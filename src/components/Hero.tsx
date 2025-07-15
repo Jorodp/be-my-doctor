@@ -12,7 +12,7 @@ const Hero = () => {
             <div className="space-y-4">
               <h1 className="text-4xl lg:text-6xl font-bold text-foreground leading-tight">
                 Encuentra médicos de{" "}
-                <span className="text-primary">confianza</span> cerca de ti
+                <span className="text-primary">confianza</span> con Be My Doctor
               </h1>
               <p className="text-xl text-muted-foreground leading-relaxed">
                 Agenda consultas presenciales con especialistas verificados. 

@@ -13,11 +13,9 @@ const Header = () => {
       <div className="container mx-auto px-4 py-4">
         <div className="flex justify-between items-center">
           {/* Logo */}
-          <Link to="/" className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-hero rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">M</span>
-            </div>
-            <span className="text-2xl font-bold text-primary">MediConnect</span>
+          <Link to="/" className="flex items-center space-x-3">
+            <img src="/lovable-uploads/2176a5eb-dd8e-4ff9-8a38-3cfe98feb63a.png" alt="Be My Doctor" className="h-10 w-auto" />
+            <span className="text-2xl font-bold text-primary">Be My Doctor</span>
           </Link>
 
           {/* Desktop Navigation */}
