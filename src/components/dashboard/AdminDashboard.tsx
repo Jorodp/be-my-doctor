@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { DoctorsList } from '@/components/admin/DoctorsList';
 import { PatientsList } from '@/components/admin/PatientsList';
 import { AssistantsList } from '@/components/admin/AssistantsList';
+import { PatientDocumentManagement } from '@/components/admin/PatientDocumentManagement';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { DashboardHeader } from '@/components/DashboardHeader';
@@ -355,11 +356,12 @@ export const AdminDashboard = () => {
 
         {/* Main Management Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="overview">Resumen</TabsTrigger>
             <TabsTrigger value="doctors">Doctores</TabsTrigger>
             <TabsTrigger value="patients">Pacientes</TabsTrigger>
             <TabsTrigger value="assistants">Asistentes</TabsTrigger>
+            <TabsTrigger value="documents">Documentos</TabsTrigger>
             <TabsTrigger value="system">Sistema</TabsTrigger>
           </TabsList>
 
@@ -438,6 +440,10 @@ export const AdminDashboard = () => {
 
           <TabsContent value="assistants">
             <AssistantsList />
+          </TabsContent>
+
+          <TabsContent value="documents">
+            <PatientDocumentManagement />
           </TabsContent>
 
           <TabsContent value="system">
