@@ -291,6 +291,27 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_settings: {
+        Row: {
+          annual_price: number
+          id: boolean
+          monthly_price: number
+          updated_at: string
+        }
+        Insert: {
+          annual_price?: number
+          id?: boolean
+          monthly_price?: number
+          updated_at?: string
+        }
+        Update: {
+          annual_price?: number
+          id?: boolean
+          monthly_price?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           address: string | null

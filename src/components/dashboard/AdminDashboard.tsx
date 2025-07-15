@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, UserCheck, Clock, BarChart3, Shield, Settings, Star, Calendar, Activity } from 'lucide-react';
+import { Users, UserCheck, Clock, BarChart3, Shield, Settings, Star, Calendar, Activity, CreditCard } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
 import { DoctorsList } from '@/components/admin/DoctorsList';
@@ -16,6 +16,8 @@ import { UserManagement } from '@/components/admin/UserManagement';
 import { DoctorVerificationList } from '@/components/admin/DoctorVerificationList';
 import { AdminReports } from '@/components/admin/AdminReports';
 import { AdminAppointments } from '@/components/admin/AdminAppointments';
+import { PaymentSettings } from '@/components/admin/PaymentSettings';
+import { SubscriptionRenewals } from '@/components/admin/SubscriptionRenewals';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { DashboardHeader } from '@/components/DashboardHeader';
@@ -392,13 +394,14 @@ export const AdminDashboard = () => {
 
         {/* Main Management Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-8">
+          <TabsList className="grid w-full grid-cols-9">
             <TabsTrigger value="overview">Resumen</TabsTrigger>
             <TabsTrigger value="users">Usuarios</TabsTrigger>
             <TabsTrigger value="doctors">Doctores</TabsTrigger>
             <TabsTrigger value="patients">Pacientes</TabsTrigger>
             <TabsTrigger value="assistants">Asistentes</TabsTrigger>
             <TabsTrigger value="appointments">Citas</TabsTrigger>
+            <TabsTrigger value="payments">Pagos</TabsTrigger>
             <TabsTrigger value="reports">Reportes</TabsTrigger>
             <TabsTrigger value="system">Sistema</TabsTrigger>
           </TabsList>
@@ -456,9 +459,9 @@ export const AdminDashboard = () => {
                           <Shield className="h-6 w-6" />
                           Asistentes
                         </Button>
-                        <Button variant="outline" className="h-20 flex flex-col gap-2" onClick={() => setActiveTab('system')}>
-                          <Settings className="h-6 w-6" />
-                          Configuración
+                        <Button variant="outline" className="h-20 flex flex-col gap-2" onClick={() => setActiveTab('payments')}>
+                          <CreditCard className="h-6 w-6" />
+                          Pagos
                         </Button>
                       </div>
                     </div>
@@ -486,6 +489,13 @@ export const AdminDashboard = () => {
 
           <TabsContent value="appointments">
             <AdminAppointments />
+          </TabsContent>
+
+          <TabsContent value="payments">
+            <div className="space-y-6">
+              <PaymentSettings />
+              <SubscriptionRenewals />
+            </div>
           </TabsContent>
 
           <TabsContent value="reports">
