@@ -14,6 +14,7 @@ import { AssistantDashboard } from "./components/dashboard/AssistantDashboard";
 import { AdminDashboard } from "./components/dashboard/AdminDashboard";
 import Unauthorized from "./pages/Unauthorized";
 import NotFound from "./pages/NotFound";
+import EmergencyLogout from "./pages/EmergencyLogout";
 
 const queryClient = new QueryClient();
 
@@ -60,6 +61,7 @@ const App = () => (
                 </ProtectedRoute>
               } 
             />
+            <Route path="/emergency-logout" element={<EmergencyLogout />} />
             <Route path="/unauthorized" element={<Unauthorized />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
