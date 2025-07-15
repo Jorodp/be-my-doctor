@@ -16,92 +16,140 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     )
 
-    // 1. Create Admin
+    // 1. Create Admin (jorodp@hotmail.com)
     const { data: adminUser, error: adminError } = await supabaseAdmin.auth.admin.createUser({
       email: 'jorodp@hotmail.com',
       password: '058__coL',
       email_confirm: true,
       user_metadata: {
-        role: 'admin'
+        role: 'admin',
+        full_name: 'Administrador'
       }
     })
 
     if (adminError) throw adminError
 
-    // 2. Create Doctor
+    // Create profile for admin
+    const { error: adminProfileError } = await supabaseAdmin
+      .from('profiles')
+      .insert({
+        user_id: adminUser.user?.id,
+        full_name: 'Administrador',
+        role: 'admin'
+      })
+
+    if (adminProfileError) console.log('Admin profile error:', adminProfileError)
+
+    // 2. Create Patient (paciente@paciente.com)
+    const { data: patientUser, error: patientError } = await supabaseAdmin.auth.admin.createUser({
+      email: 'paciente@paciente.com',
+      password: 'paciente123',
+      email_confirm: true,
+      user_metadata: {
+        role: 'patient',
+        full_name: 'Juan Paciente'
+      }
+    })
+
+    if (patientError) throw patientError
+
+    // Create profile for patient
+    const { error: patientProfileError } = await supabaseAdmin
+      .from('profiles')
+      .insert({
+        user_id: patientUser.user?.id,
+        full_name: 'Juan Paciente',
+        role: 'patient'
+      })
+
+    if (patientProfileError) console.log('Patient profile error:', patientProfileError)
+
+    // 3. Create Doctor (demo)
     const { data: doctorUser, error: doctorError } = await supabaseAdmin.auth.admin.createUser({
       email: 'doctor.demo@bemy.com',
       password: 'Doctor123',
       email_confirm: true,
       user_metadata: {
         role: 'doctor',
-        verified: true,
-        full_name: 'Dr. María Pérez',
-        speciality: 'Cardiología',
-        first_name: 'María',
-        last_name: 'Pérez',
-        professional_license: 'MED-12345',
-        specialty: 'Cardiología',
-        years_experience: '10',
-        consultation_fee: '150'
+        full_name: 'Dr. María Pérez'
       }
     })
 
     if (doctorError) throw doctorError
 
-    // 3. Create Patient
-    const { data: patientUser, error: patientError } = await supabaseAdmin.auth.admin.createUser({
-      email: 'paciente.demo@bemy.com',
-      password: 'Paciente123',
-      email_confirm: true,
-      user_metadata: {
-        role: 'patient',
-        full_name: 'Juan López',
-        first_name: 'Juan',
-        last_name: 'López'
-      }
-    })
+    // Create profile for doctor
+    const { error: doctorProfileError } = await supabaseAdmin
+      .from('profiles')
+      .insert({
+        user_id: doctorUser.user?.id,
+        full_name: 'Dr. María Pérez',
+        role: 'doctor'
+      })
 
-    if (patientError) throw patientError
+    if (doctorProfileError) console.log('Doctor profile error:', doctorProfileError)
 
-    // 4. Create Medical Assistant
+    // Create doctor profile
+    const { error: doctorProfError } = await supabaseAdmin
+      .from('doctor_profiles')
+      .insert({
+        user_id: doctorUser.user?.id,
+        specialty: 'Cardiología',
+        professional_license: 'MED-12345',
+        years_experience: 10,
+        consultation_fee: 150,
+        verification_status: 'verified'
+      })
+
+    if (doctorProfError) console.log('Doctor professional profile error:', doctorProfError)
+
+    // 4. Create Medical Assistant (demo)
     const { data: assistantUser, error: assistantError } = await supabaseAdmin.auth.admin.createUser({
       email: 'asistente.demo@bemy.com',
       password: 'Asistente123',
       email_confirm: true,
       user_metadata: {
-        role: 'medical_assistant',
+        role: 'assistant',
         assigned_doctor_id: doctorUser.user?.id,
-        first_name: 'Ana',
-        last_name: 'García',
         full_name: 'Ana García'
       }
     })
 
     if (assistantError) throw assistantError
 
+    // Create profile for assistant
+    const { error: assistantProfileError } = await supabaseAdmin
+      .from('profiles')
+      .insert({
+        user_id: assistantUser.user?.id,
+        full_name: 'Ana García',
+        role: 'assistant'
+      })
+
+    if (assistantProfileError) console.log('Assistant profile error:', assistantProfileError)
+
+
     const result = {
       success: true,
       users: {
         admin: {
           id: adminUser.user?.id,
-          email: adminUser.user?.email,
+          email: 'jorodp@hotmail.com',
           role: 'admin'
+        },
+        patient: {
+          id: patientUser.user?.id,
+          email: 'paciente@paciente.com',
+          role: 'patient'
         },
         doctor: {
           id: doctorUser.user?.id,
           email: doctorUser.user?.email,
           role: 'doctor'
         },
-        patient: {
-          id: patientUser.user?.id,
-          email: patientUser.user?.email,
-          role: 'patient'
-        },
         assistant: {
           id: assistantUser.user?.id,
           email: assistantUser.user?.email,
-          role: 'medical_assistant',
+          role: 'assistant',
           assigned_doctor_id: doctorUser.user?.id
         }
       }
