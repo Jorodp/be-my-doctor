@@ -270,6 +270,31 @@ export function AppointmentActions({
       const newStartDateTime = setMinutes(setHours(selectedDate, hour), minute);
       const newEndDateTime = new Date(newStartDateTime.getTime() + 30 * 60000); // 30 minutes
 
+      // ✅ VALIDACIÓN DE SOLAPAMIENTO ANTES DE REPROGRAMAR
+      const { data: conflictingAppointments, error: checkError } = await supabase
+        .from('appointments')
+        .select('id, starts_at, ends_at')
+        .eq('doctor_user_id', appointment.doctor_user_id)
+        .in('status', ['scheduled', 'completed'])
+        .lt('starts_at', newEndDateTime.toISOString())
+        .gt('ends_at', newStartDateTime.toISOString())
+        .neq('id', appointment.id); // Excluir la cita actual
+
+      if (checkError) {
+        console.error('Error checking for conflicts:', checkError);
+        throw new Error('Error verificando disponibilidad');
+      }
+
+      if (conflictingAppointments && conflictingAppointments.length > 0) {
+        toast({
+          title: "Horario no disponible",
+          description: "Este horario ya está ocupado. Por favor selecciona otro horario.",
+          variant: "destructive"
+        });
+        setLoading(false);
+        return;
+      }
+
       const updateData: any = {
         starts_at: newStartDateTime.toISOString(),
         ends_at: newEndDateTime.toISOString(),
@@ -288,7 +313,19 @@ export function AppointmentActions({
         .update(updateData)
         .eq('id', appointment.id);
 
-      if (error) throw error;
+      if (error) {
+        if (error.code === '23505') { // Unique constraint violation
+          toast({
+            title: "Error de concurrencia",
+            description: "Este horario fue tomado por otro usuario. Selecciona otro horario.",
+            variant: "destructive"
+          });
+        } else {
+          throw error;
+        }
+        setLoading(false);
+        return;
+      }
 
       toast({
         title: "Cita Reprogramada",

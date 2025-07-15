@@ -41,6 +41,7 @@ import { useToast } from '@/hooks/use-toast';
 import { format, addDays, startOfDay, endOfDay } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { PatientHistoryModal } from '@/components/PatientHistoryModal';
+import { AppointmentActions } from '@/components/AppointmentActions';
 import { DashboardHeader } from '@/components/DashboardHeader';
 
 interface DoctorProfile {
@@ -67,8 +68,10 @@ interface Appointment {
   status: string;
   notes: string | null;
   patient_user_id: string;
+  doctor_user_id: string;
   patient_profile?: {
     full_name: string;
+    phone: string;
   };
 }
 
@@ -268,7 +271,7 @@ export const DoctorDashboard = () => {
       (appointments || []).map(async (appointment) => {
         const { data: patientProfile } = await supabase
           .from('profiles')
-          .select('full_name')
+          .select('full_name, phone')
           .eq('user_id', appointment.patient_user_id)
           .single();
 
@@ -304,7 +307,7 @@ export const DoctorDashboard = () => {
       (appointments || []).map(async (appointment) => {
         const { data: patientProfile } = await supabase
           .from('profiles')
-          .select('full_name')
+          .select('full_name, phone')
           .eq('user_id', appointment.patient_user_id)
           .single();
 
@@ -850,111 +853,120 @@ export const DoctorDashboard = () => {
                   </p>
                 ) : (
                   <div className="space-y-4">
-                    {todayAppointments.map((appointment) => (
-                      <div key={appointment.id} className="flex items-center justify-between p-4 border rounded-lg">
-                         <div className="flex items-center gap-4">
-                           <div className="flex flex-col">
-                             <span className="font-medium">
-                               {appointment.patient_profile?.full_name || 'Paciente'}
-                             </span>
-                             <span className="text-sm text-muted-foreground">
-                               {formatTime(appointment.starts_at)} - {formatTime(appointment.ends_at)}
-                             </span>
-                           </div>
-                           <Badge>{appointment.status}</Badge>
-                         </div>
-                         <div className="flex gap-2">
-                           <Button
-                             variant="outline"
-                             size="sm"
-                             onClick={() => setSelectedPatientHistory({
-                               patientUserId: appointment.patient_user_id,
-                               isOpen: true
-                             })}
-                           >
-                             <User className="h-4 w-4 mr-2" />
-                             Historial
-                           </Button>
-                            {appointment.status === 'scheduled' ? (
-                              <Button 
-                                size="sm"
-                                onClick={() => handleStartConsultation(appointment)}
-                                className="bg-primary"
-                              >
-                                <Stethoscope className="h-4 w-4 mr-2" />
-                                Iniciar Consulta
-                              </Button>
-                            ) : (
-                              <Dialog>
-                               <DialogTrigger asChild>
-                                 <Button 
-                                   variant="outline" 
-                                   size="sm"
-                                   onClick={() => {
-                                     setSelectedAppointmentId(appointment.id);
-                                     fetchConsultationNotes(appointment.id);
-                                   }}
-                                 >
-                                   <FileText className="h-4 w-4 mr-2" />
-                                   Ver Notas
-                                 </Button>
-                          </DialogTrigger>
-                          <DialogContent className="sm:max-w-[600px]">
-                            <DialogHeader>
-                              <DialogTitle>
-                                Notas Médicas - {appointment.patient_profile?.full_name}
-                              </DialogTitle>
-                            </DialogHeader>
-                            <div className="space-y-4">
-                              <div>
-                                <Label htmlFor="diagnosis">Diagnóstico</Label>
-                                <Textarea
-                                  id="diagnosis"
-                                  value={notesForm.diagnosis}
-                                  onChange={(e) => setNotesForm(prev => ({ ...prev, diagnosis: e.target.value }))}
-                                  placeholder="Ingresa el diagnóstico..."
-                                />
+                     {todayAppointments.map((appointment) => (
+                       <div key={appointment.id} className="flex items-center justify-between p-4 border rounded-lg">
+                          <div className="flex items-center gap-4">
+                            <div className="flex flex-col">
+                              <span className="font-medium">
+                                {appointment.patient_profile?.full_name || 'Paciente'}
+                              </span>
+                              <span className="text-sm text-muted-foreground">
+                                {formatTime(appointment.starts_at)} - {formatTime(appointment.ends_at)}
+                              </span>
+                            </div>
+                            <Badge>{appointment.status}</Badge>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setSelectedPatientHistory({
+                                patientUserId: appointment.patient_user_id,
+                                isOpen: true
+                              })}
+                            >
+                              <User className="h-4 w-4 mr-2" />
+                              Historial
+                            </Button>
+                             {appointment.status === 'scheduled' ? (
+                               <Button 
+                                 size="sm"
+                                 onClick={() => handleStartConsultation(appointment)}
+                                 className="bg-primary"
+                               >
+                                 <Stethoscope className="h-4 w-4 mr-2" />
+                                 Iniciar Consulta
+                               </Button>
+                             ) : (
+                               <Dialog>
+                                <DialogTrigger asChild>
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    onClick={() => {
+                                      setSelectedAppointmentId(appointment.id);
+                                      fetchConsultationNotes(appointment.id);
+                                    }}
+                                  >
+                                    <FileText className="h-4 w-4 mr-2" />
+                                    Ver Notas
+                                  </Button>
+                           </DialogTrigger>
+                           <DialogContent className="sm:max-w-[600px]">
+                             <DialogHeader>
+                               <DialogTitle>
+                                 Notas Médicas - {appointment.patient_profile?.full_name}
+                               </DialogTitle>
+                             </DialogHeader>
+                             <div className="space-y-4">
+                               <div>
+                                 <Label htmlFor="diagnosis">Diagnóstico</Label>
+                                 <Textarea
+                                   id="diagnosis"
+                                   value={notesForm.diagnosis}
+                                   onChange={(e) => setNotesForm(prev => ({ ...prev, diagnosis: e.target.value }))}
+                                   placeholder="Ingresa el diagnóstico..."
+                                 />
+                               </div>
+                               <div>
+                                 <Label htmlFor="prescription">Receta</Label>
+                                 <Textarea
+                                   id="prescription"
+                                   value={notesForm.prescription}
+                                   onChange={(e) => setNotesForm(prev => ({ ...prev, prescription: e.target.value }))}
+                                   placeholder="Medicamentos y dosis..."
+                                 />
+                               </div>
+                               <div>
+                                 <Label htmlFor="recommendations">Recomendaciones</Label>
+                                 <Textarea
+                                   id="recommendations"
+                                   value={notesForm.recommendations}
+                                   onChange={(e) => setNotesForm(prev => ({ ...prev, recommendations: e.target.value }))}
+                                   placeholder="Recomendaciones y cuidados..."
+                                 />
+                               </div>
+                               <div>
+                                 <Label htmlFor="follow_up">Fecha de Seguimiento</Label>
+                                 <Input
+                                   id="follow_up"
+                                   type="date"
+                                   value={notesForm.follow_up_date}
+                                   onChange={(e) => setNotesForm(prev => ({ ...prev, follow_up_date: e.target.value }))}
+                                 />
+                               </div>
+                               <Button onClick={saveConsultationNotes} className="w-full">
+                                 <Save className="h-4 w-4 mr-2" />
+                                 Guardar Notas
+                               </Button>
                               </div>
-                              <div>
-                                <Label htmlFor="prescription">Receta</Label>
-                                <Textarea
-                                  id="prescription"
-                                  value={notesForm.prescription}
-                                  onChange={(e) => setNotesForm(prev => ({ ...prev, prescription: e.target.value }))}
-                                  placeholder="Medicamentos y dosis..."
-                                />
-                              </div>
-                              <div>
-                                <Label htmlFor="recommendations">Recomendaciones</Label>
-                                <Textarea
-                                  id="recommendations"
-                                  value={notesForm.recommendations}
-                                  onChange={(e) => setNotesForm(prev => ({ ...prev, recommendations: e.target.value }))}
-                                  placeholder="Recomendaciones y cuidados..."
-                                />
-                              </div>
-                              <div>
-                                <Label htmlFor="follow_up">Fecha de Seguimiento</Label>
-                                <Input
-                                  id="follow_up"
-                                  type="date"
-                                  value={notesForm.follow_up_date}
-                                  onChange={(e) => setNotesForm(prev => ({ ...prev, follow_up_date: e.target.value }))}
-                                />
-                              </div>
-                              <Button onClick={saveConsultationNotes} className="w-full">
-                                <Save className="h-4 w-4 mr-2" />
-                                Guardar Notas
-                              </Button>
-                             </div>
-                            </DialogContent>
-                            </Dialog>
-                            )}
+                              </DialogContent>
+                           </Dialog>
+                             )}
+                             
+                             {/* AppointmentActions integration */}
+                             <AppointmentActions
+                               appointment={appointment}
+                               userRole="doctor"
+                               currentUserId={user?.id || ''}
+                               onAppointmentUpdated={fetchAllData}
+                               showPatientName={true}
+                             />
                           </div>
                         </div>
-                    ))}
-                  </div>
-                )}
+                     ))}
+                   </div>
+                 )}
               </CardContent>
             </Card>
 

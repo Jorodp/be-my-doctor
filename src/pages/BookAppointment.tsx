@@ -202,6 +202,31 @@ export default function BookAppointment() {
       const appointmentEnd = new Date(appointmentStart);
       appointmentEnd.setHours(appointmentStart.getHours() + 1); // 1 hour appointment
 
+      // ✅ VALIDACIÓN DE SOLAPAMIENTO ANTES DE INSERTAR
+      const { data: conflictingAppointments, error: checkError } = await supabase
+        .from('appointments')
+        .select('id, starts_at, ends_at')
+        .eq('doctor_user_id', doctorId)
+        .in('status', ['scheduled', 'completed'])
+        .lt('starts_at', appointmentEnd.toISOString())
+        .gt('ends_at', appointmentStart.toISOString());
+
+      if (checkError) {
+        console.error('Error checking for conflicts:', checkError);
+        throw new Error('Error verificando disponibilidad');
+      }
+
+      if (conflictingAppointments && conflictingAppointments.length > 0) {
+        toast({
+          title: "Horario no disponible",
+          description: "Este horario ya está ocupado. Por favor selecciona otro horario.",
+          variant: "destructive"
+        });
+        setBookingLoading(false);
+        return;
+      }
+
+      // Si no hay conflictos, proceder con la inserción
       const { error } = await supabase
         .from('appointments')
         .insert({
@@ -214,7 +239,19 @@ export default function BookAppointment() {
           created_by: user.id
         });
 
-      if (error) throw error;
+      if (error) {
+        if (error.code === '23505') { // Unique constraint violation
+          toast({
+            title: "Error de concurrencia",
+            description: "Este horario fue tomado por otro paciente. Selecciona otro horario.",
+            variant: "destructive"
+          });
+        } else {
+          throw error;
+        }
+        setBookingLoading(false);
+        return;
+      }
 
       setBookingSuccess(true);
       toast({
