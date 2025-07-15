@@ -103,6 +103,62 @@ export type Database = {
           },
         ]
       }
+      consultation_payments: {
+        Row: {
+          amount: number
+          appointment_id: string
+          created_at: string
+          currency: string | null
+          doctor_user_id: string
+          id: string
+          paid_at: string | null
+          patient_user_id: string
+          payment_method: string
+          status: string
+          stripe_payment_intent_id: string | null
+          stripe_session_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          appointment_id: string
+          created_at?: string
+          currency?: string | null
+          doctor_user_id: string
+          id?: string
+          paid_at?: string | null
+          patient_user_id: string
+          payment_method: string
+          status?: string
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          appointment_id?: string
+          created_at?: string
+          currency?: string | null
+          doctor_user_id?: string
+          id?: string
+          paid_at?: string | null
+          patient_user_id?: string
+          payment_method?: string
+          status?: string
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "consultation_payments_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: true
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       doctor_availability: {
         Row: {
           created_at: string
@@ -196,6 +252,45 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications: {
+        Row: {
+          created_at: string
+          data: Json | null
+          email_sent_at: string | null
+          id: string
+          message: string
+          read: boolean | null
+          sent_via_email: boolean | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          data?: Json | null
+          email_sent_at?: string | null
+          id?: string
+          message: string
+          read?: boolean | null
+          sent_via_email?: boolean | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json | null
+          email_sent_at?: string | null
+          id?: string
+          message?: string
+          read?: boolean | null
+          sent_via_email?: boolean | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           address: string | null
@@ -275,6 +370,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      subscriptions: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string | null
+          ends_at: string
+          id: string
+          payment_method: string | null
+          plan: string
+          starts_at: string
+          status: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          currency?: string | null
+          ends_at: string
+          id?: string
+          payment_method?: string | null
+          plan: string
+          starts_at?: string
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string | null
+          ends_at?: string
+          id?: string
+          payment_method?: string | null
+          plan?: string
+          starts_at?: string
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
     }
     Views: {

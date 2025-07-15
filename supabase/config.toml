@@ -38,3 +38,9 @@ verify_jwt = false
 
 [functions.admin-profile-management]
 verify_jwt = false
+
+[functions.payments]
+verify_jwt = false
+
+[functions.notifications]
+verify_jwt = false
