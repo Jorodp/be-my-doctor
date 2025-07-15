@@ -107,12 +107,13 @@ export const PatientDashboard = () => {
     if (!user) return;
 
     try {
+      console.log('Fetching appointments for user:', user.id);
+      
       // Fetch upcoming appointments
       const { data: upcoming, error: upcomingError } = await supabase
         .from('appointments')
         .select(`
           *,
-          profiles!doctor_user_id (full_name),
           consultation_notes (*),
           ratings (rating, comment)
         `)
@@ -121,6 +122,8 @@ export const PatientDashboard = () => {
         .gt('starts_at', new Date().toISOString())
         .order('starts_at', { ascending: true });
 
+      console.log('Upcoming appointments query result:', { upcoming, upcomingError });
+
       if (upcomingError) throw upcomingError;
 
       // Fetch past appointments
@@ -128,7 +131,6 @@ export const PatientDashboard = () => {
         .from('appointments')
         .select(`
           *,
-          profiles!doctor_user_id (full_name),
           consultation_notes (*),
           ratings (rating, comment)
         `)
@@ -136,18 +138,57 @@ export const PatientDashboard = () => {
         .in('status', ['completed'])
         .order('starts_at', { ascending: false });
 
+      console.log('Past appointments query result:', { past, pastError });
+
       if (pastError) throw pastError;
 
-      // Ensure ratings is always an array
+      // Fetch doctor profiles for all appointments
+      const allAppointments = [...(upcoming || []), ...(past || [])];
+      const doctorIds = [...new Set(allAppointments.map(app => app.doctor_user_id))];
+      
+      let doctorProfiles: Record<string, any> = {};
+      if (doctorIds.length > 0) {
+        const { data: doctors, error: doctorsError } = await supabase
+          .from('profiles')
+          .select('user_id, full_name')
+          .in('user_id', doctorIds);
+
+        if (!doctorsError && doctors) {
+          doctorProfiles = doctors.reduce((acc, doctor) => {
+            acc[doctor.user_id] = doctor;
+            return acc;
+          }, {} as Record<string, any>);
+        }
+
+        // Also fetch doctor specialties
+        const { data: doctorSpecialties, error: specialtiesError } = await supabase
+          .from('doctor_profiles')
+          .select('user_id, specialty')
+          .in('user_id', doctorIds);
+
+        if (!specialtiesError && doctorSpecialties) {
+          doctorSpecialties.forEach(spec => {
+            if (doctorProfiles[spec.user_id]) {
+              doctorProfiles[spec.user_id].specialty = spec.specialty;
+            }
+          });
+        }
+      }
+
+      // Process appointments with doctor profiles
       const processedUpcoming = (upcoming || []).map(app => ({
         ...app,
-        ratings: Array.isArray(app.ratings) ? app.ratings : []
+        doctor_profile: doctorProfiles[app.doctor_user_id] || null,
+        ratings: Array.isArray(app.ratings) ? app.ratings : (app.ratings ? [app.ratings] : [])
       }));
 
       const processedPast = (past || []).map(app => ({
         ...app,
-        ratings: Array.isArray(app.ratings) ? app.ratings : []
+        doctor_profile: doctorProfiles[app.doctor_user_id] || null,
+        ratings: Array.isArray(app.ratings) ? app.ratings : (app.ratings ? [app.ratings] : [])
       }));
+
+      console.log('Processed appointments:', { processedUpcoming, processedPast });
 
       setUpcomingAppointments(processedUpcoming);
       setPastAppointments(processedPast);
