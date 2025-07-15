@@ -12,6 +12,7 @@ import { AssignedDoctorInfo } from '@/components/AssignedDoctorInfo';
 import { AssistantScheduleManager } from '@/components/AssistantScheduleManager';
 import { AssistantPatientManager } from '@/components/AssistantPatientManager';
 import { AssistantAppointmentCreator } from '@/components/AssistantAppointmentCreator';
+import { AssistantUpcomingAppointments } from '@/components/AssistantUpcomingAppointments';
 
 interface Appointment {
   id: string;
@@ -167,11 +168,12 @@ export const AssistantDashboard = () => {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="overview">Resumen</TabsTrigger>
+            <TabsTrigger value="appointments">Citas</TabsTrigger>
             <TabsTrigger value="schedule">Agenda</TabsTrigger>
             <TabsTrigger value="patients">Pacientes</TabsTrigger>
-            <TabsTrigger value="appointments">Nueva Cita</TabsTrigger>
+            <TabsTrigger value="new-appointment">Nueva Cita</TabsTrigger>
             <TabsTrigger value="documents">Documentos</TabsTrigger>
           </TabsList>
 
@@ -179,7 +181,11 @@ export const AssistantDashboard = () => {
             <AssignedDoctorInfo doctorId={doctorId} />
           </TabsContent>
 
-          <TabsContent value="schedule" className="space-y-6">
+          <TabsContent value="appointments" className="space-y-6">
+            <AssistantUpcomingAppointments doctorId={doctorId} />
+          </TabsContent>
+
+          <TabsContent value="schedule" className="space-y-6">${' '}
             <AssistantScheduleManager doctorId={doctorId} />
           </TabsContent>
 
@@ -187,7 +193,7 @@ export const AssistantDashboard = () => {
             <AssistantPatientManager doctorId={doctorId} />
           </TabsContent>
 
-          <TabsContent value="appointments" className="space-y-6">
+          <TabsContent value="new-appointment" className="space-y-6">
             <AssistantAppointmentCreator doctorId={doctorId} />
           </TabsContent>
 
