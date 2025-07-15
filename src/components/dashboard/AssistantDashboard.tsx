@@ -1,14 +1,17 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Calendar, Clock, User, UserCheck, Phone } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
 import { DashboardHeader } from '@/components/DashboardHeader';
 import { PatientDocumentManager } from '@/components/PatientDocumentManager';
+import { AssignedDoctorInfo } from '@/components/AssignedDoctorInfo';
+import { AssistantScheduleManager } from '@/components/AssistantScheduleManager';
+import { AssistantPatientManager } from '@/components/AssistantPatientManager';
+import { AssistantAppointmentCreator } from '@/components/AssistantAppointmentCreator';
 
 interface Appointment {
   id: string;
@@ -82,7 +85,7 @@ export const AssistantDashboard = () => {
       
       // Extract patient IDs for document validation
       const patientIds = appointmentsWithPatients.map(apt => apt.patient_user_id);
-      setAppointmentPatients([...new Set(patientIds)]); // Remove duplicates
+      setAppointmentPatients([...new Set(patientIds)] as string[]); // Remove duplicates
     } catch (error) {
       console.error('Error fetching appointments:', error);
       toast({
@@ -162,103 +165,38 @@ export const AssistantDashboard = () => {
         onSignOut={signOut}
       />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-        {/* Patient Document Validation */}
-        {appointmentPatients.length > 0 && (
-          <PatientDocumentManager appointmentPatients={appointmentPatients} />
-        )}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <Tabs defaultValue="overview" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="overview">Resumen</TabsTrigger>
+            <TabsTrigger value="schedule">Agenda</TabsTrigger>
+            <TabsTrigger value="patients">Pacientes</TabsTrigger>
+            <TabsTrigger value="appointments">Nueva Cita</TabsTrigger>
+            <TabsTrigger value="documents">Documentos</TabsTrigger>
+          </TabsList>
 
-        {/* Citas de Hoy */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
-              Citas de Hoy
-            </CardTitle>
-            <CardDescription>
-              Pacientes programados para el día actual
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {todayAppointments.length === 0 ? (
-              <p className="text-muted-foreground text-center py-8">
-                No hay citas programadas para hoy
-              </p>
-            ) : (
-              <div className="grid gap-4">
-                {todayAppointments.map((appointment) => (
-                  <div key={appointment.id} className="border rounded-lg p-4 hover:bg-muted/50 transition-colors">
-                    <div className="flex justify-between items-start">
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <User className="h-4 w-4" />
-                          <span className="font-medium">{appointment.patient_profile?.full_name || 'Paciente'}</span>
-                        </div>
-                        {appointment.patient_profile?.phone && (
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Phone className="h-4 w-4" />
-                            {appointment.patient_profile.phone}
-                          </div>
-                        )}
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Clock className="h-4 w-4" />
-                          {formatTime(appointment.starts_at)} - {formatTime(appointment.ends_at)}
-                        </div>
-                      </div>
-                      <div className="flex gap-2 flex-col">
-                        <Badge>{appointment.status}</Badge>
-                        {appointment.status === 'scheduled' && (
-                          <div className="flex gap-1">
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              onClick={() => updateAppointmentStatus(appointment.id, 'completed')}
-                            >
-                              Completar
-                            </Button>
-                            <Button 
-                              size="sm" 
-                              variant="destructive"
-                              onClick={() => updateAppointmentStatus(appointment.id, 'cancelled')}
-                            >
-                              Cancelar
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+          <TabsContent value="overview" className="space-y-6">
+            <AssignedDoctorInfo doctorId={doctorId} />
+          </TabsContent>
+
+          <TabsContent value="schedule" className="space-y-6">
+            <AssistantScheduleManager doctorId={doctorId} />
+          </TabsContent>
+
+          <TabsContent value="patients" className="space-y-6">
+            <AssistantPatientManager doctorId={doctorId} />
+          </TabsContent>
+
+          <TabsContent value="appointments" className="space-y-6">
+            <AssistantAppointmentCreator doctorId={doctorId} />
+          </TabsContent>
+
+          <TabsContent value="documents" className="space-y-6">
+            {appointmentPatients.length > 0 && (
+              <PatientDocumentManager appointmentPatients={appointmentPatients} />
             )}
-          </CardContent>
-        </Card>
-
-        {/* Acciones Rápidas */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Acciones Rápidas</CardTitle>
-            <CardDescription>
-              Herramientas para gestionar la agenda médica
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              <Button className="h-20 flex flex-col gap-2">
-                <Calendar className="h-6 w-6" />
-                Agendar Cita
-              </Button>
-              <Button variant="outline" className="h-20 flex flex-col gap-2">
-                <UserCheck className="h-6 w-6" />
-                Lista de Pacientes
-              </Button>
-              <Button variant="outline" className="h-20 flex flex-col gap-2">
-                <Clock className="h-6 w-6" />
-                Gestionar Horarios
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+          </TabsContent>
+        </Tabs>
       </main>
     </div>
   );
