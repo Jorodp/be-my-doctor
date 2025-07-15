@@ -154,25 +154,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signOut = async () => {
     try {
       console.log('Attempting to sign out...');
-      const { error } = await supabase.auth.signOut();
-      console.log('SignOut result:', { error });
       
-      // Clear state regardless of error to ensure UI updates
+      // Clear state immediately
       setUser(null);
       setSession(null);
       setUserRole(null);
       setProfile(null);
       setDoctorProfile(null);
+      
+      // Then call Supabase signOut
+      const { error } = await supabase.auth.signOut();
+      console.log('SignOut completed:', { error });
       
       return { error };
     } catch (error) {
       console.error('SignOut failed:', error);
-      // Clear state even if there's an error
-      setUser(null);
-      setSession(null);
-      setUserRole(null);
-      setProfile(null);
-      setDoctorProfile(null);
       return { error };
     }
   };
