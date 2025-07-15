@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import { CreateDemoUsers } from '@/components/CreateDemoUsers';
 import { Database } from '@/integrations/supabase/types';
 
 type UserRole = Database['public']['Enums']['user_role'];
@@ -284,6 +285,11 @@ export default function Auth() {
           </Tabs>
         </CardContent>
       </Card>
+      
+      {/* Demo Users Creation - Solo para desarrollo */}
+      <div className="mt-6">
+        <CreateDemoUsers />
+      </div>
     </div>
   );
 }
