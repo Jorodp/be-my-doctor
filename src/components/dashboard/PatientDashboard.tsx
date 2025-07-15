@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { RatingModal } from '@/components/RatingModal';
 import { DashboardHeader } from '@/components/DashboardHeader';
 import { generateConsultationPDF } from '@/utils/pdfGenerator';
+import { AppointmentCard } from '@/components/AppointmentCard';
 
 interface Appointment {
   id: string;
@@ -570,29 +571,30 @@ export const PatientDashboard = () => {
                 No tienes citas programadas
               </p>
             ) : (
-              <div className="grid gap-4">
-                {upcomingAppointments.map((appointment) => (
-                  <div key={appointment.id} className="border rounded-lg p-4 hover:bg-muted/50 transition-colors">
-                    <div className="flex justify-between items-start">
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <User className="h-4 w-4" />
-                          <span className="font-medium">{appointment.doctor_profile?.full_name || 'Doctor'}</span>
-                          <Badge variant="secondary">Especialista</Badge>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Calendar className="h-4 w-4" />
-                          {formatDate(appointment.starts_at)}
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Clock className="h-4 w-4" />
-                          {formatTime(appointment.starts_at)} - {formatTime(appointment.ends_at)}
-                        </div>
-                      </div>
-                      <Badge>{appointment.status}</Badge>
-                    </div>
-                  </div>
-                ))}
+              <div className="space-y-4">
+                {upcomingAppointments.map((appointment) => {
+                  // Transform appointment to match AppointmentCard interface
+                  const transformedAppointment = {
+                    ...appointment,
+                    doctor_profile: appointment.doctor_profile ? {
+                      full_name: appointment.doctor_profile.full_name || '',
+                      specialty: appointment.doctor_profile.specialty || 'Medicina General'
+                    } : undefined
+                  };
+
+                  return (
+                    <AppointmentCard
+                      key={appointment.id}
+                      appointment={transformedAppointment}
+                      userRole="patient"
+                      currentUserId={user?.id || ''}
+                      onAppointmentUpdated={fetchAppointments}
+                      showPatientInfo={false}
+                      showDoctorInfo={true}
+                      compact={true}
+                    />
+                  );
+                })}
               </div>
             )}
           </CardContent>
