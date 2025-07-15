@@ -263,7 +263,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_assigned_doctor_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
     }
     Enums: {
       appointment_status: "scheduled" | "completed" | "cancelled" | "no_show"
