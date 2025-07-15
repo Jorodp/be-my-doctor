@@ -35,6 +35,9 @@ interface PendingDoctor {
   consultation_fee: number | null;
   profile_image_url: string | null;
   verification_status: 'pending' | 'verified' | 'rejected';
+  office_address: string | null;
+  office_phone: string | null;
+  practice_locations: string[] | null;
   created_at: string;
   profile: {
     full_name: string | null;
@@ -63,7 +66,7 @@ export const DoctorVerificationList = () => {
 
   const fetchPendingDoctors = async () => {
     try {
-      // Fetch pending doctors
+      // Fetch pending doctors with auth user data
       const { data: doctors, error: doctorsError } = await supabase
         .from('doctor_profiles')
         .select(`
@@ -76,6 +79,9 @@ export const DoctorVerificationList = () => {
           consultation_fee,
           profile_image_url,
           verification_status,
+          office_address,
+          office_phone,
+          practice_locations,
           created_at
         `)
         .eq('verification_status', 'pending')
@@ -88,7 +94,7 @@ export const DoctorVerificationList = () => {
         return;
       }
 
-      // Get user profiles and auth users
+      // Get user profiles and auth users for email
       const userIds = doctors.map(d => d.user_id);
       
       // Fetch profiles
@@ -97,27 +103,91 @@ export const DoctorVerificationList = () => {
         .select('user_id, full_name, phone')
         .in('user_id', userIds);
 
-      // Simplify - just use profiles for now
+      // Fetch auth users to get email (we'll need to use the auth admin API or RPC)
+      // For now, let's add email to profiles if needed
+      let authUsers: any = null;
+      try {
+        const response = await supabase.auth.admin.listUsers();
+        authUsers = response.data;
+      } catch (authError) {
+        console.warn('Could not fetch auth users:', authError);
+      }
+      
       const doctorsWithProfiles = doctors.map(doctor => {
         const profile = profiles?.find(p => p.user_id === doctor.user_id);
+        const authUser = authUsers?.users?.find((u: any) => u.id === doctor.user_id);
         
         return {
           ...doctor,
           profile: profile ? {
             ...profile,
-            email: null // We'll get this from user context if needed
-          } : null
+            email: authUser?.email || 'Email no disponible'
+          } : {
+            full_name: null,
+            phone: null,
+            email: authUser?.email || 'Email no disponible'
+          }
         };
       });
 
       setPendingDoctors(doctorsWithProfiles);
     } catch (error) {
       console.error('Error fetching pending doctors:', error);
-      toast({
-        title: "Error",
-        description: "No se pudieron cargar los médicos pendientes",
-        variant: "destructive"
-      });
+      
+      // Fallback without email if auth admin fails
+      try {
+        const { data: doctors, error: doctorsError } = await supabase
+          .from('doctor_profiles')
+          .select(`
+            id,
+            user_id,
+            professional_license,
+            specialty,
+            biography,
+            years_experience,
+            consultation_fee,
+            profile_image_url,
+            verification_status,
+            office_address,
+            office_phone,
+            practice_locations,
+            created_at
+          `)
+          .eq('verification_status', 'pending')
+          .order('created_at', { ascending: true });
+
+        if (doctorsError) throw doctorsError;
+
+        const userIds = doctors?.map(d => d.user_id) || [];
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('user_id, full_name, phone')
+          .in('user_id', userIds);
+
+        const doctorsWithProfiles = doctors?.map(doctor => {
+          const profile = profiles?.find(p => p.user_id === doctor.user_id);
+          return {
+            ...doctor,
+            profile: profile ? {
+              ...profile,
+              email: 'Email no disponible'
+            } : {
+              full_name: null,
+              phone: null,
+              email: 'Email no disponible'
+            }
+          };
+        }) || [];
+
+        setPendingDoctors(doctorsWithProfiles);
+      } catch (fallbackError) {
+        console.error('Fallback error:', fallbackError);
+        toast({
+          title: "Error",
+          description: "No se pudieron cargar los médicos pendientes",
+          variant: "destructive"
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -247,36 +317,44 @@ export const DoctorVerificationList = () => {
                           )}
                         </div>
 
-                        <div className="space-y-2">
-                          {doctor.years_experience && (
-                            <div className="text-sm flex items-center gap-1">
-                              <Award className="h-3 w-3" />
-                              <span className="text-muted-foreground">{doctor.years_experience} años de experiencia</span>
-                            </div>
-                          )}
-                          {doctor.consultation_fee && (
-                            <div className="text-sm flex items-center gap-1">
-                              <DollarSign className="h-3 w-3" />
-                              <span className="text-muted-foreground">${doctor.consultation_fee} por consulta</span>
-                            </div>
-                          )}
-                          <div className="text-sm flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
-                            <span className="text-muted-foreground">
-                              Registrado: {format(new Date(doctor.created_at), 'dd/MM/yyyy', { locale: es })}
-                            </span>
-                          </div>
-                        </div>
+                         <div className="space-y-2">
+                           {doctor.years_experience && (
+                             <div className="text-sm flex items-center gap-1">
+                               <Award className="h-3 w-3" />
+                               <span className="text-muted-foreground">{doctor.years_experience} años de experiencia</span>
+                             </div>
+                           )}
+                           {doctor.consultation_fee && (
+                             <div className="text-sm flex items-center gap-1">
+                               <DollarSign className="h-3 w-3" />
+                               <span className="text-muted-foreground">${doctor.consultation_fee} MXN por consulta</span>
+                             </div>
+                           )}
+                           {doctor.office_address && (
+                             <div className="text-sm">
+                               <span className="font-medium">Consultorio:</span>{' '}
+                               <span className="text-muted-foreground">{doctor.office_address}</span>
+                             </div>
+                           )}
+                           <div className="text-sm flex items-center gap-1">
+                             <Calendar className="h-3 w-3" />
+                             <span className="text-muted-foreground">
+                               Registrado: {format(new Date(doctor.created_at), 'dd/MM/yyyy', { locale: es })}
+                             </span>
+                           </div>
+                         </div>
 
-                        <div className="space-y-2">
-                          {doctor.biography && (
-                            <div className="text-sm">
-                              <span className="font-medium">Biografía:</span>
-                              <p className="text-muted-foreground text-xs line-clamp-3 mt-1">
-                                {doctor.biography}
-                              </p>
-                            </div>
-                          )}
+                         <div className="space-y-2">
+                           {doctor.practice_locations && doctor.practice_locations.length > 0 && (
+                             <div className="text-sm">
+                               <span className="font-medium">Lugares de atención:</span>
+                               <ul className="text-muted-foreground text-xs mt-1 space-y-1">
+                                 {doctor.practice_locations.map((location, index) => (
+                                   <li key={index}>• {location}</li>
+                                 ))}
+                               </ul>
+                             </div>
+                           )}
                         </div>
                       </div>
 

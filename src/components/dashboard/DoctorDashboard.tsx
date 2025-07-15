@@ -44,6 +44,7 @@ import { es } from 'date-fns/locale';
 import { PatientHistoryModal } from '@/components/PatientHistoryModal';
 import { AppointmentActions } from '@/components/AppointmentActions';
 import { DashboardHeader } from '@/components/DashboardHeader';
+import { DoctorProfileDisplay } from '@/components/DoctorProfileDisplay';
 
 interface DoctorProfile {
   id: string;
@@ -54,6 +55,9 @@ interface DoctorProfile {
   consultation_fee: number | null;
   profile_image_url: string | null;
   professional_license: string;
+  office_address: string | null;
+  office_phone: string | null;
+  practice_locations: string[] | null;
   verification_status: 'pending' | 'verified' | 'rejected';
   profile: {
     full_name: string | null;
@@ -164,16 +168,8 @@ export const DoctorDashboard = () => {
     isOpen: boolean;
   }>({ patientUserId: '', isOpen: false });
   
-  // Edit states
+  // Edit states (removed - only admins can edit)
   const [editingProfile, setEditingProfile] = useState(false);
-  const [profileForm, setProfileForm] = useState({
-    specialty: '',
-    biography: '',
-    consultation_fee: '',
-    years_experience: '',
-    professional_license: '',
-    profile_image_url: ''
-  });
   
   // Availability states
   const [selectedDay, setSelectedDay] = useState<number>(1);
@@ -253,14 +249,6 @@ export const DoctorDashboard = () => {
     };
 
     setProfile(completeProfile);
-    setProfileForm({
-      specialty: doctorData.specialty || '',
-      biography: doctorData.biography || '',
-      consultation_fee: doctorData.consultation_fee?.toString() || '',
-      years_experience: doctorData.years_experience?.toString() || '',
-      professional_license: doctorData.professional_license || '',
-      profile_image_url: doctorData.profile_image_url || ''
-    });
   };
 
   const fetchTodayAppointments = async () => {
@@ -435,40 +423,7 @@ export const DoctorDashboard = () => {
     }
   };
 
-  const updateProfile = async () => {
-    if (!user || !profile) return;
-
-    try {
-      const { error } = await supabase
-        .from('doctor_profiles')
-        .update({
-          specialty: profileForm.specialty,
-          biography: profileForm.biography,
-          consultation_fee: profileForm.consultation_fee ? parseFloat(profileForm.consultation_fee) : null,
-          years_experience: profileForm.years_experience ? parseInt(profileForm.years_experience) : null,
-          professional_license: profileForm.professional_license,
-          profile_image_url: profileForm.profile_image_url
-        })
-        .eq('user_id', user.id);
-
-      if (error) throw error;
-
-      toast({
-        title: "Perfil actualizado",
-        description: "Los cambios se han guardado correctamente"
-      });
-
-      setEditingProfile(false);
-      fetchDoctorProfile();
-    } catch (error) {
-      console.error('Error updating profile:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo actualizar el perfil",
-        variant: "destructive"
-      });
-    }
-  };
+  // updateProfile function removed - only admins can edit profiles
 
   const addAvailability = async () => {
     if (!user) return;
@@ -1015,155 +970,12 @@ export const DoctorDashboard = () => {
 
           {/* Profile Tab */}
           <TabsContent value="profile" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2">
-                    <User className="h-5 w-5" />
-                    Información del Perfil
-                  </CardTitle>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => setEditingProfile(!editingProfile)}
-                  >
-                    <Edit className="h-4 w-4 mr-2" />
-                    {editingProfile ? 'Cancelar' : 'Editar'}
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {editingProfile ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <Label htmlFor="specialty">Especialidad</Label>
-                      <Select 
-                        value={profileForm.specialty} 
-                        onValueChange={(value) => setProfileForm(prev => ({ ...prev, specialty: value }))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecciona especialidad" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {specialties.map(specialty => (
-                            <SelectItem key={specialty} value={specialty}>
-                              {specialty}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="license">Licencia Profesional</Label>
-                      <Input
-                        id="license"
-                        value={profileForm.professional_license}
-                        onChange={(e) => setProfileForm(prev => ({ ...prev, professional_license: e.target.value }))}
-                      />
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="fee">Tarifa de Consulta</Label>
-                      <Input
-                        id="fee"
-                        type="number"
-                        value={profileForm.consultation_fee}
-                        onChange={(e) => setProfileForm(prev => ({ ...prev, consultation_fee: e.target.value }))}
-                      />
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="experience">Años de Experiencia</Label>
-                      <Input
-                        id="experience"
-                        type="number"
-                        value={profileForm.years_experience}
-                        onChange={(e) => setProfileForm(prev => ({ ...prev, years_experience: e.target.value }))}
-                      />
-                    </div>
-                    
-                    <div className="md:col-span-2">
-                      <Label htmlFor="biography">Biografía</Label>
-                      <Textarea
-                        id="biography"
-                        value={profileForm.biography}
-                        onChange={(e) => setProfileForm(prev => ({ ...prev, biography: e.target.value }))}
-                        placeholder="Cuéntanos sobre tu experiencia y especialización..."
-                      />
-                    </div>
-                    
-                    <div className="md:col-span-2">
-                      <Label htmlFor="image">URL de Imagen de Perfil</Label>
-                      <Input
-                        id="image"
-                        value={profileForm.profile_image_url}
-                        onChange={(e) => setProfileForm(prev => ({ ...prev, profile_image_url: e.target.value }))}
-                        placeholder="https://..."
-                      />
-                    </div>
-                    
-                    <div className="md:col-span-2">
-                      <Button onClick={updateProfile} className="w-full">
-                        <Save className="h-4 w-4 mr-2" />
-                        Guardar Cambios
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-4">
-                      <div>
-                        <Label className="text-sm font-medium">Nombre</Label>
-                        <p className="text-lg">{profile.profile?.full_name || 'No especificado'}</p>
-                      </div>
-                      <div>
-                        <Label className="text-sm font-medium">Especialidad</Label>
-                        <p className="text-lg">{profile.specialty}</p>
-                      </div>
-                      <div>
-                        <Label className="text-sm font-medium">Licencia</Label>
-                        <p className="text-lg">{profile.professional_license}</p>
-                      </div>
-                      <div>
-                        <Label className="text-sm font-medium">Estado</Label>
-                        <div className="flex items-center gap-2">
-                          <CheckCircle className="h-5 w-5 text-green-600" />
-                          <span className="text-green-600 font-medium">Verificado</span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-4">
-                      <div>
-                        <Label className="text-sm font-medium">Experiencia</Label>
-                        <p className="text-lg">{profile.years_experience || 'No especificado'} años</p>
-                      </div>
-                      <div>
-                        <Label className="text-sm font-medium">Tarifa</Label>
-                        <p className="text-lg">${profile.consultation_fee || 'No especificado'}</p>
-                      </div>
-                      <div>
-                        <Label className="text-sm font-medium">Teléfono</Label>
-                        <p className="text-lg">{profile.profile?.phone || 'No especificado'}</p>
-                      </div>
-                      <div>
-                        <Label className="text-sm font-medium">Dirección</Label>
-                        <p className="text-lg">{profile.profile?.address || 'No especificado'}</p>
-                      </div>
-                    </div>
-                    
-                    {profile.biography && (
-                      <div className="md:col-span-2">
-                        <Label className="text-sm font-medium">Biografía</Label>
-                        <p className="text-muted-foreground leading-relaxed mt-1">
-                          {profile.biography}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            {profile && (
+              <DoctorProfileDisplay 
+                profile={profile} 
+                onProfileUpdate={fetchDoctorProfile}
+              />
+            )}
 
             {/* Assistant Management */}
             <Card>

@@ -142,6 +142,9 @@ export type Database = {
           consultation_fee: number | null
           created_at: string
           id: string
+          office_address: string | null
+          office_phone: string | null
+          practice_locations: string[] | null
           professional_license: string
           profile_image_url: string | null
           specialty: string
@@ -157,6 +160,9 @@ export type Database = {
           consultation_fee?: number | null
           created_at?: string
           id?: string
+          office_address?: string | null
+          office_phone?: string | null
+          practice_locations?: string[] | null
           professional_license: string
           profile_image_url?: string | null
           specialty: string
@@ -172,6 +178,9 @@ export type Database = {
           consultation_fee?: number | null
           created_at?: string
           id?: string
+          office_address?: string | null
+          office_phone?: string | null
+          practice_locations?: string[] | null
           professional_license?: string
           profile_image_url?: string | null
           specialty?: string

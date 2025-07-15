@@ -24,7 +24,10 @@ export const CompleteDoctorProfile = () => {
     biography: '',
     years_experience: '',
     consultation_fee: '',
-    profile_image_url: ''
+    profile_image_url: '',
+    office_address: '',
+    office_phone: '',
+    practice_locations: ['']
   });
 
   const handleFileUpload = async (file: File) => {
@@ -102,6 +105,9 @@ export const CompleteDoctorProfile = () => {
         years_experience: profileData.years_experience ? parseInt(profileData.years_experience) : null,
         consultation_fee: profileData.consultation_fee ? parseFloat(profileData.consultation_fee) : null,
         profile_image_url: profileData.profile_image_url || null,
+        office_address: profileData.office_address || null,
+        office_phone: profileData.office_phone || null,
+        practice_locations: profileData.practice_locations.filter(loc => loc.trim() !== ''),
         verification_status: 'pending' as const
       };
 
@@ -243,7 +249,7 @@ export const CompleteDoctorProfile = () => {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="fee">Precio por Consulta (USD)</Label>
+                  <Label htmlFor="fee">Precio por Consulta (MXN)</Label>
                   <Input
                     id="fee"
                     type="number"
@@ -251,9 +257,76 @@ export const CompleteDoctorProfile = () => {
                     step="0.01"
                     value={profileData.consultation_fee}
                     onChange={(e) => setProfileData(prev => ({ ...prev, consultation_fee: e.target.value }))}
-                    placeholder="50.00"
+                    placeholder="800.00"
                   />
                 </div>
+              </div>
+
+              {/* Contact and Practice Information */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="office_address">Dirección del Consultorio</Label>
+                  <Input
+                    id="office_address"
+                    value={profileData.office_address}
+                    onChange={(e) => setProfileData(prev => ({ ...prev, office_address: e.target.value }))}
+                    placeholder="Calle, Ciudad, Estado"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="office_phone">Teléfono del Consultorio</Label>
+                  <Input
+                    id="office_phone"
+                    value={profileData.office_phone}
+                    onChange={(e) => setProfileData(prev => ({ ...prev, office_phone: e.target.value }))}
+                    placeholder="+52 55 1234 5678"
+                  />
+                </div>
+              </div>
+
+              {/* Practice Locations */}
+              <div className="space-y-2">
+                <Label>Lugares de Atención (Hospitales/Clínicas)</Label>
+                {profileData.practice_locations.map((location, index) => (
+                  <div key={index} className="flex gap-2">
+                    <Input
+                      value={location}
+                      onChange={(e) => {
+                        const newLocations = [...profileData.practice_locations];
+                        newLocations[index] = e.target.value;
+                        setProfileData(prev => ({ ...prev, practice_locations: newLocations }));
+                      }}
+                      placeholder={`Hospital o clínica ${index + 1}`}
+                    />
+                    {profileData.practice_locations.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const newLocations = profileData.practice_locations.filter((_, i) => i !== index);
+                          setProfileData(prev => ({ ...prev, practice_locations: newLocations }));
+                        }}
+                      >
+                        Eliminar
+                      </Button>
+                    )}
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setProfileData(prev => ({ 
+                      ...prev, 
+                      practice_locations: [...prev.practice_locations, ''] 
+                    }));
+                  }}
+                >
+                  Agregar lugar de atención
+                </Button>
               </div>
 
               {/* Information about current user */}
