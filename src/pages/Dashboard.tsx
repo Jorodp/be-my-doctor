@@ -36,16 +36,28 @@ export default function Dashboard() {
 
       // Check if profile is complete
       if (userRole === 'patient') {
-        // For patients, check if basic profile is complete
-        const isComplete = profile?.full_name && profile?.full_name.trim() !== '';
+        // For patients, check required fields: full_name (profile_image_url and id_document_url optional for now)
+        const isComplete = profile && 
+          profile.full_name && 
+          profile.full_name.trim() !== '';
+          
         if (!isComplete) {
           setHasRedirected(true);
           navigate('/profile/patient', { replace: true });
           return;
         }
       } else if (userRole === 'doctor') {
-        // For doctors, check if doctor profile exists
-        if (!doctorProfile) {
+        // For doctors, check if doctor profile exists and has required fields
+        const isComplete = profile && 
+          doctorProfile && 
+          profile.full_name && 
+          profile.full_name.trim() !== '' &&
+          doctorProfile.specialty && 
+          doctorProfile.specialty.trim() !== '' &&
+          doctorProfile.professional_license && 
+          doctorProfile.professional_license.trim() !== '';
+          
+        if (!isComplete) {
           setHasRedirected(true);
           navigate('/profile/doctor', { replace: true });
           return;

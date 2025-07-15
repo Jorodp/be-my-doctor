@@ -13,21 +13,21 @@ import { Upload, User, FileText } from 'lucide-react';
 import { BackToHomeButton } from '@/components/ui/BackToHomeButton';
 
 export const CompleteDoctorProfile = () => {
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, doctorProfile, signOut } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(false);
   const [profileData, setProfileData] = useState({
-    professional_license: '',
-    specialty: '',
-    biography: '',
-    years_experience: '',
-    consultation_fee: '',
-    profile_image_url: '',
-    office_address: '',
-    office_phone: '',
-    practice_locations: ['']
+    professional_license: doctorProfile?.professional_license || '',
+    specialty: doctorProfile?.specialty || '',
+    biography: doctorProfile?.biography || '',
+    years_experience: doctorProfile?.years_experience?.toString() || '',
+    consultation_fee: doctorProfile?.consultation_fee?.toString() || '',
+    profile_image_url: doctorProfile?.profile_image_url || '',
+    office_address: doctorProfile?.office_address || '',
+    office_phone: doctorProfile?.office_phone || '',
+    practice_locations: doctorProfile?.practice_locations || ['']
   });
 
   const handleFileUpload = async (file: File) => {
@@ -87,7 +87,7 @@ export const CompleteDoctorProfile = () => {
 
     try {
       // Validate required fields
-      if (!profileData.professional_license || !profileData.specialty) {
+      if (!profileData.professional_license.trim() || !profileData.specialty.trim()) {
         toast({
           title: "Campos requeridos",
           description: "Por favor completa al menos la cédula profesional y especialidad",
@@ -96,26 +96,32 @@ export const CompleteDoctorProfile = () => {
         return;
       }
 
-      // Create doctor profile
+      // Prepare doctor profile data
       const doctorProfileData = {
         user_id: user.id,
-        professional_license: profileData.professional_license,
-        specialty: profileData.specialty,
-        biography: profileData.biography || null,
+        professional_license: profileData.professional_license.trim(),
+        specialty: profileData.specialty.trim(),
+        biography: profileData.biography.trim() || null,
         years_experience: profileData.years_experience ? parseInt(profileData.years_experience) : null,
         consultation_fee: profileData.consultation_fee ? parseFloat(profileData.consultation_fee) : null,
         profile_image_url: profileData.profile_image_url || null,
-        office_address: profileData.office_address || null,
-        office_phone: profileData.office_phone || null,
+        office_address: profileData.office_address.trim() || null,
+        office_phone: profileData.office_phone.trim() || null,
         practice_locations: profileData.practice_locations.filter(loc => loc.trim() !== ''),
         verification_status: 'pending' as const
       };
 
+      console.log('Submitting doctor profile data:', doctorProfileData);
+
+      // Use upsert to handle both insert and update cases
       const { error: doctorError } = await supabase
         .from('doctor_profiles')
-        .insert([doctorProfileData]);
+        .upsert(doctorProfileData, { onConflict: 'user_id' });
 
-      if (doctorError) throw doctorError;
+      if (doctorError) {
+        console.error('Doctor profile error:', doctorError);
+        throw doctorError;
+      }
 
       // Update profile image URL in profiles table if provided
       if (profileData.profile_image_url) {
@@ -131,16 +137,17 @@ export const CompleteDoctorProfile = () => {
 
       toast({
         title: "Perfil completado",
-        description: "Tu perfil ha sido enviado para verificación. Te notificaremos cuando sea aprobado.",
+        description: "Tu perfil ha sido guardado correctamente. Te notificaremos cuando sea verificado.",
       });
 
-      // Refresh the page to load the new doctor profile
-      window.location.reload();
-    } catch (error) {
-      console.error('Error creating doctor profile:', error);
+      // Redirect to doctor dashboard
+      navigate('/dashboard/doctor', { replace: true });
+      
+    } catch (error: any) {
+      console.error('Error saving doctor profile:', error);
       toast({
         title: "Error",
-        description: "No se pudo completar el perfil. Intenta nuevamente.",
+        description: error.message || "No se pudo completar el perfil. Intenta nuevamente.",
         variant: "destructive"
       });
     } finally {

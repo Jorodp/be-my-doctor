@@ -86,25 +86,30 @@ export const CompletePatientProfile = () => {
       if (!profileData.full_name.trim()) {
         toast({
           title: "Campo requerido",
-          description: "Por favor completa al menos tu nombre completo",
+          description: "Por favor completa tu nombre completo",
           variant: "destructive"
         });
         return;
       }
 
+      console.log('Submitting patient profile data:', profileData);
+
       // Update profile
       const { error } = await supabase
         .from('profiles')
         .update({
-          full_name: profileData.full_name,
-          phone: profileData.phone || null,
-          address: profileData.address || null,
+          full_name: profileData.full_name.trim(),
+          phone: profileData.phone.trim() || null,
+          address: profileData.address.trim() || null,
           date_of_birth: profileData.date_of_birth || null,
           profile_image_url: profileData.profile_image_url || null
         })
         .eq('user_id', user.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Profile update error:', error);
+        throw error;
+      }
 
       toast({
         title: "Perfil completado",
@@ -113,11 +118,11 @@ export const CompletePatientProfile = () => {
 
       // Redirect to patient dashboard
       navigate('/dashboard/patient', { replace: true });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating profile:', error);
       toast({
         title: "Error",
-        description: "No se pudo actualizar el perfil. Intenta nuevamente.",
+        description: error.message || "No se pudo actualizar el perfil. Intenta nuevamente.",
         variant: "destructive"
       });
     } finally {

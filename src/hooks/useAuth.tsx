@@ -27,6 +27,9 @@ interface DoctorProfile {
   consultation_fee: number | null;
   biography: string | null;
   profile_image_url: string | null;
+  office_address: string | null;
+  office_phone: string | null;
+  practice_locations: string[] | null;
   verification_status: 'pending' | 'verified' | 'rejected';
   verified_at: string | null;
   verified_by: string | null;
