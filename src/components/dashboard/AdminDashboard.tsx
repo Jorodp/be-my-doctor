@@ -16,7 +16,7 @@ interface DoctorProfile {
   verification_status: string;
   profiles: {
     full_name: string;
-  };
+  } | null;
 }
 
 interface UserStats {
@@ -54,10 +54,28 @@ export const AdminDashboard = () => {
       const { data: doctors, error: doctorsError } = await supabase
         .from('doctor_profiles')
         .select(`
-          *,
-          profiles!user_id (full_name)
+          id,
+          user_id,
+          professional_license,
+          specialty,
+          verification_status
         `)
         .eq('verification_status', 'pending');
+
+      // Fetch profile names separately
+      let doctorWithProfiles: DoctorProfile[] = [];
+      if (doctors && doctors.length > 0) {
+        const userIds = doctors.map(d => d.user_id);
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('user_id, full_name')
+          .in('user_id', userIds);
+
+        doctorWithProfiles = doctors.map(doctor => ({
+          ...doctor,
+          profiles: profiles?.find(p => p.user_id === doctor.user_id) || null
+        }));
+      }
 
       if (doctorsError) throw doctorsError;
 
@@ -82,7 +100,7 @@ export const AdminDashboard = () => {
 
       if (ratingsError) throw ratingsError;
 
-      setPendingDoctors(doctors || []);
+      setPendingDoctors(doctorWithProfiles);
 
       const counts = userCounts?.reduce((acc, user) => {
         acc[user.role] = (acc[user.role] || 0) + 1;
@@ -267,7 +285,7 @@ export const AdminDashboard = () => {
                       <div className="space-y-2">
                         <div className="flex items-center gap-2">
                           <UserCheck className="h-4 w-4" />
-                          <span className="font-medium">{doctor.profiles.full_name}</span>
+                          <span className="font-medium">{doctor.profiles?.full_name || 'N/A'}</span>
                           <Badge variant="secondary">{doctor.specialty}</Badge>
                         </div>
                         <div className="text-sm text-muted-foreground">

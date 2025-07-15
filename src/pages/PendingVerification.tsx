@@ -65,7 +65,7 @@ export default function PendingVerification() {
         <CardContent className="space-y-4">
           {profile && (
             <div className="text-sm text-muted-foreground">
-              Registrado como: <span className="font-semibold">{profile.first_name} {profile.last_name}</span>
+              Registrado como: <span className="font-semibold">{profile.full_name}</span>
             </div>
           )}
           

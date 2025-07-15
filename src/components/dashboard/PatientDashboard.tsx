@@ -80,8 +80,19 @@ export const PatientDashboard = () => {
 
       if (pastError) throw pastError;
 
-      setUpcomingAppointments(upcoming || []);
-      setPastAppointments(past || []);
+      // Ensure ratings is always an array
+      const processedUpcoming = (upcoming || []).map(app => ({
+        ...app,
+        ratings: Array.isArray(app.ratings) ? app.ratings : []
+      }));
+
+      const processedPast = (past || []).map(app => ({
+        ...app,
+        ratings: Array.isArray(app.ratings) ? app.ratings : []
+      }));
+
+      setUpcomingAppointments(processedUpcoming);
+      setPastAppointments(processedPast);
     } catch (error) {
       console.error('Error fetching appointments:', error);
       toast({
@@ -256,12 +267,14 @@ export const PatientDashboard = () => {
         {selectedAppointment && (
           <RatingModal
             appointmentId={selectedAppointment.id}
-            doctorId={selectedAppointment.doctor_user_id}
-            onClose={() => setSelectedAppointment(null)}
-            onSuccess={() => {
+            doctorUserId={selectedAppointment.doctor_user_id}
+            patientUserId={user?.id || ''}
+            isOpen={true}
+            onRatingSubmitted={() => {
               setSelectedAppointment(null);
               fetchAppointments();
             }}
+            onClose={() => setSelectedAppointment(null)}
           />
         )}
       </main>
