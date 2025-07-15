@@ -14,16 +14,136 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      doctor_profiles: {
+        Row: {
+          biography: string | null
+          consultation_fee: number | null
+          created_at: string
+          id: string
+          professional_license: string
+          profile_image_url: string | null
+          specialty: string
+          updated_at: string
+          user_id: string
+          verification_status: Database["public"]["Enums"]["verification_status"]
+          verified_at: string | null
+          verified_by: string | null
+          years_experience: number | null
+        }
+        Insert: {
+          biography?: string | null
+          consultation_fee?: number | null
+          created_at?: string
+          id?: string
+          professional_license: string
+          profile_image_url?: string | null
+          specialty: string
+          updated_at?: string
+          user_id: string
+          verification_status?: Database["public"]["Enums"]["verification_status"]
+          verified_at?: string | null
+          verified_by?: string | null
+          years_experience?: number | null
+        }
+        Update: {
+          biography?: string | null
+          consultation_fee?: number | null
+          created_at?: string
+          id?: string
+          professional_license?: string
+          profile_image_url?: string | null
+          specialty?: string
+          updated_at?: string
+          user_id?: string
+          verification_status?: Database["public"]["Enums"]["verification_status"]
+          verified_at?: string | null
+          verified_by?: string | null
+          years_experience?: number | null
+        }
+        Relationships: []
+      }
+      medical_assistant_assignments: {
+        Row: {
+          assistant_user_id: string
+          created_at: string
+          doctor_user_id: string
+          id: string
+        }
+        Insert: {
+          assistant_user_id: string
+          created_at?: string
+          doctor_user_id: string
+          id?: string
+        }
+        Update: {
+          assistant_user_id?: string
+          created_at?: string
+          doctor_user_id?: string
+          id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          first_name: string | null
+          id: string
+          last_name: string | null
+          phone: string | null
+          role: Database["public"]["Enums"]["user_role"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          phone?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          phone?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      can_manage_doctor: {
+        Args: { doctor_id: string }
+        Returns: boolean
+      }
+      get_current_user_role: {
+        Args: Record<PropertyKey, never>
+        Returns: Database["public"]["Enums"]["user_role"]
+      }
+      is_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      is_doctor: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      user_role: "patient" | "doctor" | "medical_assistant" | "admin"
+      verification_status: "pending" | "verified" | "rejected"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +270,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      user_role: ["patient", "doctor", "medical_assistant", "admin"],
+      verification_status: ["pending", "verified", "rejected"],
+    },
   },
 } as const
