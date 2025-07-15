@@ -357,88 +357,49 @@ export const DoctorDashboard = () => {
     if (!user) return;
 
     try {
-      // Get all users with role assistant
-      const { data: assistantProfiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('user_id, full_name, phone')
-        .eq('role', 'assistant');
+      const { data, error } = await supabase.functions.invoke('get-assistant-info', {
+        body: {
+          action: 'get_assigned_assistant',
+          doctorId: user.id
+        }
+      });
 
-      if (profilesError) {
-        console.error('Error fetching assistant profiles:', profilesError);
-        return;
-      }
-
-      if (!assistantProfiles || assistantProfiles.length === 0) {
+      if (error) {
+        console.error('Error fetching assistant info:', error);
         setAssistantInfo(null);
         return;
       }
 
-      // Check each assistant to see if they're assigned to this doctor
-      for (const profile of assistantProfiles) {
-        try {
-          const { data: authUser, error: authError } = await supabase.auth.admin.getUserById(profile.user_id);
-          
-          if (!authError && authUser.user?.user_metadata?.assigned_doctor_id === user.id) {
-            setAssistantInfo({
-              user_id: profile.user_id,
-              full_name: profile.full_name,
-              email: authUser.user.email || '',
-              phone: profile.phone
-            });
-            return;
-          }
-        } catch (error) {
-          console.error('Error checking assistant assignment:', error);
-        }
-      }
-
-      setAssistantInfo(null);
+      setAssistantInfo(data.assistant);
     } catch (error) {
       console.error('Error in fetchAssistant:', error);
+      setAssistantInfo(null);
     }
   };
 
   const fetchAvailableAssistants = async () => {
     try {
-      // Get all users with role assistant
-      const { data: assistantProfiles, error } = await supabase
-        .from('profiles')
-        .select('user_id, full_name')
-        .eq('role', 'assistant');
+      const { data, error } = await supabase.functions.invoke('get-assistant-info', {
+        body: {
+          action: 'get_available_assistants'
+        }
+      });
 
       if (error) {
-        console.error('Error fetching assistant profiles:', error);
-        return;
-      }
-
-      if (!assistantProfiles || assistantProfiles.length === 0) {
+        console.error('Error fetching available assistants:', error);
         setAvailableAssistants([]);
         return;
       }
 
-      // Get emails for each assistant
-      const assistantsWithEmails = await Promise.all(
-        assistantProfiles.map(async (profile) => {
-          try {
-            const { data: authUser } = await supabase.auth.admin.getUserById(profile.user_id);
-            return {
-              user_id: profile.user_id,
-              full_name: profile.full_name,
-              email: authUser.user?.email || ''
-            };
-          } catch {
-            return {
-              user_id: profile.user_id,
-              full_name: profile.full_name,
-              email: ''
-            };
-          }
-        })
-      );
+      // Filter out assistants already assigned to other doctors
+      const availableAssistants = data.assistants?.filter((assistant: any) => 
+        !assistant.assigned_doctor_id || assistant.assigned_doctor_id === user?.id
+      ) || [];
 
-      setAvailableAssistants(assistantsWithEmails);
+      setAvailableAssistants(availableAssistants);
     } catch (error) {
       console.error('Error fetching available assistants:', error);
+      setAvailableAssistants([]);
     }
   };
 
