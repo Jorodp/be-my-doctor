@@ -284,7 +284,12 @@ export type Database = {
       }
     }
     Enums: {
-      appointment_status: "scheduled" | "completed" | "cancelled" | "no_show"
+      appointment_status:
+        | "scheduled"
+        | "completed"
+        | "cancelled"
+        | "no_show"
+        | "in_progress"
       user_role: "patient" | "doctor" | "assistant" | "admin"
       verification_status: "pending" | "verified" | "rejected"
     }
@@ -414,7 +419,13 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      appointment_status: ["scheduled", "completed", "cancelled", "no_show"],
+      appointment_status: [
+        "scheduled",
+        "completed",
+        "cancelled",
+        "no_show",
+        "in_progress",
+      ],
       user_role: ["patient", "doctor", "assistant", "admin"],
       verification_status: ["pending", "verified", "rejected"],
     },
