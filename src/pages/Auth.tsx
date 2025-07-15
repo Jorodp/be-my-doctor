@@ -3,6 +3,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -138,9 +139,8 @@ export default function Auth() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="signin-password">Contraseña</Label>
-                  <Input
+                  <PasswordInput
                     id="signin-password"
-                    type="password"
                     value={signInPassword}
                     onChange={(e) => setSignInPassword(e.target.value)}
                     required
@@ -267,9 +267,8 @@ export default function Auth() {
                 
                 <div className="space-y-2">
                   <Label htmlFor="signup-password">Contraseña</Label>
-                  <Input
+                  <PasswordInput
                     id="signup-password"
-                    type="password"
                     value={signUpPassword}
                     onChange={(e) => setSignUpPassword(e.target.value)}
                     required
