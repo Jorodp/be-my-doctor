@@ -45,6 +45,7 @@ import { PatientHistoryModal } from '@/components/PatientHistoryModal';
 import { AppointmentActions } from '@/components/AppointmentActions';
 import { DashboardHeader } from '@/components/DashboardHeader';
 import { DoctorProfileDisplay } from '@/components/DoctorProfileDisplay';
+import { ConsultationManager } from '@/components/ConsultationManager';
 
 interface DoctorProfile {
   id: string;
