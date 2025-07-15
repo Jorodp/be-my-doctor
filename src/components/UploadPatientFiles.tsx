@@ -87,12 +87,30 @@ export const UploadPatientFiles = ({ doctorId }: UploadPatientFilesProps) => {
       const fileName = type === 'profile' ? `profile.${fileExt}` : `id.${fileExt}`;
       const filePath = `${selectedPatient.user_id}/${fileName}`;
 
+      console.log('Uploading file:', {
+        bucket,
+        filePath,
+        fileSize: file.size,
+        fileType: file.type,
+        patientId: selectedPatient.user_id,
+        userId: user.id
+      });
+
       // Upload file to Supabase Storage
-      const { error: uploadError } = await supabase.storage
+      const { error: uploadError, data: uploadData } = await supabase.storage
         .from(bucket)
         .upload(filePath, file, { upsert: true });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('Upload error details:', {
+          error: uploadError,
+          message: uploadError.message,
+          stack: uploadError.stack
+        });
+        throw uploadError;
+      }
+
+      console.log('Upload successful:', uploadData);
 
       // Get public URL
       const { data: { publicUrl } } = supabase.storage
