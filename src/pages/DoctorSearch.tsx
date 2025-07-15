@@ -71,7 +71,7 @@ export default function DoctorSearch() {
 
   const fetchDoctors = async () => {
     try {
-      // Fetch verified doctors with their profiles
+      // Fetch verified doctors
       const { data: doctorProfiles, error } = await supabase
         .from('doctor_profiles')
         .select(`
@@ -86,44 +86,54 @@ export default function DoctorSearch() {
         .eq('verification_status', 'verified');
 
       if (error) throw error;
+      if (!doctorProfiles || doctorProfiles.length === 0) {
+        setDoctors([]);
+        return;
+      }
 
-      // Get profile names and ratings for each doctor
-      const doctorsWithDetails = await Promise.all(
-        doctorProfiles.map(async (doctor) => {
-          // Get profile name
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('full_name')
-            .eq('user_id', doctor.user_id)
-            .single();
+      const userIds = doctorProfiles.map(d => d.user_id);
 
-          // Get average rating
-          const { data: ratings } = await supabase
-            .from('ratings')
-            .select('rating')
-            .eq('doctor_user_id', doctor.user_id);
+      // Get all profiles for these doctors in a single query
+      const { data: allProfiles } = await supabase
+        .from('profiles')
+        .select('user_id, full_name')
+        .in('user_id', userIds);
 
-          const average_rating = ratings && ratings.length > 0
-            ? ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length
-            : 0;
+      // Get all ratings in a single query
+      const { data: allRatings } = await supabase
+        .from('ratings')
+        .select('doctor_user_id, rating')
+        .in('doctor_user_id', userIds);
 
-          // Check if doctor has any availability
-          const { data: availability } = await supabase
-            .from('doctor_availability')
-            .select('is_available')
-            .eq('doctor_user_id', doctor.user_id)
-            .eq('is_available', true)
-            .limit(1);
+      // Get all availability in a single query
+      const { data: allAvailability } = await supabase
+        .from('doctor_availability')
+        .select('doctor_user_id, is_available')
+        .in('doctor_user_id', userIds)
+        .eq('is_available', true);
 
-          return {
-            ...doctor,
-            profile,
-            average_rating: Math.round(average_rating * 10) / 10,
-            total_ratings: ratings?.length || 0,
-            is_available: (availability && availability.length > 0) || false
-          };
-        })
-      );
+      // Process the data
+      const doctorsWithDetails = doctorProfiles.map((doctor) => {
+        // Find profile for this doctor
+        const profile = allProfiles?.find(p => p.user_id === doctor.user_id);
+
+        // Calculate ratings for this doctor
+        const doctorRatings = allRatings?.filter(r => r.doctor_user_id === doctor.user_id) || [];
+        const average_rating = doctorRatings.length > 0
+          ? doctorRatings.reduce((sum, r) => sum + r.rating, 0) / doctorRatings.length
+          : 0;
+
+        // Check availability for this doctor
+        const hasAvailability = allAvailability?.some(a => a.doctor_user_id === doctor.user_id) || false;
+
+        return {
+          ...doctor,
+          profile: profile ? { full_name: profile.full_name } : null,
+          average_rating: Math.round(average_rating * 10) / 10,
+          total_ratings: doctorRatings.length,
+          is_available: hasAvailability
+        };
+      });
 
       setDoctors(doctorsWithDetails);
     } catch (error) {
