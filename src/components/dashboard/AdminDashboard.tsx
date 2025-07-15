@@ -4,9 +4,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Users, UserCheck, Clock, BarChart3, Shield, Settings, Star } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Users, UserCheck, Clock, BarChart3, Shield, Settings, Star, Calendar, Activity } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
+import { DoctorsList } from '@/components/admin/DoctorsList';
+import { PatientsList } from '@/components/admin/PatientsList';
+import { AssistantsList } from '@/components/admin/AssistantsList';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 interface DoctorProfile {
   id: string;
@@ -41,6 +47,7 @@ export const AdminDashboard = () => {
     averageRating: 0
   });
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('overview');
 
   useEffect(() => {
     if (user) {
@@ -265,113 +272,275 @@ export const AdminDashboard = () => {
           </Card>
         </div>
 
-        {/* Pending Doctor Verifications */}
-        {pendingDoctors.length > 0 && (
+        {/* Additional Stats Row */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
+                <Calendar className="h-5 w-5" />
+                Citas Totales
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.totalAppointments}</div>
+              <p className="text-sm text-muted-foreground">Desde el inicio</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Star className="h-5 w-5" />
+                Calificación Promedio
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold flex items-center gap-1">
+                <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
+                {stats.averageRating || '5.0'}
+              </div>
+              <p className="text-sm text-muted-foreground">De todas las consultas</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Activity className="h-5 w-5" />
+                Sistema
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">Activo</div>
+              <p className="text-sm text-muted-foreground">Última actualización: {format(new Date(), 'HH:mm', { locale: es })}</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Quick Access to Pending Actions */}
+        {pendingDoctors.length > 0 && (
+          <Card className="border-orange-200 bg-orange-50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-orange-800">
                 <Clock className="h-5 w-5" />
-                Médicos Pendientes de Verificación
+                Acciones Pendientes ({pendingDoctors.length})
               </CardTitle>
               <CardDescription>
-                Solicitudes que requieren tu revisión
+                Médicos que requieren verificación inmediata
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid gap-4">
-                {pendingDoctors.map((doctor) => (
-                  <div key={doctor.id} className="border rounded-lg p-4 hover:bg-muted/50 transition-colors">
-                    <div className="flex justify-between items-start">
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <UserCheck className="h-4 w-4" />
-                          <span className="font-medium">{doctor.profiles?.full_name || 'N/A'}</span>
-                          <Badge variant="secondary">{doctor.specialty}</Badge>
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          Cédula: {doctor.professional_license}
-                        </div>
+              <div className="grid gap-3">
+                {pendingDoctors.slice(0, 3).map((doctor) => (
+                  <div key={doctor.id} className="flex justify-between items-center p-3 bg-white rounded-lg border">
+                    <div className="flex items-center gap-3">
+                      <UserCheck className="h-4 w-4 text-orange-600" />
+                      <div>
+                        <span className="font-medium">{doctor.profiles?.full_name || 'N/A'}</span>
+                        <div className="text-sm text-muted-foreground">{doctor.specialty}</div>
                       </div>
-                      <div className="flex gap-2">
-                        <Button 
-                          size="sm" 
-                          onClick={() => approveDoctor(doctor.id)}
-                        >
-                          Aprobar
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant="destructive"
-                          onClick={() => rejectDoctor(doctor.id)}
-                        >
-                          Rechazar
-                        </Button>
-                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={() => approveDoctor(doctor.id)}>
+                        Aprobar
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => rejectDoctor(doctor.id)}>
+                        Rechazar
+                      </Button>
                     </div>
                   </div>
                 ))}
+                {pendingDoctors.length > 3 && (
+                  <div className="text-center text-sm text-muted-foreground">
+                    Y {pendingDoctors.length - 3} más en la sección de Doctores...
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
         )}
 
-        {/* System Stats */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5" />
-              Estadísticas del Sistema
-            </CardTitle>
-            <CardDescription>
-              Métricas principales de la plataforma
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <div className="text-sm text-muted-foreground">Total de citas</div>
-                <div className="text-2xl font-bold">{stats.totalAppointments}</div>
-              </div>
-              <div className="space-y-2">
-                <div className="text-sm text-muted-foreground">Calificación promedio</div>
-                <div className="text-2xl font-bold flex items-center gap-1">
-                  <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
-                  {stats.averageRating || '5.0'}
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Main Management Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="overview">Resumen</TabsTrigger>
+            <TabsTrigger value="doctors">Doctores</TabsTrigger>
+            <TabsTrigger value="patients">Pacientes</TabsTrigger>
+            <TabsTrigger value="assistants">Asistentes</TabsTrigger>
+            <TabsTrigger value="system">Sistema</TabsTrigger>
+          </TabsList>
 
-        {/* Quick Actions */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Acciones Rápidas</CardTitle>
-            <CardDescription>
-              Operaciones principales de administración
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Button className="h-20 flex flex-col gap-2">
-                <UserCheck className="h-6 w-6" />
-                Verificar Médicos
-              </Button>
-              <Button variant="outline" className="h-20 flex flex-col gap-2">
-                <Users className="h-6 w-6" />
-                Gestionar Usuarios
-              </Button>
-              <Button variant="outline" className="h-20 flex flex-col gap-2">
-                <BarChart3 className="h-6 w-6" />
-                Ver Estadísticas
-              </Button>
-              <Button variant="outline" className="h-20 flex flex-col gap-2">
-                <Settings className="h-6 w-6" />
-                Configuración
-              </Button>
+          <TabsContent value="overview">
+            <div className="grid gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Panel de Control Principal</CardTitle>
+                  <CardDescription>
+                    Vista general del estado de la plataforma Be My Doctor
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold">Actividad Reciente</h3>
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-3 p-3 rounded-lg border">
+                          <Users className="h-5 w-5 text-blue-600" />
+                          <div>
+                            <div className="font-medium">{stats.patients} pacientes registrados</div>
+                            <div className="text-sm text-muted-foreground">Base de usuarios activa</div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3 p-3 rounded-lg border">
+                          <UserCheck className="h-5 w-5 text-green-600" />
+                          <div>
+                            <div className="font-medium">{stats.doctors} doctores verificados</div>
+                            <div className="text-sm text-muted-foreground">Profesionales activos</div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3 p-3 rounded-lg border">
+                          <Shield className="h-5 w-5 text-purple-600" />
+                          <div>
+                            <div className="font-medium">{stats.assistants} asistentes</div>
+                            <div className="text-sm text-muted-foreground">Personal de apoyo</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold">Acciones Rápidas</h3>
+                      <div className="grid grid-cols-2 gap-3">
+                        <Button className="h-20 flex flex-col gap-2" onClick={() => setActiveTab('doctors')}>
+                          <UserCheck className="h-6 w-6" />
+                          Gestionar Doctores
+                        </Button>
+                        <Button variant="outline" className="h-20 flex flex-col gap-2" onClick={() => setActiveTab('patients')}>
+                          <Users className="h-6 w-6" />
+                          Ver Pacientes
+                        </Button>
+                        <Button variant="outline" className="h-20 flex flex-col gap-2" onClick={() => setActiveTab('assistants')}>
+                          <Shield className="h-6 w-6" />
+                          Asistentes
+                        </Button>
+                        <Button variant="outline" className="h-20 flex flex-col gap-2" onClick={() => setActiveTab('system')}>
+                          <Settings className="h-6 w-6" />
+                          Configuración
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
-          </CardContent>
-        </Card>
+          </TabsContent>
+
+          <TabsContent value="doctors">
+            <DoctorsList />
+          </TabsContent>
+
+          <TabsContent value="patients">
+            <PatientsList />
+          </TabsContent>
+
+          <TabsContent value="assistants">
+            <AssistantsList />
+          </TabsContent>
+
+          <TabsContent value="system">
+            <Card>
+              <CardHeader>
+                <CardTitle>Configuración del Sistema</CardTitle>
+                <CardDescription>
+                  Administración general de la plataforma
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-lg">Estado del Sistema</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-center">
+                            <span>Base de datos</span>
+                            <Badge className="bg-green-100 text-green-800">Conectada</Badge>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span>Autenticación</span>
+                            <Badge className="bg-green-100 text-green-800">Activa</Badge>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span>Notificaciones</span>
+                            <Badge className="bg-green-100 text-green-800">Funcionando</Badge>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-lg">Estadísticas Generales</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-center">
+                            <span>Total usuarios</span>
+                            <span className="font-semibold">{stats.patients + stats.doctors + stats.assistants + 1}</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span>Citas completadas</span>
+                            <span className="font-semibold">{stats.totalAppointments}</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span>Calificación promedio</span>
+                            <span className="font-semibold">{stats.averageRating}/5.0</span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Herramientas de Administración</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <Button variant="outline" className="justify-start">
+                          <BarChart3 className="h-4 w-4 mr-2" />
+                          Generar Reportes
+                        </Button>
+                        <Button variant="outline" className="justify-start">
+                          <Settings className="h-4 w-4 mr-2" />
+                          Configuración General
+                        </Button>
+                        <Button variant="outline" className="justify-start">
+                          <Users className="h-4 w-4 mr-2" />
+                          Gestión de Usuarios
+                        </Button>
+                        <Button variant="outline" className="justify-start">
+                          <Calendar className="h-4 w-4 mr-2" />
+                          Administrar Citas
+                        </Button>
+                        <Button variant="outline" className="justify-start">
+                          <Activity className="h-4 w-4 mr-2" />
+                          Monitoreo del Sistema
+                        </Button>
+                        <Button variant="outline" className="justify-start">
+                          <Shield className="h-4 w-4 mr-2" />
+                          Seguridad y Permisos
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </main>
     </div>
   );
