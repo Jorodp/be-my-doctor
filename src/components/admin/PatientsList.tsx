@@ -38,6 +38,7 @@ export const PatientsList = () => {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterType, setFilterType] = useState<'all' | 'new'>('all');
   const [loading, setLoading] = useState(true);
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [patientAppointments, setPatientAppointments] = useState<Appointment[]>([]);
@@ -50,7 +51,7 @@ export const PatientsList = () => {
 
   useEffect(() => {
     filterPatients();
-  }, [patients, searchTerm]);
+  }, [patients, searchTerm, filterType]);
 
   const fetchPatients = async () => {
     try {
@@ -96,6 +97,15 @@ export const PatientsList = () => {
   const filterPatients = () => {
     let filtered = patients;
 
+    // Filter by new patients (last 24 hours)
+    if (filterType === 'new') {
+      const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      filtered = filtered.filter(patient => 
+        new Date(patient.created_at) >= yesterday
+      );
+    }
+
+    // Apply search filter
     if (searchTerm) {
       filtered = filtered.filter(patient => 
         patient.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -214,8 +224,27 @@ export const PatientsList = () => {
           <CardTitle>Gestión de Pacientes</CardTitle>
         </CardHeader>
         <CardContent>
-          {/* Search */}
-          <div className="mb-6">
+          {/* Filters and Search */}
+          <div className="mb-6 space-y-4">
+            {/* Filter buttons */}
+            <div className="flex gap-2">
+              <Button
+                variant={filterType === 'all' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setFilterType('all')}
+              >
+                Todos los Pacientes
+              </Button>
+              <Button
+                variant={filterType === 'new' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setFilterType('new')}
+              >
+                Pacientes Nuevos (24h)
+              </Button>
+            </div>
+            
+            {/* Search */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input

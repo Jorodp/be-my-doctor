@@ -33,6 +33,7 @@ interface UserStats {
   doctors: number;
   assistants: number;
   pendingDoctors: number;
+  newPatients: number;  // New patients in last 24h
   totalAppointments: number;
   averageRating: number;
 }
@@ -46,6 +47,7 @@ export const AdminDashboard = () => {
     doctors: 0,
     assistants: 0,
     pendingDoctors: 0,
+    newPatients: 0,
     totalAppointments: 0,
     averageRating: 0
   });
@@ -99,9 +101,18 @@ export const AdminDashboard = () => {
       // Fetch user counts by role
       const { data: userCounts, error: countsError } = await supabase
         .from('profiles')
-        .select('role');
+        .select('role, created_at');
 
       if (countsError) throw countsError;
+
+      // Fetch new patients (last 24 hours)
+      const { data: newPatientsData, error: newPatientsError } = await supabase
+        .from('profiles')
+        .select('user_id')
+        .eq('role', 'patient')
+        .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
+
+      if (newPatientsError) throw newPatientsError;
 
       // Fetch total appointments
       const { data: appointments, error: appointmentsError } = await supabase
@@ -133,6 +144,7 @@ export const AdminDashboard = () => {
         doctors: counts.doctor || 0,
         assistants: counts.assistant || 0,
         pendingDoctors: doctors?.length || 0,
+        newPatients: newPatientsData?.length || 0,
         totalAppointments: appointments?.length || 0,
         averageRating: Math.round(averageRating * 10) / 10
       });
@@ -275,7 +287,20 @@ export const AdminDashboard = () => {
         </div>
 
         {/* Additional Stats Row */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <Card className="border-blue-200 bg-blue-50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-blue-800">
+                <Users className="h-5 w-5" />
+                Pacientes Nuevos
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-blue-800">{stats.newPatients}</div>
+              <p className="text-sm text-muted-foreground">Últimas 24 horas</p>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
