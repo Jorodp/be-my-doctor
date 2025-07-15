@@ -12,6 +12,7 @@ import { DoctorsList } from '@/components/admin/DoctorsList';
 import { PatientsList } from '@/components/admin/PatientsList';
 import { AssistantsList } from '@/components/admin/AssistantsList';
 import { PatientDocumentManagement } from '@/components/admin/PatientDocumentManagement';
+import { UserManagement } from '@/components/admin/UserManagement';
 import { DoctorVerificationList } from '@/components/admin/DoctorVerificationList';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -389,8 +390,9 @@ export const AdminDashboard = () => {
 
         {/* Main Management Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="overview">Resumen</TabsTrigger>
+            <TabsTrigger value="users">Usuarios</TabsTrigger>
             <TabsTrigger value="doctors">Doctores</TabsTrigger>
             <TabsTrigger value="patients">Pacientes</TabsTrigger>
             <TabsTrigger value="assistants">Asistentes</TabsTrigger>
@@ -461,6 +463,10 @@ export const AdminDashboard = () => {
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          <TabsContent value="users">
+            <UserManagement />
           </TabsContent>
 
           <TabsContent value="doctors">
