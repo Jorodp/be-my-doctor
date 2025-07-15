@@ -23,6 +23,9 @@ const Header = () => {
             <a href="#inicio" className="text-foreground hover:text-primary transition-smooth">
               Inicio
             </a>
+            <Link to="/search" className="text-foreground hover:text-primary transition-smooth font-medium">
+              Buscar Doctores
+            </Link>
             <a href="#como-funciona" className="text-foreground hover:text-primary transition-smooth">
               Cómo funciona
             </a>
@@ -78,6 +81,9 @@ const Header = () => {
             <a href="#inicio" className="block text-foreground hover:text-primary transition-smooth">
               Inicio
             </a>
+            <Link to="/search" className="block text-foreground hover:text-primary transition-smooth font-medium">
+              Buscar Doctores
+            </Link>
             <a href="#como-funciona" className="block text-foreground hover:text-primary transition-smooth">
               Cómo funciona
             </a>

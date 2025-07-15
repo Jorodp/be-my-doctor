@@ -15,6 +15,8 @@ import { AdminDashboard } from "./components/dashboard/AdminDashboard";
 import Unauthorized from "./pages/Unauthorized";
 import NotFound from "./pages/NotFound";
 import EmergencyLogout from "./pages/EmergencyLogout";
+import DoctorSearch from "./pages/DoctorSearch";
+import DoctorProfile from "./pages/DoctorProfile";
 
 const queryClient = new QueryClient();
 
@@ -61,6 +63,8 @@ const App = () => (
                 </ProtectedRoute>
               } 
             />
+            <Route path="/search" element={<DoctorSearch />} />
+            <Route path="/doctor/:doctorId" element={<DoctorProfile />} />
             <Route path="/emergency-logout" element={<EmergencyLogout />} />
             <Route path="/unauthorized" element={<Unauthorized />} />
             <Route path="*" element={<NotFound />} />
