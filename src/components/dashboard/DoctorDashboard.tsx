@@ -225,19 +225,34 @@ export const DoctorDashboard = () => {
     const today = startOfDay(new Date());
     const tomorrow = endOfDay(new Date());
 
-    const { data, error } = await supabase
+    // Fetch appointments first
+    const { data: appointments, error } = await supabase
       .from('appointments')
-      .select(`
-        *,
-        profiles!patient_user_id(full_name)
-      `)
+      .select('*')
       .eq('doctor_user_id', user.id)
       .gte('starts_at', today.toISOString())
       .lte('starts_at', tomorrow.toISOString())
       .order('starts_at', { ascending: true });
 
     if (error) throw error;
-    setTodayAppointments(data || []);
+
+    // Then fetch patient names for each appointment
+    const appointmentsWithPatients = await Promise.all(
+      (appointments || []).map(async (appointment) => {
+        const { data: patientProfile } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('user_id', appointment.patient_user_id)
+          .single();
+
+        return {
+          ...appointment,
+          patient_profile: patientProfile
+        };
+      })
+    );
+
+    setTodayAppointments(appointmentsWithPatients);
   };
 
   const fetchWeeklyAppointments = async () => {
@@ -246,19 +261,34 @@ export const DoctorDashboard = () => {
     const today = startOfDay(new Date());
     const weekEnd = endOfDay(addDays(today, 7));
 
-    const { data, error } = await supabase
+    // Fetch appointments first
+    const { data: appointments, error } = await supabase
       .from('appointments')
-      .select(`
-        *,
-        profiles!patient_user_id(full_name)
-      `)
+      .select('*')
       .eq('doctor_user_id', user.id)
       .gte('starts_at', today.toISOString())
       .lte('starts_at', weekEnd.toISOString())
       .order('starts_at', { ascending: true });
 
     if (error) throw error;
-    setWeeklyAppointments(data || []);
+
+    // Then fetch patient names for each appointment
+    const appointmentsWithPatients = await Promise.all(
+      (appointments || []).map(async (appointment) => {
+        const { data: patientProfile } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('user_id', appointment.patient_user_id)
+          .single();
+
+        return {
+          ...appointment,
+          patient_profile: patientProfile
+        };
+      })
+    );
+
+    setWeeklyAppointments(appointmentsWithPatients);
   };
 
   const fetchAvailability = async () => {
