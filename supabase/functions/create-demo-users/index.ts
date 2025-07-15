@@ -16,6 +16,15 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     )
 
+    // First, delete existing users if they exist
+    const existingUsers = await supabaseAdmin.auth.admin.listUsers();
+    
+    for (const user of existingUsers.data.users) {
+      if (['jorodp@hotmail.com', 'paciente@paciente.com', 'doctor.demo@bemy.com', 'asistente.demo@bemy.com'].includes(user.email || '')) {
+        await supabaseAdmin.auth.admin.deleteUser(user.id);
+      }
+    }
+
     // 1. Create Admin (jorodp@hotmail.com)
     const { data: adminUser, error: adminError } = await supabaseAdmin.auth.admin.createUser({
       email: 'jorodp@hotmail.com',

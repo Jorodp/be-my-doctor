@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Database } from '@/integrations/supabase/types';
-import { CreateDemoUsers } from '@/components/CreateDemoUsers';
+
 
 type UserRole = Database['public']['Enums']['user_role'];
 
@@ -285,8 +285,6 @@ export default function Auth() {
           </Tabs>
         </CardContent>
       </Card>
-      
-      <CreateDemoUsers />
       </div>
     </div>
   );
