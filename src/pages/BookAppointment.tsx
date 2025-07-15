@@ -25,6 +25,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
 import { format, addDays, isAfter, isBefore, startOfDay } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { PendingRatingValidator } from '@/components/PendingRatingValidator';
 
 interface Doctor {
   id: string;
@@ -67,6 +68,11 @@ export default function BookAppointment() {
   const [appointmentNotes, setAppointmentNotes] = useState('');
   const [bookingLoading, setBookingLoading] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState(false);
+  
+  // Rating validation states
+  const [showRatingValidator, setShowRatingValidator] = useState(false);
+  const [canProceedWithBooking, setCanProceedWithBooking] = useState(false);
+  const [hasAvailability, setHasAvailability] = useState(false);
 
   // Redirect if not a patient
   if (userRole && userRole !== 'patient') {
@@ -152,8 +158,28 @@ export default function BookAppointment() {
 
       if (error) throw error;
       setAvailability(data || []);
+      setHasAvailability((data || []).length > 0);
     } catch (error) {
       console.error('Error fetching availability:', error);
+    }
+  };
+
+  const initiateBookingProcess = () => {
+    if (!selectedDate || !selectedTime) {
+      toast({
+        title: "Error",
+        description: "Debes seleccionar fecha y hora",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Only validate ratings for patients
+    if (userRole === 'patient') {
+      setShowRatingValidator(true);
+    } else {
+      setCanProceedWithBooking(true);
+      bookAppointment();
     }
   };
 
@@ -205,6 +231,13 @@ export default function BookAppointment() {
       });
     } finally {
       setBookingLoading(false);
+    }
+  };
+
+  const handleValidationComplete = (canProceed: boolean) => {
+    setCanProceedWithBooking(canProceed);
+    if (canProceed) {
+      bookAppointment();
     }
   };
 
@@ -313,7 +346,7 @@ export default function BookAppointment() {
     );
   }
 
-  const hasAvailability = availability.length > 0;
+  
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
@@ -488,7 +521,7 @@ export default function BookAppointment() {
               {/* Book Button */}
               {hasAvailability && (
                 <Button 
-                  onClick={bookAppointment} 
+                  onClick={initiateBookingProcess} 
                   disabled={!selectedDate || !selectedTime || bookingLoading}
                   size="lg"
                   className="w-full"
@@ -507,6 +540,13 @@ export default function BookAppointment() {
           </div>
         </div>
       </div>
+
+      {/* Rating Validation Modal */}
+      <PendingRatingValidator
+        isOpen={showRatingValidator}
+        onClose={() => setShowRatingValidator(false)}
+        onValidationComplete={handleValidationComplete}
+      />
     </div>
   );
 }

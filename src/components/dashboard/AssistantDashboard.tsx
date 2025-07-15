@@ -8,6 +8,7 @@ import { Calendar, Clock, User, UserCheck, Phone } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
 import { DashboardHeader } from '@/components/DashboardHeader';
+import { PatientDocumentManager } from '@/components/PatientDocumentManager';
 
 interface Appointment {
   id: string;
@@ -27,6 +28,7 @@ export const AssistantDashboard = () => {
   const [todayAppointments, setTodayAppointments] = useState<Appointment[]>([]);
   const [doctorId, setDoctorId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [appointmentPatients, setAppointmentPatients] = useState<string[]>([]);
 
   useEffect(() => {
     if (user) {
@@ -52,10 +54,7 @@ export const AssistantDashboard = () => {
 
       const { data: appointments, error } = await supabase
         .from('appointments')
-        .select(`
-          *,
-          profiles!patient_user_id (full_name, phone)
-        `)
+        .select('*')
         .eq('doctor_user_id', doctorUserId)
         .gte('starts_at', today.toISOString())
         .lt('starts_at', tomorrow.toISOString())
@@ -63,7 +62,27 @@ export const AssistantDashboard = () => {
 
       if (error) throw error;
 
-      setTodayAppointments(appointments || []);
+      // Fetch patient profiles separately
+      const appointmentsWithPatients = await Promise.all(
+        (appointments || []).map(async (appointment) => {
+          const { data: patientProfile } = await supabase
+            .from('profiles')
+            .select('full_name, phone')
+            .eq('user_id', appointment.patient_user_id)
+            .single();
+
+          return {
+            ...appointment,
+            patient_profile: patientProfile
+          };
+        })
+      );
+
+      setTodayAppointments(appointmentsWithPatients);
+      
+      // Extract patient IDs for document validation
+      const patientIds = appointmentsWithPatients.map(apt => apt.patient_user_id);
+      setAppointmentPatients([...new Set(patientIds)]); // Remove duplicates
     } catch (error) {
       console.error('Error fetching appointments:', error);
       toast({
@@ -144,6 +163,11 @@ export const AssistantDashboard = () => {
       />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+        {/* Patient Document Validation */}
+        {appointmentPatients.length > 0 && (
+          <PatientDocumentManager appointmentPatients={appointmentPatients} />
+        )}
+
         {/* Citas de Hoy */}
         <Card>
           <CardHeader>
