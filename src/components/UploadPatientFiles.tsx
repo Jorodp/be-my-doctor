@@ -76,7 +76,12 @@ export const UploadPatientFiles = ({ doctorId }: UploadPatientFilesProps) => {
   };
 
   const handleFileUpload = async (file: File, type: 'profile' | 'id') => {
-    if (!selectedPatient || !user) return;
+    if (!selectedPatient || !user) {
+      console.error('Missing required data:', { selectedPatient: !!selectedPatient, user: !!user });
+      return;
+    }
+
+    console.log('Starting file upload:', { file: file.name, type, selectedPatient: selectedPatient.full_name });
 
     // Validación de tipos de archivo permitidos
     const allowedTypesProfile = ['image/jpeg', 'image/jpg', 'image/png'];
@@ -121,7 +126,8 @@ export const UploadPatientFiles = ({ doctorId }: UploadPatientFilesProps) => {
         fileSize: file.size,
         fileType: file.type,
         patientId: selectedPatient.user_id,
-        userId: user.id
+        userId: user.id,
+        userRole: user.user_metadata?.role
       });
 
       // Upload file to Supabase Storage

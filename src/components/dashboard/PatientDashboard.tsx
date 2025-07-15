@@ -261,7 +261,19 @@ export const PatientDashboard = () => {
   };
 
   const handleImageUpload = async (file: File, type: 'profile' | 'document') => {
-    if (!user || !file) return;
+    if (!user || !file) {
+      console.error('Missing required data for upload:', { user: !!user, file: !!file });
+      return;
+    }
+
+    console.log('Patient dashboard upload starting:', {
+      fileName: file.name,
+      fileSize: file.size,
+      fileType: file.type,
+      type: type,
+      userId: user.id,
+      userRole: user.user_metadata?.role
+    });
 
     const bucket = type === 'profile' ? 'patient-profiles' : 'patient-documents';
     const setUploading = type === 'profile' ? setUploadingImage : setUploadingDocument;
@@ -273,6 +285,8 @@ export const PatientDashboard = () => {
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}/${type}-${Date.now()}.${fileExt}`;
 
+      console.log('Uploading to storage:', { bucket, fileName });
+
       // Upload file to Supabase Storage
       const { error: uploadError } = await supabase.storage
         .from(bucket)
@@ -281,7 +295,10 @@ export const PatientDashboard = () => {
           upsert: true
         });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('Upload error details:', uploadError);
+        throw uploadError;
+      }
 
       // Get public URL
       const { data: { publicUrl } } = supabase.storage
