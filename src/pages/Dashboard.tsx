@@ -4,24 +4,59 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useEffect, useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function Dashboard() {
-  const { userRole, loading, user, signOut } = useAuth();
+  const { userRole, loading, user, signOut, profile, doctorProfile } = useAuth();
   const navigate = useNavigate();
   const [hasRedirected, setHasRedirected] = useState(false);
+  const [profileComplete, setProfileComplete] = useState(false);
 
-  // Check for intended doctor booking after login
+  // Check profile completeness
   useEffect(() => {
-    if (user && userRole === 'patient' && !loading && !hasRedirected) {
-      const intendedDoctorId = localStorage.getItem('intended_doctor_id');
-      if (intendedDoctorId) {
-        localStorage.removeItem('intended_doctor_id');
-        setHasRedirected(true);
-        navigate(`/book/${intendedDoctorId}`, { replace: true });
-        return;
-      }
+    if (user && userRole && !loading && !hasRedirected) {
+      checkProfileCompleteness();
     }
-  }, [user, userRole, loading, hasRedirected, navigate]);
+  }, [user, userRole, profile, doctorProfile, loading, hasRedirected]);
+
+  const checkProfileCompleteness = async () => {
+    if (!user || !userRole) return;
+
+    try {
+      // Check for intended doctor booking first
+      if (userRole === 'patient') {
+        const intendedDoctorId = localStorage.getItem('intended_doctor_id');
+        if (intendedDoctorId) {
+          localStorage.removeItem('intended_doctor_id');
+          setHasRedirected(true);
+          navigate(`/book/${intendedDoctorId}`, { replace: true });
+          return;
+        }
+      }
+
+      // Check if profile is complete
+      if (userRole === 'patient') {
+        // For patients, check if basic profile is complete
+        const isComplete = profile?.full_name && profile?.full_name.trim() !== '';
+        if (!isComplete) {
+          setHasRedirected(true);
+          navigate('/profile/patient', { replace: true });
+          return;
+        }
+      } else if (userRole === 'doctor') {
+        // For doctors, check if doctor profile exists
+        if (!doctorProfile) {
+          setHasRedirected(true);
+          navigate('/profile/doctor', { replace: true });
+          return;
+        }
+      }
+
+      setProfileComplete(true);
+    } catch (error) {
+      console.error('Error checking profile completeness:', error);
+    }
+  };
 
   const handleLogout = async () => {
     await signOut();
@@ -71,17 +106,36 @@ export default function Dashboard() {
     );
   }
 
-  // Redirect to specific dashboard based on role
-  switch (userRole) {
-    case 'patient':
-      return <Navigate to="/dashboard/patient" replace />;
-    case 'doctor':
-      return <Navigate to="/dashboard/doctor" replace />;
-    case 'assistant':
-      return <Navigate to="/dashboard/assistant" replace />;
-    case 'admin':
-      return <Navigate to="/admin" replace />;
-    default:
-      return <Navigate to="/unauthorized" replace />;
+  // Only redirect to dashboards if profile is complete
+  if (profileComplete) {
+    switch (userRole) {
+      case 'patient':
+        return <Navigate to="/dashboard/patient" replace />;
+      case 'doctor':
+        return <Navigate to="/dashboard/doctor" replace />;
+      case 'assistant':
+        return <Navigate to="/dashboard/assistant" replace />;
+      case 'admin':
+        return <Navigate to="/admin" replace />;
+      default:
+        return <Navigate to="/unauthorized" replace />;
+    }
   }
+
+  // If we get here, we're still checking profile completeness
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle>Verificando perfil...</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <LoadingSpinner />
+          <div className="text-sm text-muted-foreground">
+            <p>Comprobando información del perfil...</p>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
 }
