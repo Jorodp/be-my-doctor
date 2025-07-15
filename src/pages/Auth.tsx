@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import { BackToHomeButton } from '@/components/ui/BackToHomeButton';
 import { Database } from '@/integrations/supabase/types';
 
 
@@ -109,6 +110,11 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-section px-4">
+      {/* Back to Home Button */}
+      <div className="absolute top-4 left-4">
+        <BackToHomeButton />
+      </div>
+      
       <div className="flex flex-col items-center gap-6 w-full max-w-md">
         <Card className="w-full">
         <CardHeader>

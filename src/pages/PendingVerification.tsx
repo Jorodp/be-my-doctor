@@ -2,6 +2,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, Clock, XCircle } from 'lucide-react';
+import { BackToHomeButton } from '@/components/ui/BackToHomeButton';
 
 export default function PendingVerification() {
   const { profile, doctorProfile, signOut } = useAuth();
@@ -52,6 +53,11 @@ export default function PendingVerification() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-section px-4">
+      {/* Back to Home Button */}
+      <div className="absolute top-4 left-4">
+        <BackToHomeButton />
+      </div>
+      
       <Card className="w-full max-w-md text-center">
         <CardHeader>
           <div className="flex justify-center mb-4">

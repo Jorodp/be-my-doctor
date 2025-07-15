@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Search, Star, MapPin, Clock, Filter } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { BackToHomeButton } from '@/components/ui/BackToHomeButton';
 import { useToast } from '@/hooks/use-toast';
 
 interface Doctor {
@@ -212,6 +213,11 @@ export default function DoctorSearch() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
+      {/* Back to Home Button */}
+      <div className="absolute top-4 left-4 z-10">
+        <BackToHomeButton />
+      </div>
+      
       {/* Header */}
       <div className="bg-background border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

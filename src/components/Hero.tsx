@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Search, MapPin, Star } from "lucide-react";
+import { Link } from "react-router-dom";
 import heroImage from "@/assets/hero-medical.jpg";
 
 const Hero = () => {
@@ -38,10 +39,12 @@ const Hero = () => {
 
             {/* CTA Section */}
             <div className="space-y-4">
-              <Button variant="hero" size="lg" className="animate-scale-in">
-                <Search className="w-5 h-5" />
-                Buscar médico ahora
-              </Button>
+              <Link to="/search">
+                <Button variant="hero" size="lg" className="animate-scale-in">
+                  <Search className="w-5 h-5" />
+                  Buscar médico ahora
+                </Button>
+              </Link>
               
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <MapPin className="w-4 h-4" />
