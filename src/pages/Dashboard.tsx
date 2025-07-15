@@ -1,28 +1,31 @@
 import { useAuth } from '@/hooks/useAuth';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function Dashboard() {
   const { userRole, loading, user, signOut } = useAuth();
+  const navigate = useNavigate();
+  const [hasRedirected, setHasRedirected] = useState(false);
 
   // Check for intended doctor booking after login
   useEffect(() => {
-    if (user && userRole === 'patient' && !loading) {
+    if (user && userRole === 'patient' && !loading && !hasRedirected) {
       const intendedDoctorId = localStorage.getItem('intended_doctor_id');
       if (intendedDoctorId) {
         localStorage.removeItem('intended_doctor_id');
-        window.location.href = `/book/${intendedDoctorId}`;
+        setHasRedirected(true);
+        navigate(`/book/${intendedDoctorId}`, { replace: true });
         return;
       }
     }
-  }, [user, userRole, loading]);
+  }, [user, userRole, loading, hasRedirected, navigate]);
 
   const handleLogout = async () => {
     await signOut();
-    window.location.href = '/auth';
+    navigate('/auth');
   };
 
   if (loading) {
