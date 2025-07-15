@@ -44,7 +44,10 @@ const Header = () => {
                 <Link to="/dashboard">
                   <Button variant="outline">Dashboard</Button>
                 </Link>
-                <Button variant="ghost" onClick={() => signOut()}>
+                <Button variant="ghost" onClick={async () => {
+                  await signOut();
+                  window.location.href = '/auth';
+                }}>
                   Cerrar Sesión
                 </Button>
               </>
@@ -93,7 +96,10 @@ const Header = () => {
                   <Link to="/dashboard">
                     <Button variant="outline" className="w-full">Dashboard</Button>
                   </Link>
-                  <Button variant="ghost" className="w-full" onClick={() => signOut()}>
+                  <Button variant="ghost" className="w-full" onClick={async () => {
+                    await signOut();
+                    window.location.href = '/auth';
+                  }}>
                     Cerrar Sesión
                   </Button>
                 </>

@@ -1,16 +1,58 @@
 import { useAuth } from '@/hooks/useAuth';
 import { Navigate } from 'react-router-dom';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function Dashboard() {
-  const { userRole, loading } = useAuth();
+  const { userRole, loading, user, signOut } = useAuth();
+
+  const handleLogout = async () => {
+    await signOut();
+    window.location.href = '/auth';
+  };
 
   if (loading) {
-    return <LoadingSpinner />;
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle>Cargando...</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <LoadingSpinner />
+            <div className="text-sm text-muted-foreground">
+              <p>Usuario: {user?.email || 'No detectado'}</p>
+              <p>Rol: {userRole || 'No detectado'}</p>
+            </div>
+            <Button onClick={handleLogout} variant="outline" className="w-full">
+              Cerrar Sesión (Forzar)
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   if (!userRole) {
-    return <Navigate to="/auth" replace />;
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle>Sin Rol Detectado</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="text-sm text-muted-foreground">
+              <p>Usuario: {user?.email || 'No detectado'}</p>
+              <p>Rol: {userRole || 'No detectado'}</p>
+            </div>
+            <Button onClick={handleLogout} variant="outline" className="w-full">
+              Cerrar Sesión
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   // Redirect to specific dashboard based on role
