@@ -109,7 +109,10 @@ export default function Auth() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-section px-4">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle className="text-2xl text-center">MediConnect</CardTitle>
+          <div className="flex items-center justify-center gap-3 mb-2">
+            <img src="/lovable-uploads/2176a5eb-dd8e-4ff9-8a38-3cfe98feb63a.png" alt="Be My Doctor" className="h-8 w-auto" />
+            <CardTitle className="text-2xl text-center">Be My Doctor</CardTitle>
+          </div>
           <CardDescription className="text-center">
             Plataforma médica integral
           </CardDescription>
