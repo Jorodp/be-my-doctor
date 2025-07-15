@@ -68,11 +68,28 @@ export default function BookAppointment() {
   const [appointmentNotes, setAppointmentNotes] = useState('');
   const [bookingLoading, setBookingLoading] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState(false);
+  const [availableTimes, setAvailableTimes] = useState<string[]>([]);
   
   // Rating validation states
   const [showRatingValidator, setShowRatingValidator] = useState(false);
   const [canProceedWithBooking, setCanProceedWithBooking] = useState(false);
   const [hasAvailability, setHasAvailability] = useState(false);
+
+  // Effect to update available times when date changes
+  useEffect(() => {
+    if (selectedDate) {
+      updateAvailableTimes(selectedDate);
+    }
+  }, [selectedDate, availability]);
+
+  const updateAvailableTimes = async (date: Date) => {
+    const times = await getAvailableTimesForDate(date);
+    setAvailableTimes(times);
+    // Reset selected time if it's no longer available
+    if (selectedTime && !times.includes(selectedTime)) {
+      setSelectedTime('');
+    }
+  };
 
   // Redirect if not a patient
   if (userRole && userRole !== 'patient') {
@@ -295,7 +312,7 @@ export default function BookAppointment() {
     return stars;
   };
 
-  const getAvailableTimesForDate = (date: Date) => {
+  const getAvailableTimesForDate = async (date: Date) => {
     const dayOfWeek = date.getDay();
     const dayAvailability = availability.filter(a => a.day_of_week === dayOfWeek);
     
@@ -313,7 +330,21 @@ export default function BookAppointment() {
       }
     });
     
-    return times.sort();
+    // Filter out times that already have appointments
+    const { data: existingAppointments } = await supabase
+      .from('appointments')
+      .select('starts_at')
+      .eq('doctor_user_id', doctorId)
+      .in('status', ['scheduled', 'completed'])
+      .gte('starts_at', date.toISOString().split('T')[0])
+      .lt('starts_at', new Date(date.getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+
+    const bookedTimes = existingAppointments?.map(apt => {
+      const aptDate = new Date(apt.starts_at);
+      return `${aptDate.getHours().toString().padStart(2, '0')}:00`;
+    }) || [];
+
+    return times.filter(time => !bookedTimes.includes(time)).sort();
   };
 
   const isDateAvailable = (date: Date) => {
@@ -483,7 +514,7 @@ export default function BookAppointment() {
                         <SelectValue placeholder="Selecciona una hora" />
                       </SelectTrigger>
                       <SelectContent>
-                        {getAvailableTimesForDate(selectedDate).map((time) => (
+                        {availableTimes.map((time) => (
                           <SelectItem key={time} value={time}>
                             {time}
                           </SelectItem>
