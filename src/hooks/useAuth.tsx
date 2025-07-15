@@ -11,6 +11,8 @@ interface Profile {
   phone: string | null;
   address: string | null;
   date_of_birth: string | null;
+  profile_image_url: string | null;
+  id_document_url: string | null;
   role: UserRole;
   created_at: string;
   updated_at: string;
