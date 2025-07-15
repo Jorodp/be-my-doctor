@@ -3,9 +3,22 @@ import { Navigate } from 'react-router-dom';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useEffect } from 'react';
 
 export default function Dashboard() {
   const { userRole, loading, user, signOut } = useAuth();
+
+  // Check for intended doctor booking after login
+  useEffect(() => {
+    if (user && userRole === 'patient' && !loading) {
+      const intendedDoctorId = localStorage.getItem('intended_doctor_id');
+      if (intendedDoctorId) {
+        localStorage.removeItem('intended_doctor_id');
+        window.location.href = `/book/${intendedDoctorId}`;
+        return;
+      }
+    }
+  }, [user, userRole, loading]);
 
   const handleLogout = async () => {
     await signOut();

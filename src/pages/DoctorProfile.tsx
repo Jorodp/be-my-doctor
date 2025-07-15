@@ -489,72 +489,12 @@ export default function DoctorProfile() {
                 {/* Booking Section */}
                 {isAuthenticated ? (
                   hasAvailability ? (
-                    <Dialog open={showBooking} onOpenChange={setShowBooking}>
-                      <DialogTrigger asChild>
-                        <Button className="w-full" size="lg">
-                          <CalendarIcon className="h-5 w-5 mr-2" />
-                          Agendar Cita
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="max-w-md">
-                        <DialogHeader>
-                          <DialogTitle>Agendar Cita</DialogTitle>
-                        </DialogHeader>
-                        
-                        <div className="space-y-4">
-                          {/* Date Selection */}
-                          <div>
-                            <Label>Selecciona una fecha</Label>
-                            <Calendar
-                              mode="single"
-                              selected={selectedDate}
-                              onSelect={setSelectedDate}
-                              disabled={(date) => !isDateAvailable(date)}
-                              className="rounded-md border mt-2"
-                            />
-                          </div>
-
-                          {/* Time Selection */}
-                          {selectedDate && (
-                            <div>
-                              <Label>Hora disponible</Label>
-                              <Select value={selectedTime} onValueChange={setSelectedTime}>
-                                <SelectTrigger className="mt-2">
-                                  <SelectValue placeholder="Selecciona una hora" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {getAvailableTimesForDate(selectedDate).map((time) => (
-                                    <SelectItem key={time} value={time}>
-                                      {time}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          )}
-
-                          {/* Notes */}
-                          <div>
-                            <Label>Motivo de la consulta (opcional)</Label>
-                            <Textarea
-                              value={appointmentNotes}
-                              onChange={(e) => setAppointmentNotes(e.target.value)}
-                              placeholder="Describe brevemente el motivo de tu consulta..."
-                              className="mt-2"
-                              rows={3}
-                            />
-                          </div>
-
-                          <Button 
-                            onClick={bookAppointment} 
-                            disabled={!selectedDate || !selectedTime || bookingLoading}
-                            className="w-full"
-                          >
-                            {bookingLoading ? 'Agendando...' : 'Confirmar Cita'}
-                          </Button>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
+                    <Link to={`/book/${doctorId}`}>
+                      <Button className="w-full" size="lg">
+                        <CalendarIcon className="h-5 w-5 mr-2" />
+                        Agendar Cita
+                      </Button>
+                    </Link>
                   ) : (
                     <div className="text-center p-4 bg-muted/50 rounded-lg">
                       <Clock className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
@@ -568,9 +508,16 @@ export default function DoctorProfile() {
                   <div className="text-center p-4 bg-muted/50 rounded-lg">
                     <Lock className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
                     <p className="font-medium">Inicia sesión para agendar</p>
-                    <Link to="/auth">
-                      <Button className="mt-2 w-full">Iniciar Sesión</Button>
-                    </Link>
+                    <Button 
+                      className="mt-2 w-full"
+                      onClick={() => {
+                        // Guardar intención de agendamiento
+                        localStorage.setItem('intended_doctor_id', doctorId || '');
+                        window.location.href = '/auth';
+                      }}
+                    >
+                      Iniciar Sesión para Agendar
+                    </Button>
                   </div>
                 )}
               </CardContent>

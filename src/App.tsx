@@ -17,6 +17,7 @@ import NotFound from "./pages/NotFound";
 import EmergencyLogout from "./pages/EmergencyLogout";
 import DoctorSearch from "./pages/DoctorSearch";
 import DoctorProfile from "./pages/DoctorProfile";
+import BookAppointment from "./pages/BookAppointment";
 
 const queryClient = new QueryClient();
 
@@ -65,6 +66,14 @@ const App = () => (
             />
             <Route path="/search" element={<DoctorSearch />} />
             <Route path="/doctor/:doctorId" element={<DoctorProfile />} />
+            <Route 
+              path="/book/:doctorId" 
+              element={
+                <ProtectedRoute role="patient">
+                  <BookAppointment />
+                </ProtectedRoute>
+              } 
+            />
             <Route path="/emergency-logout" element={<EmergencyLogout />} />
             <Route path="/unauthorized" element={<Unauthorized />} />
             <Route path="*" element={<NotFound />} />
