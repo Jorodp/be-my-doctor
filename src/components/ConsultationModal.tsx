@@ -31,6 +31,9 @@ import {
   CheckCircle,
   ChevronRight,
   ChevronLeft,
+  Shield,
+  AlertTriangle,
+  Upload,
 } from 'lucide-react';
 
 interface ConsultationModalProps {
@@ -54,6 +57,7 @@ interface PatientProfile {
   address: string;
   date_of_birth: string;
   profile_image_url: string;
+  id_document_url: string;
 }
 
 interface ConsultationForm {
@@ -66,18 +70,24 @@ interface ConsultationForm {
 const INITIAL_STEPS: ConsultationStep[] = [
   {
     id: 1,
+    title: "Verificación de Identidad",
+    description: "Verificar que el paciente coincide con sus documentos",
+    completed: false,
+  },
+  {
+    id: 2,
     title: "Inicio de Consulta",
     description: "Revisar información del paciente e iniciar consulta",
     completed: false,
   },
   {
-    id: 2,
+    id: 3,
     title: "Registrar Consulta",
     description: "Llenar diagnóstico, receta y recomendaciones",
     completed: false,
   },
   {
-    id: 3,
+    id: 4,
     title: "Finalizar Consulta",
     description: "Confirmar datos y completar la consulta",
     completed: false,
@@ -94,6 +104,7 @@ export function ConsultationModal({
   const [currentStep, setCurrentStep] = useState(1);
   const [steps, setSteps] = useState<ConsultationStep[]>(INITIAL_STEPS);
   const [consultationStarted, setConsultationStarted] = useState(false);
+  const [identityVerified, setIdentityVerified] = useState(false);
   const [patientProfile, setPatientProfile] = useState<PatientProfile | null>(null);
   const [patientHistory, setPatientHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -115,6 +126,7 @@ export function ConsultationModal({
     setCurrentStep(1);
     setSteps(INITIAL_STEPS);
     setConsultationStarted(false);
+    setIdentityVerified(false);
     setConsultationForm({
       diagnosis: '',
       prescription: '',
@@ -177,10 +189,16 @@ export function ConsultationModal({
     return age;
   };
 
-  const startConsultation = () => {
-    setConsultationStarted(true);
+  const verifyIdentity = () => {
+    setIdentityVerified(true);
     markStepCompleted(1);
     setCurrentStep(2);
+  };
+
+  const startConsultation = () => {
+    setConsultationStarted(true);
+    markStepCompleted(2);
+    setCurrentStep(3);
   };
 
   const markStepCompleted = (stepId: number) => {
@@ -190,7 +208,7 @@ export function ConsultationModal({
   };
 
   const nextStep = () => {
-    if (currentStep < 3) {
+    if (currentStep < 4) {
       markStepCompleted(currentStep);
       setCurrentStep(currentStep + 1);
     }
@@ -212,8 +230,8 @@ export function ConsultationModal({
       return;
     }
 
-    markStepCompleted(2);
-    setCurrentStep(3);
+    markStepCompleted(3);
+    setCurrentStep(4);
   };
 
   const finalizeConsultation = async () => {
@@ -243,7 +261,7 @@ export function ConsultationModal({
 
       if (statusError) throw statusError;
 
-      markStepCompleted(3);
+      markStepCompleted(4);
       
       toast({
         title: "Consulta Finalizada",
@@ -270,6 +288,119 @@ export function ConsultationModal({
   const renderStepContent = () => {
     switch (currentStep) {
       case 1:
+        return (
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Shield className="h-5 w-5 text-primary" />
+                  Verificación de Identidad
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {patientProfile && patientProfile.profile_image_url && patientProfile.id_document_url ? (
+                  <div className="space-y-6">
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <p className="text-blue-900 font-medium mb-2">
+                        Verifique que la persona presente coincide con los documentos cargados.
+                      </p>
+                      <p className="text-blue-700 text-sm">
+                        Compare la apariencia física del paciente con la foto de perfil y documento de identificación oficial.
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-3">
+                        <h4 className="font-medium flex items-center gap-2">
+                          <User className="h-4 w-4" />
+                          Foto de Perfil
+                        </h4>
+                        <div className="border rounded-lg p-4 bg-muted/50">
+                          <img
+                            src={patientProfile.profile_image_url}
+                            alt="Foto de perfil del paciente"
+                            className="w-full h-48 object-cover rounded-lg"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-3">
+                        <h4 className="font-medium flex items-center gap-2">
+                          <FileText className="h-4 w-4" />
+                          Documento de Identificación
+                        </h4>
+                        <div className="border rounded-lg p-4 bg-muted/50">
+                          <img
+                            src={patientProfile.id_document_url}
+                            alt="Documento de identificación"
+                            className="w-full h-48 object-cover rounded-lg"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-center pt-4">
+                      <Button 
+                        onClick={verifyIdentity}
+                        size="lg"
+                        className="w-full max-w-md"
+                      >
+                        <CheckCircle className="h-5 w-5 mr-2" />
+                        ✅ Verificación Completada
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                      <AlertTriangle className="h-6 w-6 text-amber-600 flex-shrink-0" />
+                      <div>
+                        <p className="font-medium text-amber-900">
+                          Documentos Incompletos
+                        </p>
+                        <p className="text-amber-700 text-sm mt-1">
+                          Este paciente no ha cargado su identificación y/o foto de perfil. 
+                          El asistente deberá subirlos antes de proceder.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div className={`p-3 rounded-lg border ${patientProfile?.profile_image_url ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                        <div className="flex items-center gap-2">
+                          <User className="h-4 w-4" />
+                          <span className="font-medium">Foto de Perfil</span>
+                        </div>
+                        <p className={`text-xs mt-1 ${patientProfile?.profile_image_url ? 'text-green-700' : 'text-red-700'}`}>
+                          {patientProfile?.profile_image_url ? '✅ Disponible' : '❌ Faltante'}
+                        </p>
+                      </div>
+
+                      <div className={`p-3 rounded-lg border ${patientProfile?.id_document_url ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-4 w-4" />
+                          <span className="font-medium">Identificación</span>
+                        </div>
+                        <p className={`text-xs mt-1 ${patientProfile?.id_document_url ? 'text-green-700' : 'text-red-700'}`}>
+                          {patientProfile?.id_document_url ? '✅ Disponible' : '❌ Faltante'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="text-center">
+                      <Button variant="outline" disabled className="cursor-not-allowed">
+                        <Upload className="h-5 w-5 mr-2" />
+                        No se puede proceder sin documentos
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        );
+
+      case 2:
         return (
           <div className="space-y-6">
             {patientProfile && (
@@ -352,7 +483,7 @@ export function ConsultationModal({
           </div>
         );
 
-      case 2:
+      case 3:
         return (
           <div className="space-y-6">
             <Card>
@@ -430,7 +561,7 @@ export function ConsultationModal({
           </div>
         );
 
-      case 3:
+      case 4:
         return (
           <div className="space-y-6">
             <Card>
