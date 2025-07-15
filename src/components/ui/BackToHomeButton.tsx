@@ -1,23 +1,14 @@
-import { ArrowLeft } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
+import { Link } from "react-router-dom";
 
-interface BackToHomeButtonProps {
-  className?: string;
-  variant?: "default" | "outline" | "ghost" | "link";
-}
-
-export const BackToHomeButton = ({ className = "", variant = "ghost" }: BackToHomeButtonProps) => {
+export const BackToHomeButton = () => {
   return (
-    <Link to="/">
-      <Button 
-        variant={variant}
-        size="sm"
-        className={`flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors ${className}`}
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Volver a inicio
-      </Button>
-    </Link>
+    <Button variant="ghost" asChild className="mb-4">
+      <Link to="/">
+        <ArrowLeft className="h-4 w-4 mr-2" />
+        Volver al inicio
+      </Link>
+    </Button>
   );
 };

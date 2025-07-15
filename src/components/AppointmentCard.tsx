@@ -1,213 +1,198 @@
-import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { AppointmentActions } from '@/components/AppointmentActions';
+import { Button } from '@/components/ui/button';
+import { Calendar, Clock, User, DollarSign, CheckCircle, AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import {
-  User,
-  Phone,
-  Clock,
-  Calendar,
-  Stethoscope
-} from 'lucide-react';
-
-interface Appointment {
-  id: string;
-  starts_at: string;
-  ends_at: string;
-  status: string;
-  doctor_user_id: string;
-  patient_user_id: string;
-  notes?: string;
-  patient_profile?: {
-    full_name: string;
-    phone: string;
-  };
-  doctor_profile?: {
-    full_name: string;
-    specialty: string;
-  };
-}
 
 interface AppointmentCardProps {
-  appointment: Appointment;
-  userRole: 'patient' | 'doctor' | 'assistant' | 'admin';
-  currentUserId: string;
-  onAppointmentUpdated: () => void;
-  showPatientInfo?: boolean;
-  showDoctorInfo?: boolean;
-  compact?: boolean;
+  appointment: {
+    id: string;
+    starts_at: string;
+    ends_at: string;
+    status: string;
+    patient_profile?: {
+      full_name: string;
+      phone: string;
+    };
+    doctor_profile?: {
+      full_name: string;
+      specialty: string;
+    };
+    consultation_fee?: number;
+  };
+  paymentStatus?: {
+    status: string;
+    amount: number;
+    payment_method: string;
+  };
+  onAction?: (appointmentId: string, action: string) => void;
+  userRole?: string;
+  showPayment?: boolean;
 }
 
-export function AppointmentCard({
-  appointment,
+export const AppointmentCard = ({ 
+  appointment, 
+  paymentStatus, 
+  onAction, 
   userRole,
-  currentUserId,
-  onAppointmentUpdated,
-  showPatientInfo = true,
-  showDoctorInfo = false,
-  compact = false
-}: AppointmentCardProps) {
-  const appointmentDateTime = new Date(appointment.starts_at);
-  const isToday = format(appointmentDateTime, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
-  const isPast = appointmentDateTime < new Date();
-
+  showPayment = false 
+}: AppointmentCardProps) => {
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'scheduled':
-        return 'default';
-      case 'completed':
-        return 'secondary';
-      case 'cancelled':
-        return 'destructive';
-      case 'no_show':
-        return 'outline';
-      default:
-        return 'secondary';
+      case 'scheduled': return 'bg-blue-100 text-blue-800';
+      case 'completed': return 'bg-green-100 text-green-800';
+      case 'cancelled': return 'bg-red-100 text-red-800';
+      case 'in_progress': return 'bg-yellow-100 text-yellow-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
-  const getStatusText = (status: string) => {
+  const getPaymentStatusColor = (status: string) => {
     switch (status) {
-      case 'scheduled':
-        return 'Programada';
-      case 'completed':
-        return 'Completada';
-      case 'cancelled':
-        return 'Cancelada';
-      case 'no_show':
-        return 'No asistió';
-      default:
-        return status;
+      case 'paid': return 'bg-green-100 text-green-800';
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      case 'failed': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
-  if (compact) {
-    return (
-      <div className="border rounded-lg p-3 hover:bg-muted/50 transition-colors">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex flex-col">
-              {showPatientInfo && appointment.patient_profile && (
-                <span className="font-medium text-sm">
-                  {appointment.patient_profile.full_name}
-                </span>
-              )}
-              {showDoctorInfo && appointment.doctor_profile && (
-                <span className="font-medium text-sm">
-                  Dr. {appointment.doctor_profile.full_name}
-                </span>
-              )}
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Clock className="h-3 w-3" />
-                {format(appointmentDateTime, 'HH:mm')}
-                {isToday && <Badge variant="outline" className="text-xs px-1 py-0">Hoy</Badge>}
-              </div>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <Badge variant={getStatusColor(appointment.status)} className="text-xs">
-              {getStatusText(appointment.status)}
-            </Badge>
-            
-            <AppointmentActions
-              appointment={appointment}
-              userRole={userRole}
-              currentUserId={currentUserId}
-              onAppointmentUpdated={onAppointmentUpdated}
-              showPatientName={showPatientInfo}
-            />
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const formatStatus = (status: string) => {
+    switch (status) {
+      case 'scheduled': return 'Programada';
+      case 'completed': return 'Completada';
+      case 'cancelled': return 'Cancelada';
+      case 'in_progress': return 'En progreso';
+      default: return status;
+    }
+  };
+
+  const formatPaymentStatus = (status: string) => {
+    switch (status) {
+      case 'paid': return 'Pagado';
+      case 'pending': return 'Pendiente';
+      case 'failed': return 'Fallido';
+      default: return status;
+    }
+  };
 
   return (
-    <Card className={`hover:shadow-md transition-shadow ${isPast ? 'opacity-75' : ''}`}>
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between">
-          <div className="flex items-start gap-4 flex-1">
-            <Avatar className="h-12 w-12">
-              <AvatarFallback>
-                {showPatientInfo && appointment.patient_profile ? (
-                  appointment.patient_profile.full_name.split(' ').map(n => n[0]).join('')
-                ) : showDoctorInfo && appointment.doctor_profile ? (
-                  appointment.doctor_profile.full_name.split(' ').map(n => n[0]).join('')
-                ) : (
-                  <User className="h-6 w-6" />
-                )}
-              </AvatarFallback>
-            </Avatar>
+    <Card className="w-full">
+      <CardHeader>
+        <div className="flex justify-between items-start">
+          <CardTitle className="text-lg">
+            <div className="flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              {format(new Date(appointment.starts_at), 'PPP', { locale: es })}
+            </div>
+          </CardTitle>
+          <Badge className={getStatusColor(appointment.status)}>
+            {formatStatus(appointment.status)}
+          </Badge>
+        </div>
+      </CardHeader>
+      
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-sm">
+              <Clock className="h-4 w-4" />
+              <span>
+                {format(new Date(appointment.starts_at), 'HH:mm')} - 
+                {format(new Date(appointment.ends_at), 'HH:mm')}
+              </span>
+            </div>
             
-            <div className="space-y-2 flex-1">
-              {/* Patient/Doctor Info */}
-              {showPatientInfo && appointment.patient_profile && (
-                <div>
-                  <h4 className="font-medium">{appointment.patient_profile.full_name}</h4>
-                  {appointment.patient_profile.phone && (
-                    <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                      <Phone className="h-3 w-3" />
-                      {appointment.patient_profile.phone}
-                    </div>
+            {appointment.patient_profile && (
+              <div className="flex items-center gap-2 text-sm">
+                <User className="h-4 w-4" />
+                <span>Paciente: {appointment.patient_profile.full_name}</span>
+              </div>
+            )}
+            
+            {appointment.doctor_profile && (
+              <div className="flex items-center gap-2 text-sm">
+                <User className="h-4 w-4" />
+                <span>Dr. {appointment.doctor_profile.full_name}</span>
+                <Badge variant="outline" className="text-xs">
+                  {appointment.doctor_profile.specialty}
+                </Badge>
+              </div>
+            )}
+          </div>
+
+          {showPayment && (
+            <div className="space-y-2">
+              {appointment.consultation_fee && (
+                <div className="flex items-center gap-2 text-sm">
+                  <DollarSign className="h-4 w-4" />
+                  <span>${appointment.consultation_fee} MXN</span>
+                </div>
+              )}
+              
+              {paymentStatus && (
+                <div className="flex items-center gap-2">
+                  {paymentStatus.status === 'paid' ? (
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                  ) : (
+                    <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                  )}
+                  <Badge className={getPaymentStatusColor(paymentStatus.status)}>
+                    {formatPaymentStatus(paymentStatus.status)}
+                  </Badge>
+                  {paymentStatus.payment_method && (
+                    <span className="text-xs text-muted-foreground">
+                      via {paymentStatus.payment_method}
+                    </span>
                   )}
                 </div>
               )}
-              
-              {showDoctorInfo && appointment.doctor_profile && (
-                <div>
-                  <h4 className="font-medium">Dr. {appointment.doctor_profile.full_name}</h4>
-                  <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                    <Stethoscope className="h-3 w-3" />
-                    {appointment.doctor_profile.specialty}
-                  </div>
-                </div>
-              )}
-              
-              {/* Date and Time */}
-              <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                <div className="flex items-center gap-1">
-                  <Calendar className="h-3 w-3" />
-                  {format(appointmentDateTime, 'dd/MM/yyyy', { locale: es })}
-                  {isToday && <Badge variant="outline" className="text-xs ml-1">Hoy</Badge>}
-                </div>
-                <div className="flex items-center gap-1">
-                  <Clock className="h-3 w-3" />
-                  {format(appointmentDateTime, 'HH:mm')} - {format(new Date(appointment.ends_at), 'HH:mm')}
-                </div>
-              </div>
-
-              {/* Notes */}
-              {appointment.notes && (
-                <div className="text-sm text-muted-foreground bg-muted/50 p-2 rounded">
-                  <strong>Notas:</strong> {appointment.notes.length > 100 ? 
-                    `${appointment.notes.substring(0, 100)}...` : 
-                    appointment.notes
-                  }
-                </div>
-              )}
             </div>
-          </div>
-          
-          {/* Status and Actions */}
-          <div className="flex flex-col items-end gap-3">
-            <Badge variant={getStatusColor(appointment.status)}>
-              {getStatusText(appointment.status)}
-            </Badge>
-            
-            <AppointmentActions
-              appointment={appointment}
-              userRole={userRole}
-              currentUserId={currentUserId}
-              onAppointmentUpdated={onAppointmentUpdated}
-              showPatientName={showPatientInfo}
-            />
-          </div>
+          )}
         </div>
+
+        {onAction && (
+          <div className="flex gap-2 pt-2">
+            {appointment.status === 'scheduled' && userRole !== 'patient' && (
+              <>
+                <Button 
+                  size="sm" 
+                  onClick={() => onAction(appointment.id, 'start')}
+                  disabled={paymentStatus?.status !== 'paid'}
+                >
+                  Iniciar Consulta
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={() => onAction(appointment.id, 'cancel')}
+                >
+                  Cancelar
+                </Button>
+              </>
+            )}
+            
+            {appointment.status === 'in_progress' && userRole !== 'patient' && (
+              <Button 
+                size="sm" 
+                onClick={() => onAction(appointment.id, 'complete')}
+              >
+                Completar Consulta
+              </Button>
+            )}
+            
+            {userRole === 'patient' && appointment.status === 'scheduled' && (
+              <Button 
+                size="sm" 
+                variant="outline"
+                onClick={() => onAction(appointment.id, 'cancel')}
+              >
+                Cancelar Cita
+              </Button>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
-}
+};

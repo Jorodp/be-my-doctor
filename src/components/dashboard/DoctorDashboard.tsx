@@ -46,6 +46,7 @@ import { AppointmentActions } from '@/components/AppointmentActions';
 import { DashboardHeader } from '@/components/DashboardHeader';
 import { DoctorProfileDisplay } from '@/components/DoctorProfileDisplay';
 import { ConsultationManager } from '@/components/ConsultationManager';
+import { SubscriptionGuard } from '@/components/SubscriptionGuard';
 
 interface DoctorProfile {
   id: string;
@@ -150,6 +151,22 @@ export const DoctorDashboard = () => {
   if (doctorProfile.verification_status === 'rejected') {
     return <Navigate to="/pending-verification" replace />;
   }
+
+  // Wrap the entire dashboard with subscription guard
+  return (
+    <SubscriptionGuard>
+      <DoctorDashboardContent 
+        user={user}
+        doctorProfile={doctorProfile}
+        userRole={userRole}
+        signOut={signOut}
+        toast={toast}
+      />
+    </SubscriptionGuard>
+  );
+};
+
+const DoctorDashboardContent = ({ user, doctorProfile, userRole, signOut, toast }: any) => {
   
   // State
   const [loading, setLoading] = useState(true);

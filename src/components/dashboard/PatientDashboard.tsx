@@ -604,11 +604,7 @@ export const PatientDashboard = () => {
                       key={appointment.id}
                       appointment={transformedAppointment}
                       userRole="patient"
-                      currentUserId={user?.id || ''}
-                      onAppointmentUpdated={fetchAppointments}
-                      showPatientInfo={false}
-                      showDoctorInfo={true}
-                      compact={true}
+                      showPayment={true}
                     />
                   );
                 })}
