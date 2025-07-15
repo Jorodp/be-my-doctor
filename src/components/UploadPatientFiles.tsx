@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
-import { Upload, User, IdCard, Check, X } from 'lucide-react';
+import { Upload, User, IdCard, Check, X, FileText } from 'lucide-react';
 
 interface Patient {
   user_id: string;
@@ -78,12 +78,40 @@ export const UploadPatientFiles = ({ doctorId }: UploadPatientFilesProps) => {
   const handleFileUpload = async (file: File, type: 'profile' | 'id') => {
     if (!selectedPatient || !user) return;
 
+    // Validación de tipos de archivo permitidos
+    const allowedTypesProfile = ['image/jpeg', 'image/jpg', 'image/png'];
+    const allowedTypesDocument = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
+    
+    const allowedTypes = type === 'profile' ? allowedTypesProfile : allowedTypesDocument;
+    
+    if (!allowedTypes.includes(file.type)) {
+      toast({
+        title: "Archivo no válido",
+        description: type === 'profile' 
+          ? "Solo se permiten archivos JPG, JPEG o PNG para la foto de perfil"
+          : "Solo se permiten archivos JPG, JPEG, PNG o PDF para la identificación",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Validación de tamaño (máximo 10MB)
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+      toast({
+        title: "Archivo muy grande",
+        description: "El archivo no puede superar los 10MB",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setUploading(prev => ({ ...prev, [type]: true }));
 
     try {
       // Determine bucket and file path
       const bucket = type === 'profile' ? 'patient-profiles' : 'patient-documents';
-      const fileExt = file.name.split('.').pop();
+      const fileExt = file.name.split('.').pop()?.toLowerCase();
       const fileName = type === 'profile' ? `profile.${fileExt}` : `id.${fileExt}`;
       const filePath = `${selectedPatient.user_id}/${fileName}`;
 
@@ -153,7 +181,10 @@ export const UploadPatientFiles = ({ doctorId }: UploadPatientFilesProps) => {
   const createFileInputHandler = (type: 'profile' | 'id') => () => {
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = 'image/*';
+    // Diferentes tipos de archivo permitidos según el tipo
+    input.accept = type === 'profile' 
+      ? '.jpg,.jpeg,.png' 
+      : '.jpg,.jpeg,.png,.pdf';
     input.onchange = (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (file) {
@@ -161,6 +192,18 @@ export const UploadPatientFiles = ({ doctorId }: UploadPatientFilesProps) => {
       }
     };
     input.click();
+  };
+
+  const getFileIcon = (url: string) => {
+    if (url.toLowerCase().includes('.pdf')) {
+      return <FileText className="h-4 w-4 text-red-600" />;
+    }
+    return <Check className="h-4 w-4 text-green-600" />;
+  };
+
+  const isImageFile = (url: string) => {
+    const imageExtensions = ['.jpg', '.jpeg', '.png'];
+    return imageExtensions.some(ext => url.toLowerCase().includes(ext));
   };
 
   if (loading) {
@@ -245,6 +288,9 @@ export const UploadPatientFiles = ({ doctorId }: UploadPatientFilesProps) => {
                         </>
                       )}
                     </Button>
+                    <p className="text-xs text-muted-foreground text-center">
+                      Formatos: JPG, JPEG, PNG (máx. 10MB)
+                    </p>
                   </CardContent>
                 </Card>
 
@@ -254,19 +300,36 @@ export const UploadPatientFiles = ({ doctorId }: UploadPatientFilesProps) => {
                     <CardTitle className="flex items-center gap-2 text-base">
                       <IdCard className="h-4 w-4" />
                       Identificación oficial
-                      {selectedPatient.id_document_url && (
-                        <Check className="h-4 w-4 text-green-600" />
-                      )}
+                      {selectedPatient.id_document_url && 
+                        getFileIcon(selectedPatient.id_document_url)
+                      }
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     {selectedPatient.id_document_url && (
                       <div className="w-full max-w-xs mx-auto">
-                        <img
-                          src={selectedPatient.id_document_url}
-                          alt="Documento de identidad"
-                          className="w-full h-auto object-cover rounded-lg border"
-                        />
+                        {isImageFile(selectedPatient.id_document_url) ? (
+                          <img
+                            src={selectedPatient.id_document_url}
+                            alt="Documento de identidad"
+                            className="w-full h-auto object-cover rounded-lg border"
+                          />
+                        ) : (
+                          <div className="flex items-center justify-center p-8 border rounded-lg bg-muted">
+                            <div className="text-center">
+                              <FileText className="h-12 w-12 text-red-600 mx-auto mb-2" />
+                              <p className="text-sm text-muted-foreground">Documento PDF</p>
+                              <Button
+                                variant="link"
+                                size="sm"
+                                onClick={() => window.open(selectedPatient.id_document_url, '_blank')}
+                                className="p-0 h-auto text-xs"
+                              >
+                                Ver documento
+                              </Button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                     <Button
@@ -287,6 +350,9 @@ export const UploadPatientFiles = ({ doctorId }: UploadPatientFilesProps) => {
                         </>
                       )}
                     </Button>
+                    <p className="text-xs text-muted-foreground text-center">
+                      Formatos: JPG, JPEG, PNG, PDF (máx. 10MB)
+                    </p>
                   </CardContent>
                 </Card>
               </div>
@@ -313,6 +379,11 @@ export const UploadPatientFiles = ({ doctorId }: UploadPatientFilesProps) => {
                       Estado: Foto de perfil {selectedPatient.profile_image_url ? '✅' : '❌'} | 
                       Identificación {selectedPatient.id_document_url ? '✅' : '❌'}
                     </p>
+                    {selectedPatient.id_document_url && !isImageFile(selectedPatient.id_document_url) && (
+                      <p className="text-xs text-blue-600 mt-1">
+                        📄 Documento cargado como PDF
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
