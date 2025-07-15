@@ -37,6 +37,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
 import { format, addDays, startOfDay, endOfDay } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { PatientHistoryModal } from '@/components/PatientHistoryModal';
 
 interface DoctorProfile {
   id: string;
@@ -135,6 +136,12 @@ export const DoctorDashboard = () => {
   const [averageRating, setAverageRating] = useState(0);
   const [availableAssistants, setAvailableAssistants] = useState<AssistantOption[]>([]);
   const [selectedAssistant, setSelectedAssistant] = useState<string>('');
+  
+  // Patient history modal state
+  const [selectedPatientHistory, setSelectedPatientHistory] = useState<{
+    patientUserId: string;
+    isOpen: boolean;
+  }>({ patientUserId: '', isOpen: false });
   
   // Edit states
   const [editingProfile, setEditingProfile] = useState(false);
@@ -838,18 +845,30 @@ export const DoctorDashboard = () => {
                   <div className="space-y-4">
                     {todayAppointments.map((appointment) => (
                       <div key={appointment.id} className="flex items-center justify-between p-4 border rounded-lg">
-                        <div className="flex items-center gap-4">
-                          <div className="flex flex-col">
-                            <span className="font-medium">
-                              {appointment.patient_profile?.full_name || 'Paciente'}
-                            </span>
-                            <span className="text-sm text-muted-foreground">
-                              {formatTime(appointment.starts_at)} - {formatTime(appointment.ends_at)}
-                            </span>
-                          </div>
-                          <Badge>{appointment.status}</Badge>
-                        </div>
-                        <Dialog>
+                         <div className="flex items-center gap-4">
+                           <div className="flex flex-col">
+                             <span className="font-medium">
+                               {appointment.patient_profile?.full_name || 'Paciente'}
+                             </span>
+                             <span className="text-sm text-muted-foreground">
+                               {formatTime(appointment.starts_at)} - {formatTime(appointment.ends_at)}
+                             </span>
+                           </div>
+                           <Badge>{appointment.status}</Badge>
+                         </div>
+                         <div className="flex gap-2">
+                           <Button
+                             variant="outline"
+                             size="sm"
+                             onClick={() => setSelectedPatientHistory({
+                               patientUserId: appointment.patient_user_id,
+                               isOpen: true
+                             })}
+                           >
+                             <User className="h-4 w-4 mr-2" />
+                             Historial
+                           </Button>
+                           <Dialog>
                           <DialogTrigger asChild>
                             <Button 
                               variant="outline" 
@@ -911,9 +930,10 @@ export const DoctorDashboard = () => {
                                 Guardar Notas
                               </Button>
                             </div>
-                          </DialogContent>
-                        </Dialog>
-                      </div>
+                           </DialogContent>
+                           </Dialog>
+                         </div>
+                       </div>
                     ))}
                   </div>
                 )}
@@ -1469,6 +1489,14 @@ export const DoctorDashboard = () => {
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* Patient History Modal */}
+      <PatientHistoryModal
+        isOpen={selectedPatientHistory.isOpen}
+        onClose={() => setSelectedPatientHistory({ patientUserId: '', isOpen: false })}
+        patientUserId={selectedPatientHistory.patientUserId}
+        doctorUserId={user?.id || ''}
+      />
     </div>
   );
 };
