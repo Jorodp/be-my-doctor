@@ -12,6 +12,7 @@ import { DoctorsList } from '@/components/admin/DoctorsList';
 import { PatientsList } from '@/components/admin/PatientsList';
 import { AssistantsList } from '@/components/admin/AssistantsList';
 import { PatientDocumentManagement } from '@/components/admin/PatientDocumentManagement';
+import { DoctorVerificationList } from '@/components/admin/DoctorVerificationList';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { DashboardHeader } from '@/components/DashboardHeader';
@@ -431,7 +432,7 @@ export const AdminDashboard = () => {
           </TabsContent>
 
           <TabsContent value="doctors">
-            <DoctorsList />
+            <DoctorVerificationList />
           </TabsContent>
 
           <TabsContent value="patients">

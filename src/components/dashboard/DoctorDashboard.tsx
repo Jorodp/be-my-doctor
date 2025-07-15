@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { Navigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -131,6 +132,19 @@ const specialties = [
 export const DoctorDashboard = () => {
   const { user, doctorProfile, userRole, signOut } = useAuth();
   const { toast } = useToast();
+  
+  // Check if doctor needs to complete profile or is pending verification
+  if (!doctorProfile) {
+    return <Navigate to="/complete-doctor-profile" replace />;
+  }
+  
+  if (doctorProfile.verification_status === 'pending') {
+    return <Navigate to="/pending-verification" replace />;
+  }
+  
+  if (doctorProfile.verification_status === 'rejected') {
+    return <Navigate to="/pending-verification" replace />;
+  }
   
   // State
   const [loading, setLoading] = useState(true);

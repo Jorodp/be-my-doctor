@@ -18,6 +18,8 @@ import EmergencyLogout from "./pages/EmergencyLogout";
 import DoctorSearch from "./pages/DoctorSearch";
 import DoctorProfile from "./pages/DoctorProfile";
 import BookAppointment from "./pages/BookAppointment";
+import { CompleteDoctorProfile } from "./pages/CompleteDoctorProfile";
+import PendingVerification from "./pages/PendingVerification";
 
 const queryClient = new QueryClient();
 
@@ -71,6 +73,22 @@ const App = () => (
               element={
                 <ProtectedRoute role="patient">
                   <BookAppointment />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/complete-doctor-profile" 
+              element={
+                <ProtectedRoute role="doctor">
+                  <CompleteDoctorProfile />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/pending-verification" 
+              element={
+                <ProtectedRoute role="doctor">
+                  <PendingVerification />
                 </ProtectedRoute>
               } 
             />
