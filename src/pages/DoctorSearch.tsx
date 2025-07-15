@@ -71,10 +71,7 @@ export default function DoctorSearch() {
 
   const fetchDoctors = async () => {
     try {
-      console.log('Starting fetchDoctors...');
-      
       // Fetch verified doctors
-      console.log('Fetching doctor profiles...');
       const { data: doctorProfiles, error } = await supabase
         .from('doctor_profiles')
         .select(`
@@ -87,46 +84,35 @@ export default function DoctorSearch() {
           verification_status
         `)
         .eq('verification_status', 'verified');
-
-      console.log('Doctor profiles result:', { doctorProfiles, error });
       
       if (error) throw error;
       if (!doctorProfiles || doctorProfiles.length === 0) {
-        console.log('No doctors found');
         setDoctors([]);
         return;
       }
 
       const userIds = doctorProfiles.map(d => d.user_id);
-      console.log('User IDs:', userIds);
 
       // Get all profiles for these doctors in a single query
-      console.log('Fetching profiles...');
       const { data: allProfiles } = await supabase
         .from('profiles')
         .select('user_id, full_name')
         .in('user_id', userIds);
-      console.log('Profiles result:', allProfiles);
 
       // Get all ratings in a single query
-      console.log('Fetching ratings...');
       const { data: allRatings } = await supabase
         .from('ratings')
         .select('doctor_user_id, rating')
         .in('doctor_user_id', userIds);
-      console.log('Ratings result:', allRatings);
 
       // Get all availability in a single query
-      console.log('Fetching availability...');
       const { data: allAvailability } = await supabase
         .from('doctor_availability')
         .select('doctor_user_id, is_available')
         .in('doctor_user_id', userIds)
         .eq('is_available', true);
-      console.log('Availability result:', allAvailability);
 
       // Process the data
-      console.log('Processing data...');
       const doctorsWithDetails = doctorProfiles.map((doctor) => {
         // Find profile for this doctor
         const profile = allProfiles?.find(p => p.user_id === doctor.user_id);
@@ -149,7 +135,6 @@ export default function DoctorSearch() {
         };
       });
 
-      console.log('Final doctors data:', doctorsWithDetails);
       setDoctors(doctorsWithDetails);
     } catch (error) {
       console.error('Error fetching doctors:', error);
@@ -159,7 +144,6 @@ export default function DoctorSearch() {
         variant: "destructive"
       });
     } finally {
-      console.log('Setting loading to false');
       setLoading(false);
     }
   };

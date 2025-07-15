@@ -93,12 +93,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth state change:', event, session?.user?.id);
         setSession(session);
         setUser(session?.user ?? null);
         setUserRole(session?.user?.user_metadata?.role ?? null);
         
         if (session?.user) {
-          await fetchUserProfile(session.user.id);
+          // Use setTimeout to avoid potential recursive calls
+          setTimeout(() => {
+            fetchUserProfile(session.user.id);
+          }, 0);
         } else {
           setProfile(null);
           setDoctorProfile(null);
@@ -108,21 +112,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     );
 
-    // Check for existing session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setUserRole(session?.user?.user_metadata?.role ?? null);
-      
-      if (session?.user) {
-        await fetchUserProfile(session.user.id);
-      }
-      
-      setLoading(false);
-    });
+    // Check for existing session only once on mount
+    let hasCheckedSession = false;
+    if (!hasCheckedSession) {
+      hasCheckedSession = true;
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        console.log('Initial session check:', session?.user?.id);
+        setSession(session);
+        setUser(session?.user ?? null);
+        setUserRole(session?.user?.user_metadata?.role ?? null);
+        
+        if (session?.user) {
+          fetchUserProfile(session.user.id);
+        }
+        
+        setLoading(false);
+      });
+    }
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, []); // Empty dependency array to run only once
 
   const signUp = async (email: string, password: string, role: UserRole = 'patient', additionalData: any = {}) => {
     const redirectUrl = `${window.location.origin}/`;
