@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Calendar, FileText, User, Phone, MapPin, Star, Eye } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { PatientIdDocument } from './PatientIdDocument';
 
 interface PatientHistoryModalProps {
   isOpen: boolean;
@@ -198,11 +199,10 @@ export const PatientHistoryModal = ({ isOpen, onClose, patientUserId, doctorUser
                         <div className="space-y-2">
                           <h4 className="text-sm font-medium">Identificación Oficial</h4>
                           <div className="border rounded-lg p-2">
-                            <img 
-                              src={patientProfile.id_document_url} 
-                              alt="Documento de identidad"
-                              className="w-full h-32 object-cover rounded cursor-pointer"
-                              onClick={() => window.open(patientProfile.id_document_url!, '_blank')}
+                            <PatientIdDocument 
+                              idDocumentUrl={patientProfile.id_document_url}
+                              patientUserId={patientProfile.user_id}
+                              showTitle={false}
                             />
                           </div>
                         </div>

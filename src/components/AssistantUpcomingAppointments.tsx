@@ -19,6 +19,7 @@ import {
   CheckCircle,
   Image as ImageIcon
 } from 'lucide-react';
+import { PatientIdDocument } from './PatientIdDocument';
 
 interface Appointment {
   id: string;
@@ -292,20 +293,10 @@ export function AssistantUpcomingAppointments({ doctorId }: AssistantUpcomingApp
                                   </div>
                                 </div>
 
-                                <div className="space-y-2">
-                                  <h4 className="font-medium text-sm">Identificación</h4>
-                                  <div className="border rounded p-2 h-32 flex items-center justify-center">
-                                    {selectedPatient.patient_profile?.id_document_url ? (
-                                      <img 
-                                        src={selectedPatient.patient_profile.id_document_url}
-                                        alt="Documento de identidad"
-                                        className="max-h-full max-w-full object-cover rounded"
-                                      />
-                                    ) : (
-                                      <FileText className="h-8 w-8 text-muted-foreground" />
-                                    )}
-                                  </div>
-                                </div>
+                                <PatientIdDocument 
+                                  idDocumentUrl={selectedPatient.patient_profile?.id_document_url}
+                                  patientUserId={selectedPatient.patient_user_id}
+                                />
                               </div>
 
                               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">

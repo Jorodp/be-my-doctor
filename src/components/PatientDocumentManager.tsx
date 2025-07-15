@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { User, Camera, Upload, AlertTriangle, CheckCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { PatientIdDocument } from './PatientIdDocument';
 
 interface PatientProfile {
   user_id: string;
@@ -250,20 +251,21 @@ export const PatientDocumentManager = ({ appointmentPatients }: PatientDocumentM
                 {/* ID Document */}
                 <div className="space-y-2">
                   <Label>Identificación Oficial</Label>
-                  <div className="flex flex-col items-center gap-2">
-                    {patient.id_document_url ? (
-                      <div className="w-32 h-20 border rounded overflow-hidden">
-                        <img 
-                          src={patient.id_document_url} 
-                          alt="Identificación"
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    ) : (
-                      <div className="w-32 h-20 border-2 border-dashed border-muted-foreground/25 rounded flex items-center justify-center">
-                        <Upload className="h-6 w-6 text-muted-foreground" />
-                      </div>
-                    )}
+                   <div className="flex flex-col items-center gap-2">
+                     {patient.id_document_url ? (
+                       <div className="w-32 h-20">
+                         <PatientIdDocument 
+                           idDocumentUrl={patient.id_document_url}
+                           patientUserId={patient.user_id}
+                           compact={true}
+                           showTitle={false}
+                         />
+                       </div>
+                     ) : (
+                       <div className="w-32 h-20 border-2 border-dashed border-muted-foreground/25 rounded flex items-center justify-center">
+                         <Upload className="h-6 w-6 text-muted-foreground" />
+                       </div>
+                     )}
                     
                     <div>
                       <input

@@ -35,6 +35,7 @@ import {
   AlertTriangle,
   Upload,
 } from 'lucide-react';
+import { PatientIdDocument } from './PatientIdDocument';
 
 interface ConsultationModalProps {
   isOpen: boolean;
@@ -329,13 +330,10 @@ export function ConsultationModal({
                           <FileText className="h-4 w-4" />
                           Documento de Identificación
                         </h4>
-                        <div className="border rounded-lg p-4 bg-muted/50">
-                          <img
-                            src={patientProfile.id_document_url}
-                            alt="Documento de identificación"
-                            className="w-full h-48 object-cover rounded-lg"
-                          />
-                        </div>
+                        <PatientIdDocument 
+                          idDocumentUrl={patientProfile.id_document_url}
+                          patientUserId={patientProfile.user_id}
+                        />
                       </div>
                     </div>
 
