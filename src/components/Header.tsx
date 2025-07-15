@@ -1,21 +1,24 @@
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
 import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { Link } from "react-router-dom";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { user, profile, signOut } = useAuth();
 
   return (
     <header className="bg-background/95 backdrop-blur-sm border-b border-border sticky top-0 z-50">
       <div className="container mx-auto px-4 py-4">
         <div className="flex justify-between items-center">
           {/* Logo */}
-          <div className="flex items-center space-x-2">
+          <Link to="/" className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-gradient-hero rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">B</span>
+              <span className="text-white font-bold text-sm">M</span>
             </div>
-            <span className="text-2xl font-bold text-primary">Be My</span>
-          </div>
+            <span className="text-2xl font-bold text-primary">MediConnect</span>
+          </Link>
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
@@ -34,10 +37,29 @@ const Header = () => {
           </nav>
 
           {/* Desktop CTA */}
-          <div className="hidden md:block">
-            <Button variant="default">
-              Registrarse
-            </Button>
+          <div className="hidden md:flex items-center space-x-4">
+            {user && profile ? (
+              <>
+                <span className="text-sm text-muted-foreground">
+                  Hola, {profile.first_name || 'Usuario'}
+                </span>
+                <Link to="/dashboard">
+                  <Button variant="outline">Dashboard</Button>
+                </Link>
+                <Button variant="ghost" onClick={() => signOut()}>
+                  Cerrar Sesión
+                </Button>
+              </>
+            ) : (
+              <>
+                <Link to="/auth">
+                  <Button variant="outline">Iniciar Sesión</Button>
+                </Link>
+                <Link to="/auth">
+                  <Button>Registrarse</Button>
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -64,9 +86,30 @@ const Header = () => {
             <a href="#contacto" className="block text-foreground hover:text-primary transition-smooth">
               Contacto
             </a>
-            <Button variant="default" className="w-full">
-              Registrarse
-            </Button>
+            <div className="pt-4 space-y-2">
+              {user && profile ? (
+                <>
+                  <div className="text-sm text-muted-foreground px-3 py-2">
+                    Hola, {profile.first_name || 'Usuario'}
+                  </div>
+                  <Link to="/dashboard">
+                    <Button variant="outline" className="w-full">Dashboard</Button>
+                  </Link>
+                  <Button variant="ghost" className="w-full" onClick={() => signOut()}>
+                    Cerrar Sesión
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Link to="/auth">
+                    <Button variant="outline" className="w-full">Iniciar Sesión</Button>
+                  </Link>
+                  <Link to="/auth">
+                    <Button className="w-full">Registrarse</Button>
+                  </Link>
+                </>
+              )}
+            </div>
           </nav>
         )}
       </div>
