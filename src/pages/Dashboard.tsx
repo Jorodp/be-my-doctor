@@ -47,7 +47,7 @@ export default function Dashboard() {
           return;
         }
       } else if (userRole === 'doctor') {
-        // For doctors, check if doctor profile exists and has required fields
+        // For doctors, check if doctor profile exists and has basic required fields
         const isComplete = profile && 
           doctorProfile && 
           profile.full_name && 
@@ -58,9 +58,12 @@ export default function Dashboard() {
           doctorProfile.professional_license.trim() !== '';
           
         if (!isComplete) {
-          setHasRedirected(true);
-          navigate('/profile/doctor', { replace: true });
-          return;
+          // If doctor profile doesn't exist, redirect to create it
+          if (!doctorProfile) {
+            setHasRedirected(true);
+            navigate('/profile/doctor', { replace: true });
+            return;
+          }
         }
       }
 

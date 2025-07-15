@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,16 +19,27 @@ export const CompleteDoctorProfile = () => {
 
   const [loading, setLoading] = useState(false);
   const [profileData, setProfileData] = useState({
-    professional_license: doctorProfile?.professional_license || '',
-    specialty: doctorProfile?.specialty || '',
-    biography: doctorProfile?.biography || '',
-    years_experience: doctorProfile?.years_experience?.toString() || '',
-    consultation_fee: doctorProfile?.consultation_fee?.toString() || '',
-    profile_image_url: doctorProfile?.profile_image_url || '',
-    office_address: doctorProfile?.office_address || '',
-    office_phone: doctorProfile?.office_phone || '',
-    practice_locations: doctorProfile?.practice_locations || ['']
+    professional_license: '',
+    specialty: '',
+    biography: '',
+    years_experience: '',
+    consultation_fee: '',
+    profile_image_url: '',
+    office_address: '',
+    office_phone: '',
+    practice_locations: ['']
   });
+
+  // Redirect if doctor already has a profile
+  useEffect(() => {
+    if (doctorProfile) {
+      toast({
+        title: "Perfil ya existe",
+        description: "Tu perfil ya está creado. Solo un administrador puede modificarlo.",
+      });
+      navigate('/dashboard/doctor', { replace: true });
+    }
+  }, [doctorProfile, navigate, toast]);
 
   const handleFileUpload = async (file: File) => {
     if (!user) return;
@@ -113,13 +124,25 @@ export const CompleteDoctorProfile = () => {
 
       console.log('Submitting doctor profile data:', doctorProfileData);
 
-      // Use upsert to handle both insert and update cases
+      // Use INSERT since this should only run for new profiles
       const { error: doctorError } = await supabase
         .from('doctor_profiles')
-        .upsert(doctorProfileData, { onConflict: 'user_id' });
+        .insert([doctorProfileData]);
 
       if (doctorError) {
         console.error('Doctor profile error:', doctorError);
+        
+        // Check if it's a unique constraint violation (profile already exists)
+        if (doctorError.code === '23505') {
+          toast({
+            title: "Perfil ya existe",
+            description: "Ya tienes un perfil médico. Solo un administrador puede modificarlo.",
+            variant: "destructive"
+          });
+          navigate('/dashboard/doctor', { replace: true });
+          return;
+        }
+        
         throw doctorError;
       }
 

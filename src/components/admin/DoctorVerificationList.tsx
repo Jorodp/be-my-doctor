@@ -18,12 +18,14 @@ import {
   Award,
   Phone,
   Calendar,
-  DollarSign
+  DollarSign,
+  Edit
 } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { EditDoctorProfile } from './EditDoctorProfile';
 
 interface PendingDoctor {
   id: string;
@@ -52,6 +54,8 @@ export const DoctorVerificationList = () => {
   const [pendingDoctors, setPendingDoctors] = useState<PendingDoctor[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [editingDoctor, setEditingDoctor] = useState<PendingDoctor | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   useEffect(() => {
     fetchPendingDoctors();
@@ -236,6 +240,20 @@ export const DoctorVerificationList = () => {
     } finally {
       setProcessingId(null);
     }
+  };
+
+  const handleEditDoctor = (doctor: PendingDoctor) => {
+    setEditingDoctor(doctor);
+    setIsEditModalOpen(true);
+  };
+
+  const handleCloseEditModal = () => {
+    setIsEditModalOpen(false);
+    setEditingDoctor(null);
+  };
+
+  const handleProfileUpdated = () => {
+    fetchPendingDoctors(); // Refresh the list
   };
 
   if (loading) {
@@ -426,14 +444,23 @@ export const DoctorVerificationList = () => {
                               )}
                             </div>
                           </DialogContent>
-                        </Dialog>
+                         </Dialog>
 
-                        <Button 
-                          onClick={() => handleApproval(doctor.id, true)}
-                          disabled={processingId === doctor.id}
-                          className="bg-green-600 hover:bg-green-700"
-                          size="sm"
-                        >
+                         <Button 
+                           variant="outline" 
+                           size="sm"
+                           onClick={() => handleEditDoctor(doctor)}
+                         >
+                           <Edit className="h-4 w-4 mr-1" />
+                           Editar
+                         </Button>
+
+                         <Button 
+                           onClick={() => handleApproval(doctor.id, true)}
+                           disabled={processingId === doctor.id}
+                           className="bg-green-600 hover:bg-green-700"
+                           size="sm"
+                         >
                           {processingId === doctor.id ? (
                             <LoadingSpinner className="h-4 w-4 mr-1" />
                           ) : (
@@ -464,6 +491,35 @@ export const DoctorVerificationList = () => {
           </div>
         )}
       </CardContent>
+
+      {/* Edit Doctor Modal */}
+      {editingDoctor && (
+        <EditDoctorProfile
+          isOpen={isEditModalOpen}
+          onClose={handleCloseEditModal}
+          doctorProfile={{
+            id: editingDoctor.id,
+            user_id: editingDoctor.user_id,
+            specialty: editingDoctor.specialty,
+            professional_license: editingDoctor.professional_license,
+            biography: editingDoctor.biography,
+            years_experience: editingDoctor.years_experience,
+            consultation_fee: editingDoctor.consultation_fee,
+            profile_image_url: editingDoctor.profile_image_url,
+            office_address: editingDoctor.office_address,
+            office_phone: editingDoctor.office_phone,
+            practice_locations: editingDoctor.practice_locations,
+            verification_status: editingDoctor.verification_status
+          }}
+          profile={{
+            user_id: editingDoctor.user_id,
+            full_name: editingDoctor.profile?.full_name || null,
+            phone: editingDoctor.profile?.phone || null,
+            email: editingDoctor.profile?.email || null
+          }}
+          onProfileUpdated={handleProfileUpdated}
+        />
+      )}
     </Card>
   );
 };
