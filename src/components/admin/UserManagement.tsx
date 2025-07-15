@@ -67,11 +67,11 @@ export function UserManagement() {
       }
 
       const response = await supabase.functions.invoke('admin-user-management', {
-        method: 'GET',
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
         },
-        body: new URLSearchParams({ action: 'list' })
+        body: JSON.stringify({ action: 'list' })
       });
 
       if (response.error) {
@@ -100,7 +100,6 @@ export function UserManagement() {
       }
 
       const response = await supabase.functions.invoke('admin-user-management', {
-        method: 'POST',
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
           'Content-Type': 'application/json',
@@ -149,7 +148,6 @@ export function UserManagement() {
       }
 
       const response = await supabase.functions.invoke('admin-user-management', {
-        method: 'PUT',
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
           'Content-Type': 'application/json',
@@ -196,11 +194,11 @@ export function UserManagement() {
       }
 
       const response = await supabase.functions.invoke('admin-user-management', {
-        method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
         },
-        body: new URLSearchParams({ 
+        body: JSON.stringify({ 
           action: 'delete',
           userId: userId 
         })

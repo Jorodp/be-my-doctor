@@ -1,1 +1,37 @@
 project_id = "rvsoeuwlgnovcmemlmqz"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "storage", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[auth]
+enabled = true
+port = 54324
+site_url = "https://preview--be-my-doctor.lovable.app"
+additional_redirect_urls = ["https://localhost:3000", "https://preview--be-my-doctor.lovable.app"]
+jwt_expiry = 3600
+refresh_token_rotation_enabled = true
+
+[functions.admin-user-management]
+verify_jwt = false
+
+[functions.assign-assistant]
+verify_jwt = false
+
+[functions.get-assistant-info] 
+verify_jwt = false
+
+[functions.create-demo-users]
+verify_jwt = false
+
+[functions.admin-reports]
+verify_jwt = false
+
+[functions.admin-storage]
+verify_jwt = false
+
+[functions.admin-appointments]
+verify_jwt = false
