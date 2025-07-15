@@ -9,32 +9,38 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Calendar, Clock, User, Star, FileText, Camera, Upload, Edit, Save, X } from 'lucide-react';
+import { Calendar, Clock, User, Star, FileText, Camera, Upload, Edit, Save, X, Download } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
 import { RatingModal } from '@/components/RatingModal';
 import { DashboardHeader } from '@/components/DashboardHeader';
+import { generateConsultationPDF } from '@/utils/pdfGenerator';
 
 interface Appointment {
   id: string;
   starts_at: string;
   ends_at: string;
   status: string;
-  price: number;
+  price: number | null;
+  notes: string | null;
   doctor_user_id: string;
+  patient_user_id: string;
   doctor_profile?: {
-    full_name: string;
-    specialty: string;
-  };
+    full_name: string | null;
+    specialty?: string;
+  } | null;
   consultation_notes?: {
-    diagnosis: string;
-    prescription: string;
-    recommendations: string;
-  }[];
+    id: string;
+    diagnosis: string | null;
+    prescription: string | null;
+    recommendations: string | null;
+    follow_up_date: string | null;
+  }[] | null;
   ratings?: {
+    id: string;
     rating: number;
-    comment: string;
-  }[];
+    comment: string | null;
+  }[] | null;
 }
 
 interface UserProfile {
@@ -115,7 +121,7 @@ export const PatientDashboard = () => {
         .select(`
           *,
           consultation_notes (*),
-          ratings (rating, comment)
+          ratings (id, rating, comment)
         `)
         .eq('patient_user_id', user.id)
         .eq('status', 'scheduled')
@@ -132,7 +138,7 @@ export const PatientDashboard = () => {
         .select(`
           *,
           consultation_notes (*),
-          ratings (rating, comment)
+          ratings (id, rating, comment)
         `)
         .eq('patient_user_id', user.id)
         .in('status', ['completed'])
@@ -175,18 +181,18 @@ export const PatientDashboard = () => {
         }
       }
 
-      // Process appointments with doctor profiles
+      // Process appointments with doctor profiles and ensure proper typing
       const processedUpcoming = (upcoming || []).map(app => ({
         ...app,
         doctor_profile: doctorProfiles[app.doctor_user_id] || null,
-        ratings: Array.isArray(app.ratings) ? app.ratings : (app.ratings ? [app.ratings] : [])
-      }));
+        ratings: Array.isArray(app.ratings) ? app.ratings : []
+      })) as Appointment[];
 
       const processedPast = (past || []).map(app => ({
         ...app,
         doctor_profile: doctorProfiles[app.doctor_user_id] || null,
-        ratings: Array.isArray(app.ratings) ? app.ratings : (app.ratings ? [app.ratings] : [])
-      }));
+        ratings: Array.isArray(app.ratings) ? app.ratings : []
+      })) as Appointment[];
 
       console.log('Processed appointments:', { processedUpcoming, processedPast });
 
@@ -303,9 +309,40 @@ export const PatientDashboard = () => {
         description: "No se pudo subir la imagen",
         variant: "destructive"
       });
-    } finally {
-      setUploading(false);
     }
+  };
+
+  const handleDownloadPDF = (appointment: Appointment) => {
+    if (!appointment.consultation_notes || appointment.consultation_notes.length === 0) {
+      toast({
+        title: "Sin notas médicas",
+        description: "Esta consulta no tiene notas médicas para descargar",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const consultationData = {
+      patientName: userProfile?.full_name || 'Paciente',
+      doctorName: appointment.doctor_profile?.full_name || 'Doctor',
+      specialty: appointment.doctor_profile?.specialty || 'Medicina General',
+      date: formatDate(appointment.starts_at),
+      time: `${formatTime(appointment.starts_at)} - ${formatTime(appointment.ends_at)}`,
+      diagnosis: appointment.consultation_notes[0].diagnosis,
+      prescription: appointment.consultation_notes[0].prescription,
+      recommendations: appointment.consultation_notes[0].recommendations,
+      followUpDate: appointment.consultation_notes[0].follow_up_date ? 
+        formatDate(appointment.consultation_notes[0].follow_up_date) : null,
+      rating: appointment.ratings && appointment.ratings.length > 0 ? appointment.ratings[0].rating : undefined,
+      ratingComment: appointment.ratings && appointment.ratings.length > 0 ? appointment.ratings[0].comment || undefined : undefined
+    };
+
+    generateConsultationPDF(consultationData);
+    
+    toast({
+      title: "PDF generado",
+      description: "El resumen de la consulta se ha descargado correctamente"
+    });
   };
 
   if (loading) {
@@ -593,22 +630,33 @@ export const PatientDashboard = () => {
                           {formatDate(appointment.starts_at)}
                         </div>
                       </div>
-                      <div className="flex gap-2">
-                        {appointment.ratings && appointment.ratings.length > 0 ? (
-                          <div className="flex items-center gap-1">
-                            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                            <span className="text-sm">{appointment.ratings[0].rating}/5</span>
-                          </div>
-                        ) : (
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => setSelectedAppointment(appointment)}
-                          >
-                            Calificar
-                          </Button>
-                        )}
-                      </div>
+                       <div className="flex gap-2">
+                         {appointment.consultation_notes && appointment.consultation_notes.length > 0 && (
+                           <Button
+                             size="sm"
+                             variant="outline"
+                             onClick={() => handleDownloadPDF(appointment)}
+                           >
+                             <Download className="h-4 w-4 mr-1" />
+                             Descargar PDF
+                           </Button>
+                         )}
+                         
+                         {appointment.ratings && appointment.ratings.length > 0 ? (
+                           <div className="flex items-center gap-1">
+                             <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                             <span className="text-sm">{appointment.ratings[0].rating}/5</span>
+                           </div>
+                         ) : (
+                           <Button 
+                             size="sm" 
+                             variant="outline"
+                             onClick={() => setSelectedAppointment(appointment)}
+                           >
+                             Calificar
+                           </Button>
+                         )}
+                       </div>
                     </div>
                     
                     {appointment.consultation_notes && appointment.consultation_notes.length > 0 && (
