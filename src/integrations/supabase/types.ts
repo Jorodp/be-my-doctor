@@ -140,6 +140,7 @@ export type Database = {
         Row: {
           biography: string | null
           consultation_fee: number | null
+          consultorios: Json | null
           created_at: string
           id: string
           office_address: string | null
@@ -158,6 +159,7 @@ export type Database = {
         Insert: {
           biography?: string | null
           consultation_fee?: number | null
+          consultorios?: Json | null
           created_at?: string
           id?: string
           office_address?: string | null
@@ -176,6 +178,7 @@ export type Database = {
         Update: {
           biography?: string | null
           consultation_fee?: number | null
+          consultorios?: Json | null
           created_at?: string
           id?: string
           office_address?: string | null

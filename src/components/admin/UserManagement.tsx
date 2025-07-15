@@ -10,7 +10,10 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Pencil, Trash2, Plus, Search } from 'lucide-react';
+import { EditPatientProfile } from './EditPatientProfile';
+import { EditDoctorProfileAdvanced } from './EditDoctorProfileAdvanced';
+import { EditAssistantProfile } from './EditAssistantProfile';
+import { Pencil, Trash2, Plus, Search, Settings } from 'lucide-react';
 
 interface User {
   id: string;
@@ -41,6 +44,9 @@ export function UserManagement() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+  const [profileToEdit, setProfileToEdit] = useState<any>(null);
+  const [profileType, setProfileType] = useState<'patient' | 'doctor' | 'assistant' | null>(null);
   const { toast } = useToast();
 
   // Form states
@@ -273,6 +279,44 @@ export function UserManagement() {
     setIsEditDialogOpen(true);
   };
 
+  const openProfileEditor = async (user: User) => {
+    const role = user.profile?.role || user.user_metadata?.role || 'patient';
+    
+    try {
+      // Fetch complete profile data
+      const { data, error } = await supabase.functions.invoke('admin-profile-management', {
+        body: {
+          action: 'get-profile',
+          userId: user.id
+        }
+      });
+
+      if (error) throw error;
+      if (!data.success) throw new Error(data.error);
+
+      // Add email and assigned_doctor_id to profile data
+      const enrichedProfile = {
+        ...data.profile,
+        email: user.email,
+        assigned_doctor_id: user.user_metadata?.assigned_doctor_id
+      };
+
+      setProfileToEdit({
+        profile: enrichedProfile,
+        doctorProfile: data.doctorProfile
+      });
+      setProfileType(role as 'patient' | 'doctor' | 'assistant');
+      setIsEditProfileOpen(true);
+    } catch (error: any) {
+      console.error('Error fetching profile:', error);
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo cargar el perfil",
+        variant: "destructive"
+      });
+    }
+  };
+
   const filteredUsers = users.filter(user => 
     user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (user.profile?.full_name || '').toLowerCase().includes(searchTerm.toLowerCase())
@@ -407,6 +451,62 @@ export function UserManagement() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Profile Edit Dialogs */}
+        {profileType === 'patient' && (
+          <EditPatientProfile
+            isOpen={isEditProfileOpen}
+            onClose={() => {
+              setIsEditProfileOpen(false);
+              setProfileToEdit(null);
+              setProfileType(null);
+            }}
+            patientProfile={profileToEdit?.profile}
+            onProfileUpdated={() => {
+              fetchUsers();
+              setIsEditProfileOpen(false);
+              setProfileToEdit(null);
+              setProfileType(null);
+            }}
+          />
+        )}
+
+        {profileType === 'doctor' && (
+          <EditDoctorProfileAdvanced
+            isOpen={isEditProfileOpen}
+            onClose={() => {
+              setIsEditProfileOpen(false);
+              setProfileToEdit(null);
+              setProfileType(null);
+            }}
+            doctorProfile={profileToEdit?.doctorProfile}
+            profile={profileToEdit?.profile}
+            onProfileUpdated={() => {
+              fetchUsers();
+              setIsEditProfileOpen(false);
+              setProfileToEdit(null);
+              setProfileType(null);
+            }}
+          />
+        )}
+
+        {profileType === 'assistant' && (
+          <EditAssistantProfile
+            isOpen={isEditProfileOpen}
+            onClose={() => {
+              setIsEditProfileOpen(false);
+              setProfileToEdit(null);
+              setProfileType(null);
+            }}
+            assistantProfile={profileToEdit?.profile}
+            onProfileUpdated={() => {
+              fetchUsers();
+              setIsEditProfileOpen(false);
+              setProfileToEdit(null);
+              setProfileType(null);
+            }}
+          />
+        )}
       </div>
 
       {/* Search */}
@@ -472,8 +572,18 @@ export function UserManagement() {
                         variant="outline"
                         size="sm"
                         onClick={() => openEditDialog(user)}
+                        title="Editar usuario básico"
                       >
                         <Pencil className="h-4 w-4" />
+                      </Button>
+                      
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openProfileEditor(user)}
+                        title="Editar perfil completo"
+                      >
+                        <Settings className="h-4 w-4" />
                       </Button>
                       
                       <AlertDialog>

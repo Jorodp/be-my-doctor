@@ -35,3 +35,6 @@ verify_jwt = false
 
 [functions.admin-appointments]
 verify_jwt = false
+
+[functions.admin-profile-management]
+verify_jwt = false
