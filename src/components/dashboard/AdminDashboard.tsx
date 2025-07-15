@@ -55,6 +55,13 @@ export const AdminDashboard = () => {
   useEffect(() => {
     if (user) {
       fetchData();
+      
+      // Set up polling to check for new pending doctors every 30 seconds
+      const interval = setInterval(() => {
+        fetchData();
+      }, 30000);
+      
+      return () => clearInterval(interval);
     }
   }, [user]);
 

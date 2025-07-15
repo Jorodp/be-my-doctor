@@ -52,6 +52,13 @@ export const DoctorVerificationList = () => {
 
   useEffect(() => {
     fetchPendingDoctors();
+    
+    // Set up polling to check for new pending doctors every 30 seconds
+    const interval = setInterval(() => {
+      fetchPendingDoctors();
+    }, 30000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   const fetchPendingDoctors = async () => {
