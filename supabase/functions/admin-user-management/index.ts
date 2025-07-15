@@ -4,36 +4,21 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
 };
-
-interface CreateUserRequest {
-  email: string;
-  password: string;
-  role: 'patient' | 'doctor' | 'assistant' | 'admin';
-  fullName?: string;
-  assignedDoctorId?: string;
-  specialty?: string;
-  professionalLicense?: string;
-}
-
-interface UpdateUserRequest {
-  userId: string;
-  email?: string;
-  password?: string;
-  role?: 'patient' | 'doctor' | 'assistant' | 'admin';
-  fullName?: string;
-  assignedDoctorId?: string;
-  verificationStatus?: 'pending' | 'verified' | 'rejected';
-}
 
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { 
+      status: 204,
+      headers: corsHeaders 
+    });
   }
 
+  console.log('Admin user management function called with method:', req.method);
+
   try {
-    // Initialize Supabase Admin Client
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
@@ -45,28 +30,37 @@ serve(async (req) => {
       }
     );
 
-    // Initialize regular client for RLS operations
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? ''
     );
 
-    // Get the authorization header
+    // Verify admin access
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      throw new Error('No authorization header');
+      return new Response(
+        JSON.stringify({ success: false, error: 'No authorization header' }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
     }
 
-    // Verify the user is authenticated and is an admin
     const { data: { user }, error: authError } = await supabase.auth.getUser(
       authHeader.replace('Bearer ', '')
     );
 
     if (authError || !user) {
-      throw new Error('Authentication failed');
+      return new Response(
+        JSON.stringify({ success: false, error: 'Authentication failed' }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
     }
 
-    // Check if user is admin
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('role')
@@ -74,180 +68,195 @@ serve(async (req) => {
       .single();
 
     if (profileError || profile?.role !== 'admin') {
-      throw new Error('Access denied: Admin role required');
-    }
-
-    const url = new URL(req.url);
-    const action = url.searchParams.get('action');
-    const method = req.method;
-
-    // GET - List all users
-    if (method === 'GET' && action === 'list') {
-      const { data: users, error } = await supabaseAdmin.auth.admin.listUsers();
-      
-      if (error) throw error;
-
-      // Get additional profile data
-      const userIds = users.users.map(u => u.id);
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('*')
-        .in('user_id', userIds);
-
-      const { data: doctorProfiles } = await supabase
-        .from('doctor_profiles')
-        .select('*')
-        .in('user_id', userIds);
-
-      // Combine data
-      const enrichedUsers = users.users.map(user => {
-        const profile = profiles?.find(p => p.user_id === user.id);
-        const doctorProfile = doctorProfiles?.find(d => d.user_id === user.id);
-        
-        return {
-          ...user,
-          profile,
-          doctorProfile
-        };
-      });
-
-      return new Response(JSON.stringify({ users: enrichedUsers }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    // POST - Create user
-    if (method === 'POST' && action === 'create') {
-      const body: CreateUserRequest = await req.json();
-      
-      // Create user in auth
-      const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
-        email: body.email,
-        password: body.password,
-        user_metadata: {
-          role: body.role,
-          full_name: body.fullName || '',
-          assigned_doctor_id: body.assignedDoctorId
+      return new Response(
+        JSON.stringify({ success: false, error: 'Access denied: Admin role required' }),
+        {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
-      });
+      );
+    }
 
-      if (createError) throw createError;
+    if (req.method !== 'POST') {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Method not allowed' }),
+        {
+          status: 405,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
 
-      // Create profile
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          user_id: newUser.user.id,
-          role: body.role,
-          full_name: body.fullName || '',
+    const body = await req.json();
+    const { action } = body;
+
+    console.log('Processing action:', action);
+
+    if (!action) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Action is required' }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    switch (action) {
+      case 'list':
+        const { data: authUsers, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+        
+        if (listError) throw listError;
+
+        // Get additional profile data
+        const userIds = authUsers.users.map(u => u.id);
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('*')
+          .in('user_id', userIds);
+
+        const { data: doctorProfiles } = await supabase
+          .from('doctor_profiles')
+          .select('*')
+          .in('user_id', userIds);
+
+        // Combine data
+        const enrichedUsers = authUsers.users.map(authUser => {
+          const profile = profiles?.find(p => p.user_id === authUser.id);
+          const doctorProfile = doctorProfiles?.find(d => d.user_id === authUser.id);
+          
+          return {
+            ...authUser,
+            profile,
+            doctorProfile
+          };
         });
 
-      if (profileError) throw profileError;
+        return new Response(JSON.stringify({ 
+          success: true, 
+          users: enrichedUsers 
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
 
-      // If doctor, create doctor profile
-      if (body.role === 'doctor') {
-        const { error: doctorError } = await supabase
-          .from('doctor_profiles')
-          .insert({
-            user_id: newUser.user.id,
-            specialty: body.specialty || '',
-            professional_license: body.professionalLicense || '',
-            verification_status: 'pending'
-          });
+      case 'create':
+        const { email, password, role, fullName, specialty, professionalLicense } = body;
+        
+        if (!email || !password || !role) {
+          return new Response(
+            JSON.stringify({ success: false, error: 'Email, password and role are required' }),
+            {
+              status: 400,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            }
+          );
+        }
 
-        if (doctorError) throw doctorError;
-      }
+        const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
+          email,
+          password,
+          user_metadata: { role, full_name: fullName },
+          email_confirm: true
+        });
 
-      console.log('User created successfully:', newUser.user.id);
-      
-      return new Response(JSON.stringify({ user: newUser.user }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+        if (createError) throw createError;
 
-    // PUT - Update user
-    if (method === 'PUT' && action === 'update') {
-      const body: UpdateUserRequest = await req.json();
-      
-      // Update auth user
-      const updateData: any = {};
-      if (body.email) updateData.email = body.email;
-      if (body.password) updateData.password = body.password;
-      if (body.role || body.fullName || body.assignedDoctorId) {
-        updateData.user_metadata = {};
-        if (body.role) updateData.user_metadata.role = body.role;
-        if (body.fullName) updateData.user_metadata.full_name = body.fullName;
-        if (body.assignedDoctorId) updateData.user_metadata.assigned_doctor_id = body.assignedDoctorId;
-      }
+        return new Response(JSON.stringify({ 
+          success: true, 
+          user: newUser 
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
 
-      if (Object.keys(updateData).length > 0) {
-        const { error: authUpdateError } = await supabaseAdmin.auth.admin.updateUserById(
-          body.userId,
+      case 'update':
+        const { userId, email: newEmail, password: newPassword, role: newRole, fullName: newFullName } = body;
+        
+        if (!userId) {
+          return new Response(
+            JSON.stringify({ success: false, error: 'User ID is required' }),
+            {
+              status: 400,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            }
+          );
+        }
+
+        const updateData: any = {};
+        
+        if (newEmail) updateData.email = newEmail;
+        if (newPassword) updateData.password = newPassword;
+        if (newRole || newFullName) {
+          updateData.user_metadata = { 
+            role: newRole,
+            full_name: newFullName 
+          };
+        }
+
+        const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
+          userId,
           updateData
         );
 
-        if (authUpdateError) throw authUpdateError;
-      }
+        if (updateError) throw updateError;
 
-      // Update profile
-      const profileUpdate: any = {};
-      if (body.role) profileUpdate.role = body.role;
-      if (body.fullName) profileUpdate.full_name = body.fullName;
+        // Also update profile table
+        if (newRole || newFullName) {
+          const { error: profileUpdateError } = await supabase
+            .from('profiles')
+            .update({
+              role: newRole,
+              full_name: newFullName
+            })
+            .eq('user_id', userId);
 
-      if (Object.keys(profileUpdate).length > 0) {
-        const { error: profileUpdateError } = await supabase
-          .from('profiles')
-          .update(profileUpdate)
-          .eq('user_id', body.userId);
-
-        if (profileUpdateError) throw profileUpdateError;
-      }
-
-      // Update doctor profile if verification status changed
-      if (body.verificationStatus) {
-        const doctorUpdate: any = { verification_status: body.verificationStatus };
-        if (body.verificationStatus === 'verified') {
-          doctorUpdate.verified_at = new Date().toISOString();
-          doctorUpdate.verified_by = user.id;
+          if (profileUpdateError) throw profileUpdateError;
         }
 
-        const { error: doctorUpdateError } = await supabase
-          .from('doctor_profiles')
-          .update(doctorUpdate)
-          .eq('user_id', body.userId);
+        return new Response(JSON.stringify({ 
+          success: true, 
+          message: 'User updated successfully' 
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
 
-        if (doctorUpdateError) throw doctorUpdateError;
-      }
+      case 'delete':
+        const { userId: deleteUserId } = body;
+        
+        if (!deleteUserId) {
+          return new Response(
+            JSON.stringify({ success: false, error: 'User ID is required' }),
+            {
+              status: 400,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            }
+          );
+        }
 
-      console.log('User updated successfully:', body.userId);
+        const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(deleteUserId);
 
-      return new Response(JSON.stringify({ success: true }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+        if (deleteError) throw deleteError;
+
+        return new Response(JSON.stringify({ 
+          success: true, 
+          message: 'User deleted successfully' 
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+
+      default:
+        return new Response(
+          JSON.stringify({ success: false, error: `Invalid action: ${action}` }),
+          {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
     }
-
-    // DELETE - Delete user
-    if (method === 'DELETE' && action === 'delete') {
-      const userId = url.searchParams.get('userId');
-      if (!userId) throw new Error('User ID is required');
-
-      const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
-      
-      if (deleteError) throw deleteError;
-
-      console.log('User deleted successfully:', userId);
-
-      return new Response(JSON.stringify({ success: true }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    throw new Error('Invalid action or method');
 
   } catch (error) {
     console.error('Error in admin-user-management function:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ success: false, error: error.message }),
       {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

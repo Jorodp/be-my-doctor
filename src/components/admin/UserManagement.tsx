@@ -66,24 +66,37 @@ export function UserManagement() {
         throw new Error('No session found');
       }
 
-      const response = await supabase.functions.invoke('admin-user-management', {
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ action: 'list' })
+      const { data, error } = await supabase.functions.invoke('admin-user-management', {
+        body: { action: 'list' }
       });
 
-      if (response.error) {
-        throw response.error;
+      if (error) {
+        console.error('Supabase function error:', error);
+        toast({
+          title: "Error",
+          description: `Failed to fetch users: ${error.message}`,
+          variant: "destructive",
+        });
+        return;
       }
 
-      setUsers(response.data.users || []);
+      if (!data.success) {
+        console.error('Function returned error:', data.error);
+        toast({
+          title: "Error",
+          description: `Failed to fetch users: ${data.error}`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log('Users data:', data);
+      setUsers(data.users || []);
     } catch (error: any) {
       console.error('Error fetching users:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to fetch users",
+        description: `Failed to fetch users: ${error.message || error}`,
         variant: "destructive",
       });
     } finally {
@@ -93,18 +106,8 @@ export function UserManagement() {
 
   const handleCreateUser = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        throw new Error('No session found');
-      }
-
-      const response = await supabase.functions.invoke('admin-user-management', {
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      const { data, error } = await supabase.functions.invoke('admin-user-management', {
+        body: {
           action: 'create',
           email: formData.email,
           password: formData.password,
@@ -112,11 +115,25 @@ export function UserManagement() {
           fullName: formData.fullName,
           specialty: formData.specialty,
           professionalLicense: formData.professionalLicense
-        })
+        }
       });
 
-      if (response.error) {
-        throw response.error;
+      if (error) {
+        toast({
+          title: "Error",
+          description: `Failed to create user: ${error.message}`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!data.success) {
+        toast({
+          title: "Error",
+          description: `Failed to create user: ${data.error}`,
+          variant: "destructive",
+        });
+        return;
       }
 
       toast({
@@ -131,7 +148,7 @@ export function UserManagement() {
       console.error('Error creating user:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to create user",
+        description: `Failed to create user: ${error.message || error}`,
         variant: "destructive",
       });
     }
@@ -141,29 +158,33 @@ export function UserManagement() {
     if (!selectedUser) return;
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        throw new Error('No session found');
-      }
-
-      const response = await supabase.functions.invoke('admin-user-management', {
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      const { data, error } = await supabase.functions.invoke('admin-user-management', {
+        body: {
           action: 'update',
           userId: selectedUser.id,
           email: formData.email || undefined,
           password: formData.password || undefined,
           role: formData.role,
           fullName: formData.fullName
-        })
+        }
       });
 
-      if (response.error) {
-        throw response.error;
+      if (error) {
+        toast({
+          title: "Error",
+          description: `Failed to update user: ${error.message}`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!data.success) {
+        toast({
+          title: "Error",
+          description: `Failed to update user: ${data.error}`,
+          variant: "destructive",
+        });
+        return;
       }
 
       toast({
@@ -179,7 +200,7 @@ export function UserManagement() {
       console.error('Error updating user:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to update user",
+        description: `Failed to update user: ${error.message || error}`,
         variant: "destructive",
       });
     }
@@ -187,25 +208,29 @@ export function UserManagement() {
 
   const handleDeleteUser = async (userId: string) => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        throw new Error('No session found');
-      }
-
-      const response = await supabase.functions.invoke('admin-user-management', {
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
+      const { data, error } = await supabase.functions.invoke('admin-user-management', {
+        body: { 
           action: 'delete',
           userId: userId 
-        })
+        }
       });
 
-      if (response.error) {
-        throw response.error;
+      if (error) {
+        toast({
+          title: "Error",
+          description: `Failed to delete user: ${error.message}`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!data.success) {
+        toast({
+          title: "Error",
+          description: `Failed to delete user: ${data.error}`,
+          variant: "destructive",
+        });
+        return;
       }
 
       toast({
@@ -218,7 +243,7 @@ export function UserManagement() {
       console.error('Error deleting user:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to delete user",
+        description: `Failed to delete user: ${error.message || error}`,
         variant: "destructive",
       });
     }
