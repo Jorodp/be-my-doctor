@@ -83,6 +83,13 @@ export default function DoctorProfile() {
     }
   }, [doctorId]);
 
+  // Redirect authenticated users directly to booking page
+  useEffect(() => {
+    if (user && doctorId) {
+      window.location.href = `/book/${doctorId}`;
+    }
+  }, [user, doctorId]);
+
   const fetchDoctorProfile = async () => {
     try {
       // Fetch doctor profile
