@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Database } from '@/integrations/supabase/types';
+import { CreateDemoUsers } from '@/components/CreateDemoUsers';
 
 type UserRole = Database['public']['Enums']['user_role'];
 
@@ -108,7 +109,8 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-section px-4">
-      <Card className="w-full max-w-md">
+      <div className="flex flex-col items-center gap-6 w-full max-w-md">
+        <Card className="w-full">
         <CardHeader>
           <div className="flex items-center justify-center gap-3 mb-2">
             <img src="/lovable-uploads/2176a5eb-dd8e-4ff9-8a38-3cfe98feb63a.png" alt="Be My Doctor" className="h-8 w-auto" />
@@ -283,6 +285,9 @@ export default function Auth() {
           </Tabs>
         </CardContent>
       </Card>
+      
+      <CreateDemoUsers />
+      </div>
     </div>
   );
 }

@@ -73,7 +73,8 @@ Deno.serve(async (req) => {
         role: 'medical_assistant',
         assigned_doctor_id: doctorUser.user?.id,
         first_name: 'Ana',
-        last_name: 'García'
+        last_name: 'García',
+        full_name: 'Ana García'
       }
     })
 
