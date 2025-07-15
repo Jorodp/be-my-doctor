@@ -4,10 +4,12 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
-import { AuthGuard } from "@/components/auth/AuthGuard";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
-import Dashboard from "./pages/Dashboard";
+import { PatientDashboard } from "./components/dashboard/PatientDashboard";
+import { DoctorDashboard } from "./components/dashboard/DoctorDashboard";
+import { AdminDashboard } from "./components/dashboard/AdminDashboard";
 import PendingVerification from "./pages/PendingVerification";
 import Unauthorized from "./pages/Unauthorized";
 import NotFound from "./pages/NotFound";
@@ -25,19 +27,35 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route 
-              path="/dashboard" 
+              path="/dashboard/patient" 
               element={
-                <AuthGuard>
-                  <Dashboard />
-                </AuthGuard>
+                <ProtectedRoute role="patient">
+                  <PatientDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/dashboard/doctor" 
+              element={
+                <ProtectedRoute role="doctor">
+                  <DoctorDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin" 
+              element={
+                <ProtectedRoute role="admin">
+                  <AdminDashboard />
+                </ProtectedRoute>
               } 
             />
             <Route 
               path="/pending-verification" 
               element={
-                <AuthGuard>
+                <ProtectedRoute role="doctor">
                   <PendingVerification />
-                </AuthGuard>
+                </ProtectedRoute>
               } 
             />
             <Route path="/unauthorized" element={<Unauthorized />} />

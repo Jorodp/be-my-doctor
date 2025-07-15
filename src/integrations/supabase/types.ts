@@ -14,6 +14,114 @@ export type Database = {
   }
   public: {
     Tables: {
+      appointments: {
+        Row: {
+          created_at: string
+          doctor_user_id: string
+          ends_at: string
+          id: string
+          notes: string | null
+          patient_user_id: string
+          price: number | null
+          starts_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          doctor_user_id: string
+          ends_at: string
+          id?: string
+          notes?: string | null
+          patient_user_id: string
+          price?: number | null
+          starts_at: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          doctor_user_id?: string
+          ends_at?: string
+          id?: string
+          notes?: string | null
+          patient_user_id?: string
+          price?: number | null
+          starts_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      consultation_notes: {
+        Row: {
+          appointment_id: string
+          created_at: string
+          diagnosis: string | null
+          doctor_user_id: string
+          id: string
+          notes: string | null
+          patient_user_id: string
+          prescription: string | null
+          updated_at: string
+        }
+        Insert: {
+          appointment_id: string
+          created_at?: string
+          diagnosis?: string | null
+          doctor_user_id: string
+          id?: string
+          notes?: string | null
+          patient_user_id: string
+          prescription?: string | null
+          updated_at?: string
+        }
+        Update: {
+          appointment_id?: string
+          created_at?: string
+          diagnosis?: string | null
+          doctor_user_id?: string
+          id?: string
+          notes?: string | null
+          patient_user_id?: string
+          prescription?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      doctor_availability: {
+        Row: {
+          created_at: string
+          day_of_week: number
+          doctor_user_id: string
+          end_time: string
+          id: string
+          is_available: boolean
+          start_time: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          day_of_week: number
+          doctor_user_id: string
+          end_time: string
+          id?: string
+          is_available?: boolean
+          start_time: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          day_of_week?: number
+          doctor_user_id?: string
+          end_time?: string
+          id?: string
+          is_available?: boolean
+          start_time?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       doctor_profiles: {
         Row: {
           biography: string | null
@@ -116,6 +224,36 @@ export type Database = {
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      ratings: {
+        Row: {
+          appointment_id: string
+          comment: string | null
+          created_at: string
+          doctor_user_id: string
+          id: string
+          patient_user_id: string
+          rating: number
+        }
+        Insert: {
+          appointment_id: string
+          comment?: string | null
+          created_at?: string
+          doctor_user_id: string
+          id?: string
+          patient_user_id: string
+          rating: number
+        }
+        Update: {
+          appointment_id?: string
+          comment?: string | null
+          created_at?: string
+          doctor_user_id?: string
+          id?: string
+          patient_user_id?: string
+          rating?: number
         }
         Relationships: []
       }
