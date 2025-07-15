@@ -6,7 +6,7 @@ import { Link } from "react-router-dom";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { user, profile, signOut } = useAuth();
+  const { user, userRole, signOut } = useAuth();
 
   return (
     <header className="bg-background/95 backdrop-blur-sm border-b border-border sticky top-0 z-50">
@@ -36,10 +36,10 @@ const Header = () => {
 
           {/* Desktop CTA */}
           <div className="hidden md:flex items-center space-x-4">
-            {user && profile ? (
+            {user && userRole ? (
               <>
                 <span className="text-sm text-muted-foreground">
-                  Hola, {profile.first_name || 'Usuario'}
+                  Hola, Usuario
                 </span>
                 <Link to="/dashboard">
                   <Button variant="outline">Dashboard</Button>
@@ -85,10 +85,10 @@ const Header = () => {
               Contacto
             </a>
             <div className="pt-4 space-y-2">
-              {user && profile ? (
+              {user && userRole ? (
                 <>
                   <div className="text-sm text-muted-foreground px-3 py-2">
-                    Hola, {profile.first_name || 'Usuario'}
+                    Hola, Usuario
                   </div>
                   <Link to="/dashboard">
                     <Button variant="outline" className="w-full">Dashboard</Button>

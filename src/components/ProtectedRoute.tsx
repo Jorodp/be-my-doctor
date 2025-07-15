@@ -2,9 +2,8 @@ import { ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { Database } from '@/integrations/supabase/types';
 
-type UserRole = Database['public']['Enums']['user_role'];
+type UserRole = 'patient' | 'doctor' | 'assistant' | 'admin';
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -12,17 +11,17 @@ interface ProtectedRouteProps {
 }
 
 export const ProtectedRoute = ({ children, role }: ProtectedRouteProps) => {
-  const { user, profile, loading } = useAuth();
+  const { user, userRole, loading } = useAuth();
 
   if (loading) {
     return <LoadingSpinner />;
   }
 
-  if (!user || !profile) {
+  if (!user || !userRole) {
     return <Navigate to="/auth" replace />;
   }
 
-  if (profile.role !== role) {
+  if (userRole !== role) {
     return <Navigate to="/unauthorized" replace />;
   }
 

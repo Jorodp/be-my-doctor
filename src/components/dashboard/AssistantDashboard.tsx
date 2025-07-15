@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Clock, User, DollarSign, Star, Settings, FileText } from 'lucide-react';
+import { Calendar, Clock, User, UserCheck, Phone } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
 
@@ -13,95 +13,61 @@ interface Appointment {
   starts_at: string;
   ends_at: string;
   status: string;
-  price: number;
   patient_user_id: string;
   patient_profile?: {
     full_name: string;
+    phone: string;
   };
 }
 
-interface DoctorStats {
-  totalConsultations: number;
-  averageRating: number;
-  monthlyIncome: number;
-}
-
-export const DoctorDashboard = () => {
+export const AssistantDashboard = () => {
   const { user, signOut } = useAuth();
   const { toast } = useToast();
   const [todayAppointments, setTodayAppointments] = useState<Appointment[]>([]);
-  const [stats, setStats] = useState<DoctorStats>({ totalConsultations: 0, averageRating: 5.0, monthlyIncome: 0 });
+  const [doctorId, setDoctorId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (user) {
-      fetchData();
+      // Get assigned doctor ID from user metadata
+      const assignedDoctorId = user.user_metadata?.assigned_doctor_id;
+      setDoctorId(assignedDoctorId);
+      
+      if (assignedDoctorId) {
+        fetchTodayAppointments(assignedDoctorId);
+      } else {
+        setLoading(false);
+      }
     }
   }, [user]);
 
-  const fetchData = async () => {
-    if (!user) return;
-
+  const fetchTodayAppointments = async (doctorUserId: string) => {
     try {
-      // Fetch today's appointments
+      // Fetch today's appointments for assigned doctor
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const tomorrow = new Date(today);
       tomorrow.setDate(tomorrow.getDate() + 1);
 
-      const { data: appointments, error: appointmentsError } = await supabase
+      const { data: appointments, error } = await supabase
         .from('appointments')
         .select(`
           *,
-          profiles!patient_user_id (full_name)
+          profiles!patient_user_id (full_name, phone)
         `)
-        .eq('doctor_user_id', user.id)
+        .eq('doctor_user_id', doctorUserId)
         .gte('starts_at', today.toISOString())
         .lt('starts_at', tomorrow.toISOString())
         .order('starts_at', { ascending: true });
 
-      if (appointmentsError) throw appointmentsError;
-
-      // Fetch monthly stats
-      const thisMonth = new Date();
-      thisMonth.setDate(1);
-      thisMonth.setHours(0, 0, 0, 0);
-
-      const { data: monthlyAppointments, error: monthlyError } = await supabase
-        .from('appointments')
-        .select('price')
-        .eq('doctor_user_id', user.id)
-        .eq('status', 'completed')
-        .gte('starts_at', thisMonth.toISOString());
-
-      if (monthlyError) throw monthlyError;
-
-      // Fetch ratings
-      const { data: ratings, error: ratingsError } = await supabase
-        .from('ratings')
-        .select('rating')
-        .eq('doctor_user_id', user.id);
-
-      if (ratingsError) throw ratingsError;
+      if (error) throw error;
 
       setTodayAppointments(appointments || []);
-      
-      const monthlyIncome = monthlyAppointments?.reduce((sum, app) => sum + (app.price || 0), 0) || 0;
-      const averageRating = ratings && ratings.length > 0 
-        ? ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length 
-        : 5.0;
-
-      setStats({
-        totalConsultations: monthlyAppointments?.length || 0,
-        averageRating: Math.round(averageRating * 10) / 10,
-        monthlyIncome
-      });
-
     } catch (error) {
-      console.error('Error fetching data:', error);
+      console.error('Error fetching appointments:', error);
       toast({
         title: "Error",
-        description: "No se pudieron cargar los datos",
+        description: "No se pudieron cargar las citas",
         variant: "destructive"
       });
     } finally {
@@ -116,8 +82,56 @@ export const DoctorDashboard = () => {
     });
   };
 
+  const updateAppointmentStatus = async (appointmentId: string, newStatus: string) => {
+    try {
+      const { error } = await supabase
+        .from('appointments')
+        .update({ status: newStatus })
+        .eq('id', appointmentId);
+
+      if (error) throw error;
+
+      // Refresh appointments
+      if (doctorId) {
+        fetchTodayAppointments(doctorId);
+      }
+
+      toast({
+        title: "Éxito",
+        description: "Estado de la cita actualizado",
+      });
+    } catch (error) {
+      console.error('Error updating appointment:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar la cita",
+        variant: "destructive"
+      });
+    }
+  };
+
   if (loading) {
     return <LoadingSpinner />;
+  }
+
+  if (!doctorId) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 p-6">
+        <div className="max-w-4xl mx-auto">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-destructive">Configuración Requerida</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p>No tienes un médico asignado. Contacta al administrador para configurar tu cuenta.</p>
+              <Button variant="outline" onClick={() => signOut()} className="mt-4">
+                Cerrar Sesión
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -126,8 +140,8 @@ export const DoctorDashboard = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <div>
-              <h1 className="text-3xl font-bold text-foreground">Panel del Médico</h1>
-              <p className="text-muted-foreground">Gestiona tu práctica médica</p>
+              <h1 className="text-3xl font-bold text-foreground">Panel del Asistente</h1>
+              <p className="text-muted-foreground">Gestiona la agenda del médico asignado</p>
             </div>
             <Button variant="outline" onClick={() => signOut()}>
               Cerrar Sesión
@@ -145,13 +159,13 @@ export const DoctorDashboard = () => {
               Citas de Hoy
             </CardTitle>
             <CardDescription>
-              Agenda del día actual
+              Pacientes programados para el día actual
             </CardDescription>
           </CardHeader>
           <CardContent>
             {todayAppointments.length === 0 ? (
               <p className="text-muted-foreground text-center py-8">
-                No tienes citas programadas para hoy
+                No hay citas programadas para hoy
               </p>
             ) : (
               <div className="grid gap-4">
@@ -163,12 +177,38 @@ export const DoctorDashboard = () => {
                           <User className="h-4 w-4" />
                           <span className="font-medium">{appointment.patient_profile?.full_name || 'Paciente'}</span>
                         </div>
+                        {appointment.patient_profile?.phone && (
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Phone className="h-4 w-4" />
+                            {appointment.patient_profile.phone}
+                          </div>
+                        )}
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <Clock className="h-4 w-4" />
                           {formatTime(appointment.starts_at)} - {formatTime(appointment.ends_at)}
                         </div>
                       </div>
-                      <Badge>{appointment.status}</Badge>
+                      <div className="flex gap-2 flex-col">
+                        <Badge>{appointment.status}</Badge>
+                        {appointment.status === 'scheduled' && (
+                          <div className="flex gap-1">
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => updateAppointmentStatus(appointment.id, 'completed')}
+                            >
+                              Completar
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="destructive"
+                              onClick={() => updateAppointmentStatus(appointment.id, 'cancelled')}
+                            >
+                              Cancelar
+                            </Button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -177,73 +217,27 @@ export const DoctorDashboard = () => {
           </CardContent>
         </Card>
 
-        {/* Resumen Mensual */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                Consultas
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalConsultations}</div>
-              <p className="text-sm text-muted-foreground">Este mes</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Star className="h-5 w-5" />
-                Calificación
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.averageRating}/5</div>
-              <p className="text-sm text-muted-foreground">Promedio</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <DollarSign className="h-5 w-5" />
-                Ingresos
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">${stats.monthlyIncome}</div>
-              <p className="text-sm text-muted-foreground">Este mes</p>
-            </CardContent>
-          </Card>
-        </div>
-
         {/* Acciones Rápidas */}
         <Card>
           <CardHeader>
             <CardTitle>Acciones Rápidas</CardTitle>
             <CardDescription>
-              Herramientas principales para la práctica médica
+              Herramientas para gestionar la agenda médica
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <Button className="h-20 flex flex-col gap-2">
                 <Calendar className="h-6 w-6" />
-                Gestionar Agenda
+                Agendar Cita
               </Button>
               <Button variant="outline" className="h-20 flex flex-col gap-2">
-                <User className="h-6 w-6" />
-                Pacientes
+                <UserCheck className="h-6 w-6" />
+                Lista de Pacientes
               </Button>
               <Button variant="outline" className="h-20 flex flex-col gap-2">
-                <FileText className="h-6 w-6" />
-                Notas Médicas
-              </Button>
-              <Button variant="outline" className="h-20 flex flex-col gap-2">
-                <Settings className="h-6 w-6" />
-                Configuración
+                <Clock className="h-6 w-6" />
+                Gestionar Horarios
               </Button>
             </div>
           </CardContent>

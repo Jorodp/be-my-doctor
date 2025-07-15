@@ -7,10 +7,11 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import Dashboard from "./pages/Dashboard";
 import { PatientDashboard } from "./components/dashboard/PatientDashboard";
 import { DoctorDashboard } from "./components/dashboard/DoctorDashboard";
+import { AssistantDashboard } from "./components/dashboard/AssistantDashboard";
 import { AdminDashboard } from "./components/dashboard/AdminDashboard";
-import PendingVerification from "./pages/PendingVerification";
 import Unauthorized from "./pages/Unauthorized";
 import NotFound from "./pages/NotFound";
 
@@ -26,6 +27,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/dashboard" element={<Dashboard />} />
             <Route 
               path="/dashboard/patient" 
               element={
@@ -43,6 +45,14 @@ const App = () => (
               } 
             />
             <Route 
+              path="/dashboard/assistant" 
+              element={
+                <ProtectedRoute role="assistant">
+                  <AssistantDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
               path="/admin" 
               element={
                 <ProtectedRoute role="admin">
@@ -50,16 +60,7 @@ const App = () => (
                 </ProtectedRoute>
               } 
             />
-            <Route 
-              path="/pending-verification" 
-              element={
-                <ProtectedRoute role="doctor">
-                  <PendingVerification />
-                </ProtectedRoute>
-              } 
-            />
             <Route path="/unauthorized" element={<Unauthorized />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
