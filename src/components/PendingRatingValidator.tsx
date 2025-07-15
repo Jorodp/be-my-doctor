@@ -51,13 +51,7 @@ export const PendingRatingValidator = ({
       // Check for completed appointments without ratings
       const { data: appointments, error } = await supabase
         .from('appointments')
-        .select(`
-          id,
-          doctor_user_id,
-          starts_at,
-          status,
-          ratings!inner(id)
-        `)
+        .select('id, doctor_user_id, starts_at, status')
         .eq('patient_user_id', user.id)
         .eq('status', 'completed')
         .order('ends_at', { ascending: false })
