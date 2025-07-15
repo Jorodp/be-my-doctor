@@ -23,6 +23,45 @@ export default function Dashboard() {
     if (!user || !userRole) return;
 
     try {
+      // PRIORITY: For verified doctors, go directly to dashboard
+      if (userRole === 'doctor') {
+        if (doctorProfile && doctorProfile.verification_status === 'verified') {
+          console.log('Verified doctor detected, redirecting to dashboard...');
+          setProfileComplete(true);
+          setHasRedirected(true);
+          return; // This will trigger redirect to /dashboard/doctor in the render
+        }
+        
+        // For non-verified doctors, check if profile needs completion
+        const isComplete = profile && 
+          doctorProfile && 
+          profile.full_name && 
+          profile.full_name.trim() !== '' &&
+          doctorProfile.specialty && 
+          doctorProfile.specialty.trim() !== '' &&
+          doctorProfile.professional_license && 
+          doctorProfile.professional_license.trim() !== '';
+          
+        if (!isComplete || !doctorProfile) {
+          setHasRedirected(true);
+          navigate('/profile/doctor', { replace: true });
+          return;
+        }
+        
+        // For pending/rejected doctors, redirect to pending verification
+        if (doctorProfile.verification_status === 'pending') {
+          setHasRedirected(true);
+          navigate('/pending-verification', { replace: true });
+          return;
+        }
+        
+        if (doctorProfile.verification_status === 'rejected') {
+          setHasRedirected(true);
+          navigate('/pending-verification', { replace: true });
+          return;
+        }
+      }
+
       // Check for intended doctor booking first
       if (userRole === 'patient') {
         const intendedDoctorId = localStorage.getItem('intended_doctor_id');
@@ -34,7 +73,7 @@ export default function Dashboard() {
         }
       }
 
-      // Check if profile is complete
+      // Check if profile is complete for patients
       if (userRole === 'patient') {
         // For patients, check required fields: full_name (profile_image_url and id_document_url optional for now)
         const isComplete = profile && 
@@ -45,25 +84,6 @@ export default function Dashboard() {
           setHasRedirected(true);
           navigate('/profile/patient', { replace: true });
           return;
-        }
-      } else if (userRole === 'doctor') {
-        // For doctors, check if doctor profile exists and has basic required fields
-        const isComplete = profile && 
-          doctorProfile && 
-          profile.full_name && 
-          profile.full_name.trim() !== '' &&
-          doctorProfile.specialty && 
-          doctorProfile.specialty.trim() !== '' &&
-          doctorProfile.professional_license && 
-          doctorProfile.professional_license.trim() !== '';
-          
-        if (!isComplete) {
-          // If doctor profile doesn't exist, redirect to create it
-          if (!doctorProfile) {
-            setHasRedirected(true);
-            navigate('/profile/doctor', { replace: true });
-            return;
-          }
         }
       }
 
