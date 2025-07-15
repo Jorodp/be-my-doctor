@@ -31,8 +31,11 @@ import {
   Stethoscope,
   Award,
   UserPlus,
-  UserMinus
+  UserMinus,
+  Eye,
+  Phone
 } from 'lucide-react';
+import { ConsultationModal } from '@/components/ConsultationModal';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
 import { format, addDays, startOfDay, endOfDay } from 'date-fns';
@@ -162,7 +165,7 @@ export const DoctorDashboard = () => {
   const [agendaEnabled, setAgendaEnabled] = useState(true);
   
   // Consultation notes state
-  const [selectedAppointment, setSelectedAppointment] = useState<string | null>(null);
+  const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null);
   const [consultationNotes, setConsultationNotes] = useState<ConsultationNote | null>(null);
   const [notesForm, setNotesForm] = useState({
     diagnosis: '',
@@ -170,6 +173,10 @@ export const DoctorDashboard = () => {
     recommendations: '',
     follow_up_date: ''
   });
+  
+  // Consultation modal state
+  const [consultationModalOpen, setConsultationModalOpen] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
 
   useEffect(() => {
     if (user && userRole === 'doctor') {
@@ -564,14 +571,14 @@ export const DoctorDashboard = () => {
   };
 
   const saveConsultationNotes = async () => {
-    if (!selectedAppointment || !user) return;
+    if (!selectedAppointmentId || !user) return;
 
     try {
-      const appointment = todayAppointments.find(a => a.id === selectedAppointment);
+      const appointment = todayAppointments.find(a => a.id === selectedAppointmentId);
       if (!appointment) return;
 
       const noteData = {
-        appointment_id: selectedAppointment,
+        appointment_id: selectedAppointmentId,
         doctor_user_id: user.id,
         patient_user_id: appointment.patient_user_id,
         diagnosis: notesForm.diagnosis || null,
@@ -692,6 +699,17 @@ export const DoctorDashboard = () => {
       />
     ));
   };
+
+  const handleStartConsultation = (appointment: Appointment) => {
+    setSelectedAppointment(appointment)
+    setConsultationModalOpen(true)
+  }
+
+  const handleConsultationComplete = () => {
+    fetchAllData() // Refresh all data
+    setConsultationModalOpen(false)
+    setSelectedAppointment(null)
+  }
 
   if (loading) {
     return (
@@ -857,19 +875,29 @@ export const DoctorDashboard = () => {
                              <User className="h-4 w-4 mr-2" />
                              Historial
                            </Button>
-                           <Dialog>
-                          <DialogTrigger asChild>
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => {
-                                setSelectedAppointment(appointment.id);
-                                fetchConsultationNotes(appointment.id);
-                              }}
-                            >
-                              <FileText className="h-4 w-4 mr-2" />
-                              Notas
-                            </Button>
+                            {appointment.status === 'scheduled' ? (
+                              <Button 
+                                size="sm"
+                                onClick={() => handleStartConsultation(appointment)}
+                                className="bg-primary"
+                              >
+                                <Stethoscope className="h-4 w-4 mr-2" />
+                                Iniciar Consulta
+                              </Button>
+                            ) : (
+                              <Dialog>
+                               <DialogTrigger asChild>
+                                 <Button 
+                                   variant="outline" 
+                                   size="sm"
+                                   onClick={() => {
+                                     setSelectedAppointmentId(appointment.id);
+                                     fetchConsultationNotes(appointment.id);
+                                   }}
+                                 >
+                                   <FileText className="h-4 w-4 mr-2" />
+                                   Ver Notas
+                                 </Button>
                           </DialogTrigger>
                           <DialogContent className="sm:max-w-[600px]">
                             <DialogHeader>
@@ -918,11 +946,12 @@ export const DoctorDashboard = () => {
                                 <Save className="h-4 w-4 mr-2" />
                                 Guardar Notas
                               </Button>
-                            </div>
-                           </DialogContent>
-                           </Dialog>
-                         </div>
-                       </div>
+                             </div>
+                            </DialogContent>
+                            </Dialog>
+                            )}
+                          </div>
+                        </div>
                     ))}
                   </div>
                 )}
@@ -1333,10 +1362,10 @@ export const DoctorDashboard = () => {
                               <Button 
                                 variant="outline" 
                                 size="sm"
-                                onClick={() => {
-                                  setSelectedAppointment(appointment.id);
-                                  fetchConsultationNotes(appointment.id);
-                                }}
+                                 onClick={() => {
+                                   setSelectedAppointmentId(appointment.id);
+                                   fetchConsultationNotes(appointment.id);
+                                 }}
                               >
                                 <FileText className="h-4 w-4" />
                               </Button>
@@ -1486,6 +1515,19 @@ export const DoctorDashboard = () => {
         patientUserId={selectedPatientHistory.patientUserId}
         doctorUserId={user?.id || ''}
       />
+
+      {/* Consultation Modal */}
+      {selectedAppointment && (
+        <ConsultationModal
+          isOpen={consultationModalOpen}
+          onClose={() => {
+            setConsultationModalOpen(false)
+            setSelectedAppointment(null)
+          }}
+          appointment={selectedAppointment}
+          onConsultationComplete={handleConsultationComplete}
+        />
+      )}
     </div>
   );
 };
