@@ -1,10 +1,9 @@
 import { ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { Database } from '@/integrations/supabase/types';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
-type UserRole = Database['public']['Enums']['user_role'];
+type UserRole = 'patient' | 'doctor' | 'assistant' | 'admin';
 
 interface AuthGuardProps {
   children: ReactNode;
@@ -12,8 +11,8 @@ interface AuthGuardProps {
   requireVerified?: boolean;
 }
 
-export const AuthGuard = ({ children, requiredRole, requireVerified = false }: AuthGuardProps) => {
-  const { user, profile, doctorProfile, loading } = useAuth();
+export const AuthGuard = ({ children, requiredRole }: AuthGuardProps) => {
+  const { user, userRole, loading } = useAuth();
   const location = useLocation();
 
   if (loading) {
@@ -21,22 +20,15 @@ export const AuthGuard = ({ children, requiredRole, requireVerified = false }: A
   }
 
   // Redirect to auth if not authenticated
-  if (!user || !profile) {
+  if (!user || !userRole) {
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
   // Check role requirements
   if (requiredRole) {
     const allowedRoles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
-    if (!allowedRoles.includes(profile.role)) {
+    if (!allowedRoles.includes(userRole)) {
       return <Navigate to="/unauthorized" replace />;
-    }
-  }
-
-  // Check verification requirements for doctors
-  if (requireVerified && profile.role === 'doctor') {
-    if (!doctorProfile || doctorProfile.verification_status !== 'verified') {
-      return <Navigate to="/pending-verification" replace />;
     }
   }
 

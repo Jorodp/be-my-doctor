@@ -82,7 +82,7 @@ export const AssistantDashboard = () => {
     });
   };
 
-  const updateAppointmentStatus = async (appointmentId: string, newStatus: string) => {
+  const updateAppointmentStatus = async (appointmentId: string, newStatus: 'completed' | 'cancelled') => {
     try {
       const { error } = await supabase
         .from('appointments')
