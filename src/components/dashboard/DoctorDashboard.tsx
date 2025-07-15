@@ -29,7 +29,9 @@ import {
   Camera,
   Users,
   Stethoscope,
-  Award
+  Award,
+  UserPlus,
+  UserMinus
 } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
@@ -91,9 +93,16 @@ interface Rating {
 }
 
 interface AssistantInfo {
+  user_id: string;
   full_name: string | null;
   email: string;
   phone: string | null;
+}
+
+interface AssistantOption {
+  user_id: string;
+  full_name: string | null;
+  email: string;
 }
 
 const dayNames = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
@@ -124,6 +133,8 @@ export const DoctorDashboard = () => {
   const [ratings, setRatings] = useState<Rating[]>([]);
   const [assistantInfo, setAssistantInfo] = useState<AssistantInfo | null>(null);
   const [averageRating, setAverageRating] = useState(0);
+  const [availableAssistants, setAvailableAssistants] = useState<AssistantOption[]>([]);
+  const [selectedAssistant, setSelectedAssistant] = useState<string>('');
   
   // Edit states
   const [editingProfile, setEditingProfile] = useState(false);
@@ -168,7 +179,8 @@ export const DoctorDashboard = () => {
         fetchWeeklyAppointments(),
         fetchAvailability(),
         fetchRatings(),
-        fetchAssistant()
+        fetchAssistant(),
+        fetchAvailableAssistants()
       ]);
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -345,10 +357,53 @@ export const DoctorDashboard = () => {
     if (!user) return;
 
     try {
-      // Query profiles table directly for assistants assigned to this doctor
-      const { data: assistantProfiles, error } = await supabase
+      // Get all users with role assistant
+      const { data: assistantProfiles, error: profilesError } = await supabase
         .from('profiles')
         .select('user_id, full_name, phone')
+        .eq('role', 'assistant');
+
+      if (profilesError) {
+        console.error('Error fetching assistant profiles:', profilesError);
+        return;
+      }
+
+      if (!assistantProfiles || assistantProfiles.length === 0) {
+        setAssistantInfo(null);
+        return;
+      }
+
+      // Check each assistant to see if they're assigned to this doctor
+      for (const profile of assistantProfiles) {
+        try {
+          const { data: authUser, error: authError } = await supabase.auth.admin.getUserById(profile.user_id);
+          
+          if (!authError && authUser.user?.user_metadata?.assigned_doctor_id === user.id) {
+            setAssistantInfo({
+              user_id: profile.user_id,
+              full_name: profile.full_name,
+              email: authUser.user.email || '',
+              phone: profile.phone
+            });
+            return;
+          }
+        } catch (error) {
+          console.error('Error checking assistant assignment:', error);
+        }
+      }
+
+      setAssistantInfo(null);
+    } catch (error) {
+      console.error('Error in fetchAssistant:', error);
+    }
+  };
+
+  const fetchAvailableAssistants = async () => {
+    try {
+      // Get all users with role assistant
+      const { data: assistantProfiles, error } = await supabase
+        .from('profiles')
+        .select('user_id, full_name')
         .eq('role', 'assistant');
 
       if (error) {
@@ -356,18 +411,34 @@ export const DoctorDashboard = () => {
         return;
       }
 
-      // For now, we'll just show if there are any assistants
-      // In a real implementation, you'd need a proper way to link assistants to doctors
-      if (assistantProfiles && assistantProfiles.length > 0) {
-        const assistant = assistantProfiles[0]; // Take first assistant for demo
-        setAssistantInfo({
-          full_name: assistant.full_name,
-          email: 'asistente@clinica.com', // Placeholder email
-          phone: assistant.phone
-        });
+      if (!assistantProfiles || assistantProfiles.length === 0) {
+        setAvailableAssistants([]);
+        return;
       }
+
+      // Get emails for each assistant
+      const assistantsWithEmails = await Promise.all(
+        assistantProfiles.map(async (profile) => {
+          try {
+            const { data: authUser } = await supabase.auth.admin.getUserById(profile.user_id);
+            return {
+              user_id: profile.user_id,
+              full_name: profile.full_name,
+              email: authUser.user?.email || ''
+            };
+          } catch {
+            return {
+              user_id: profile.user_id,
+              full_name: profile.full_name,
+              email: ''
+            };
+          }
+        })
+      );
+
+      setAvailableAssistants(assistantsWithEmails);
     } catch (error) {
-      console.error('Error in fetchAssistant:', error);
+      console.error('Error fetching available assistants:', error);
     }
   };
 
@@ -409,6 +480,33 @@ export const DoctorDashboard = () => {
   const addAvailability = async () => {
     if (!user) return;
 
+    // Validations
+    if (startTime >= endTime) {
+      toast({
+        title: "Error de validación",
+        description: "La hora de inicio debe ser menor que la hora de fin",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Check for duplicate slots
+    const duplicateSlot = availability.find(slot => 
+      slot.day_of_week === selectedDay &&
+      ((startTime >= slot.start_time && startTime < slot.end_time) ||
+       (endTime > slot.start_time && endTime <= slot.end_time) ||
+       (startTime <= slot.start_time && endTime >= slot.end_time))
+    );
+
+    if (duplicateSlot) {
+      toast({
+        title: "Horario duplicado",
+        description: `Ya tienes disponibilidad configurada para ${dayNames[selectedDay]} en ese horario`,
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('doctor_availability')
@@ -420,19 +518,26 @@ export const DoctorDashboard = () => {
           is_available: true
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Database error:', error);
+        throw error;
+      }
 
       toast({
         title: "Disponibilidad agregada",
         description: "Nuevo horario agregado correctamente"
       });
 
+      // Reset form and refresh data
+      setStartTime('09:00');
+      setEndTime('17:00');
+      setSelectedDay(1);
       fetchAvailability();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding availability:', error);
       toast({
         title: "Error",
-        description: "No se pudo agregar la disponibilidad",
+        description: error.message || "No se pudo agregar la disponibilidad",
         variant: "destructive"
       });
     }
@@ -534,6 +639,69 @@ export const DoctorDashboard = () => {
       toast({
         title: "Error",
         description: "No se pudieron guardar las notas",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const assignAssistant = async (assistantUserId: string) => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase.functions.invoke('assign-assistant', {
+        body: {
+          assistantUserId,
+          doctorUserId: user.id,
+          action: 'assign'
+        }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Asistente asignado",
+        description: "El asistente ha sido asignado correctamente"
+      });
+
+      // Refresh data
+      await fetchAssistant();
+      setSelectedAssistant('');
+    } catch (error: any) {
+      console.error('Error assigning assistant:', error);
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo asignar el asistente",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const unassignAssistant = async () => {
+    if (!user || !assistantInfo) return;
+
+    try {
+      const { data, error } = await supabase.functions.invoke('assign-assistant', {
+        body: {
+          assistantUserId: assistantInfo.user_id,
+          doctorUserId: user.id,
+          action: 'unassign'
+        }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Asistente removido",
+        description: "El asistente ha sido removido correctamente"
+      });
+
+      // Refresh data
+      await fetchAssistant();
+    } catch (error: any) {
+      console.error('Error unassigning assistant:', error);
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo remover el asistente",
         variant: "destructive"
       });
     }
@@ -965,6 +1133,76 @@ export const DoctorDashboard = () => {
                         <p className="text-muted-foreground leading-relaxed mt-1">
                           {profile.biography}
                         </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Assistant Management */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  Gestión de Asistente
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {assistantInfo ? (
+                  <div className="border rounded-lg p-4 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Avatar>
+                          <AvatarFallback>
+                            <User className="h-4 w-4" />
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-medium">{assistantInfo.full_name || 'Asistente'}</p>
+                          <p className="text-sm text-muted-foreground">{assistantInfo.email}</p>
+                          {assistantInfo.phone && (
+                            <p className="text-sm text-muted-foreground">{assistantInfo.phone}</p>
+                          )}
+                        </div>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={unassignAssistant}
+                      >
+                        <UserMinus className="h-4 w-4 mr-2" />
+                        Remover
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="border rounded-lg p-4 space-y-4">
+                    <p className="text-muted-foreground text-center">No tienes un asistente asignado</p>
+                    {availableAssistants.length > 0 && (
+                      <div className="space-y-3">
+                        <Label>Seleccionar Asistente</Label>
+                        <Select value={selectedAssistant} onValueChange={setSelectedAssistant}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Elige un asistente..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {availableAssistants.map((assistant) => (
+                              <SelectItem key={assistant.user_id} value={assistant.user_id}>
+                                {assistant.full_name || assistant.email}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {selectedAssistant && (
+                          <Button
+                            onClick={() => assignAssistant(selectedAssistant)}
+                            className="w-full"
+                          >
+                            <UserPlus className="h-4 w-4 mr-2" />
+                            Asignar Asistente
+                          </Button>
+                        )}
                       </div>
                     )}
                   </div>
