@@ -13,6 +13,7 @@ import { Calendar, Clock, User, Star, FileText, Camera, Upload, Edit, Save, X } 
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
 import { RatingModal } from '@/components/RatingModal';
+import { DashboardHeader } from '@/components/DashboardHeader';
 
 interface Appointment {
   id: string;
@@ -272,19 +273,11 @@ export const PatientDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
-      <header className="bg-background shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">Panel del Paciente</h1>
-              <p className="text-muted-foreground">Gestiona tus citas y consultas médicas</p>
-            </div>
-            <Button variant="outline" onClick={() => signOut()}>
-              Cerrar Sesión
-            </Button>
-          </div>
-        </div>
-      </header>
+      <DashboardHeader
+        title="Panel del Paciente"
+        subtitle="Gestiona tus citas y consultas médicas"
+        onSignOut={signOut}
+      />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         {/* Mi Perfil */}

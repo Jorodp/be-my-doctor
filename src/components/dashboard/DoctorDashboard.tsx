@@ -38,6 +38,7 @@ import { useToast } from '@/hooks/use-toast';
 import { format, addDays, startOfDay, endOfDay } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { PatientHistoryModal } from '@/components/PatientHistoryModal';
+import { DashboardHeader } from '@/components/DashboardHeader';
 
 interface DoctorProfile {
   id: string;
@@ -740,30 +741,18 @@ export const DoctorDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
-      {/* Header */}
-      <header className="bg-background shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div className="flex items-center gap-4">
-              <Avatar className="h-12 w-12">
-                <AvatarImage src={profile.profile_image_url || undefined} />
-                <AvatarFallback>
-                  <Stethoscope className="h-6 w-6" />
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <h1 className="text-2xl font-bold text-foreground">
-                  Dr. {profile.profile?.full_name || 'Doctor'}
-                </h1>
-                <p className="text-muted-foreground">{profile.specialty}</p>
-              </div>
-            </div>
-            <Button variant="outline" onClick={() => signOut()}>
-              Cerrar Sesión
-            </Button>
-          </div>
-        </div>
-      </header>
+      <DashboardHeader
+        title={`Dr. ${profile.profile?.full_name || 'Doctor'}`}
+        subtitle={profile.specialty}
+        onSignOut={signOut}
+      >
+        <Avatar className="h-12 w-12">
+          <AvatarImage src={profile.profile_image_url || undefined} />
+          <AvatarFallback>
+            <Stethoscope className="h-6 w-6" />
+          </AvatarFallback>
+        </Avatar>
+      </DashboardHeader>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs defaultValue="overview" className="space-y-6">

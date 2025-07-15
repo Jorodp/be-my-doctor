@@ -13,6 +13,7 @@ import { PatientsList } from '@/components/admin/PatientsList';
 import { AssistantsList } from '@/components/admin/AssistantsList';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { DashboardHeader } from '@/components/DashboardHeader';
 
 interface DoctorProfile {
   id: string;
@@ -202,19 +203,11 @@ export const AdminDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
-      <header className="bg-background shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">Panel de Administración</h1>
-              <p className="text-muted-foreground">Gestiona la plataforma Be My Doctor</p>
-            </div>
-            <Button variant="outline" onClick={() => signOut()}>
-              Cerrar Sesión
-            </Button>
-          </div>
-        </div>
-      </header>
+      <DashboardHeader
+        title="Panel de Administración"
+        subtitle="Gestiona la plataforma Be My Doctor"
+        onSignOut={signOut}
+      />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         {/* Stats Cards */}
