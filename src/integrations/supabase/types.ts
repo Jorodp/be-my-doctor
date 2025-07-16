@@ -564,6 +564,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_user_assigned_doctor_id: {
+        Args: { user_uuid: string }
+        Returns: string
+      }
     }
     Enums: {
       appointment_status:
