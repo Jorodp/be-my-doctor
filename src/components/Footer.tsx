@@ -66,12 +66,22 @@ const Footer = () => {
             <h3 className="text-lg font-semibold text-background">Legal</h3>
             <ul className="space-y-2">
               <li>
-                <a href="#" className="text-background/80 hover:text-primary transition-smooth">
+                <a 
+                  href="https://rvsoeuwlgnovcmemlmqz.supabase.co/storage/v1/object/public/legal-documents/aviso-de-privacidad.pdf" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-background/80 hover:text-primary transition-smooth"
+                >
                   Aviso de privacidad
                 </a>
               </li>
               <li>
-                <a href="#" className="text-background/80 hover:text-primary transition-smooth">
+                <a 
+                  href="https://rvsoeuwlgnovcmemlmqz.supabase.co/storage/v1/object/public/legal-documents/terminos-y-condiciones.docx" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-background/80 hover:text-primary transition-smooth"
+                >
                   Términos y condiciones
                 </a>
               </li>
