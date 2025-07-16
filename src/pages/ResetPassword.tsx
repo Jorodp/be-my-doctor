@@ -22,8 +22,14 @@ export default function ResetPassword() {
   const type = searchParams.get('type');
 
   useEffect(() => {
+    console.log('ResetPassword mounted');
+    console.log('Token:', token);
+    console.log('Type:', type);
+    console.log('Search params:', searchParams.toString());
+    
     // Verificar que tenemos los parámetros necesarios
     if (!token || type !== 'recovery') {
+      console.log('Invalid token or type, redirecting to auth');
       toast({
         variant: "destructive",
         title: "Enlace inválido",
@@ -31,7 +37,7 @@ export default function ResetPassword() {
       });
       navigate('/auth');
     }
-  }, [token, type, navigate, toast]);
+  }, [token, type, navigate, toast, searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
