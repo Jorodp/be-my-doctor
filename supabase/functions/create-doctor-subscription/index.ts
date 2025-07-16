@@ -5,17 +5,26 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Credentials": "true",
 };
 
 serve(async (req) => {
+  // Handle CORS preflight request FIRST before any other logic
+  if (req.method === "OPTIONS") {
+    console.log("🔄 Handling CORS preflight OPTIONS request");
+    return new Response(null, { 
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "text/plain"
+      },
+      status: 200 
+    });
+  }
+
   console.log("🚀 CREATE-DOCTOR-SUBSCRIPTION FUNCTION CALLED!");
   console.log("Method:", req.method);
   console.log("URL:", req.url);
-  
-  if (req.method === "OPTIONS") {
-    console.log("Handling OPTIONS request");
-    return new Response(null, { headers: corsHeaders });
-  }
 
   try {
     console.log("Processing request...");
