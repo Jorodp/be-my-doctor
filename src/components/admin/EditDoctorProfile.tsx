@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,7 +7,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Upload, Save, X } from 'lucide-react';
+import { Upload, Save, X, Camera, Trash2 } from 'lucide-react';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { User } from 'lucide-react';
 
 interface DoctorProfile {
   id: string;
@@ -48,6 +50,9 @@ export const EditDoctorProfile = ({
 }: EditDoctorProfileProps) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [currentProfileImage, setCurrentProfileImage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [profileData, setProfileData] = useState({
     full_name: '',
     phone: '',
@@ -75,8 +80,96 @@ export const EditDoctorProfile = ({
         office_phone: doctorProfile.office_phone || '',
         practice_locations: doctorProfile.practice_locations || ['']
       });
+      setCurrentProfileImage(doctorProfile.profile_image_url);
     }
   }, [doctorProfile, profile]);
+
+  const handleImageUpload = async (file: File) => {
+    if (!doctorProfile) return;
+
+    setUploadingImage(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}.${fileExt}`;
+      const filePath = `doctor-profiles/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('patient-profiles')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      // Update doctor profile with new image URL
+      const { error: updateError } = await supabase
+        .from('doctor_profiles')
+        .update({ profile_image_url: filePath })
+        .eq('user_id', doctorProfile.user_id);
+
+      if (updateError) throw updateError;
+
+      setCurrentProfileImage(filePath);
+      
+      toast({
+        title: "Foto actualizada",
+        description: "La foto del doctor ha sido actualizada correctamente",
+      });
+
+      onProfileUpdated();
+    } catch (error: any) {
+      console.error('Error uploading image:', error);
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo subir la imagen",
+        variant: "destructive"
+      });
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const handleImageDelete = async () => {
+    if (!doctorProfile || !currentProfileImage) return;
+
+    try {
+      // Delete from storage
+      const { error: deleteError } = await supabase.storage
+        .from('patient-profiles')
+        .remove([currentProfileImage]);
+
+      if (deleteError) throw deleteError;
+
+      // Update doctor profile to remove image URL
+      const { error: updateError } = await supabase
+        .from('doctor_profiles')
+        .update({ profile_image_url: null })
+        .eq('user_id', doctorProfile.user_id);
+
+      if (updateError) throw updateError;
+
+      setCurrentProfileImage(null);
+      
+      toast({
+        title: "Foto eliminada",
+        description: "La foto del doctor ha sido eliminada",
+      });
+
+      onProfileUpdated();
+    } catch (error: any) {
+      console.error('Error deleting image:', error);
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo eliminar la imagen",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const onFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      handleImageUpload(file);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -186,6 +279,66 @@ export const EditDoctorProfile = ({
                 />
               </div>
             </div>
+          </div>
+
+          {/* Profile Photo */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Foto de Perfil</h3>
+            <div className="flex items-center gap-6">
+              <Avatar className="h-24 w-24">
+                <AvatarImage 
+                  src={currentProfileImage ? `${supabase.storage.from('patient-profiles').getPublicUrl(currentProfileImage).data.publicUrl}` : undefined} 
+                  alt="Foto del doctor" 
+                />
+                <AvatarFallback>
+                  <User className="h-12 w-12" />
+                </AvatarFallback>
+              </Avatar>
+              
+              <div className="flex flex-col gap-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={onFileSelect}
+                  className="hidden"
+                />
+                
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingImage}
+                >
+                  {uploadingImage ? (
+                    <>
+                      <LoadingSpinner className="mr-2 h-4 w-4" />
+                      Subiendo...
+                    </>
+                  ) : (
+                    <>
+                      <Camera className="mr-2 h-4 w-4" />
+                      {currentProfileImage ? 'Cambiar Foto' : 'Subir Foto'}
+                    </>
+                  )}
+                </Button>
+                
+                {currentProfileImage && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleImageDelete}
+                    className="text-destructive hover:text-destructive"
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Eliminar Foto
+                  </Button>
+                )}
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              La foto debe ser cuadrada (1:1) y no mayor a 5MB. Formatos permitidos: JPG, PNG, WebP.
+            </p>
           </div>
 
           {/* Professional Information */}
