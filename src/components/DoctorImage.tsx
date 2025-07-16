@@ -16,14 +16,14 @@ const sizeClasses = {
   xl: 'h-64 w-64 md:h-80 md:w-80'
 };
 
-export const DoctorImage = ({ 
+export const DoctorImage = ({
   profileImageUrl, 
   doctorName, 
   className,
   fallbackClassName,
   size = 'md'
 }: DoctorImageProps) => {
-  const { signedUrl, loading, error } = useSignedUrl('doctor-profiles', profileImageUrl);
+  const { signedUrl, loading, error } = useSignedUrl('doctor-photos', profileImageUrl);
   
   const getImageSrc = () => {
     if (!profileImageUrl) return undefined;
@@ -33,8 +33,8 @@ export const DoctorImage = ({
       return profileImageUrl;
     }
     
-    // Use signed URL for storage paths
-    return signedUrl || undefined;
+    // For storage paths, use public URL from doctor-photos bucket
+    return `https://rvsoeuwlgnovcmemlmqz.supabase.co/storage/v1/object/public/doctor-photos/${profileImageUrl.replace('doctor-profiles/', '')}`;
   };
 
   const imageSrc = getImageSrc();
