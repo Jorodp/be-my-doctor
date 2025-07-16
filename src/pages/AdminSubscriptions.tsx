@@ -84,52 +84,86 @@ const AdminSubscriptionsPage = () => {
   const { data: subscriptions, isLoading, refetch } = useQuery({
     queryKey: ['admin-subscriptions'],
     queryFn: async () => {
-      // Get all doctors first
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('user_id, full_name')
-        .eq('role', 'doctor');
-
-      if (profilesError) throw profilesError;
-
-      // Get doctor profiles for specialties
-      const { data: doctorProfiles, error: doctorProfilesError } = await supabase
-        .from('doctor_profiles')
-        .select('user_id, specialty');
-
-      if (doctorProfilesError) throw doctorProfilesError;
-
-      // Get all subscriptions with enhanced data
-      const { data: subscriptionsData, error: subscriptionsError } = await supabase
-        .from('subscriptions')
-        .select(`
-          *,
-          cancelled_by_user:profiles!subscriptions_cancelled_by_fkey(full_name)
-        `)
-        .order('created_at', { ascending: false });
-
-      if (subscriptionsError) throw subscriptionsError;
-
-      // Get user emails from auth
-      const { data: authData } = await supabase.auth.admin.listUsers();
-      const users = authData?.users || [];
-
-      // Combine all data
-      const combinedData = subscriptionsData?.map(subscription => {
-        const profile = profiles?.find(p => p.user_id === subscription.user_id);
-        const doctorProfile = doctorProfiles?.find(dp => dp.user_id === subscription.user_id);
-        const authUser = users.find(u => u.id === subscription.user_id);
+      try {
+        console.log('Fetching subscriptions...');
         
-        return {
-          ...subscription,
-          doctor_name: profile?.full_name || 'N/A',
-          doctor_email: authUser?.email || 'N/A',
-          specialty: doctorProfile?.specialty || 'N/A'
-        } as SubscriptionWithDoctor;
-      }) || [];
+        // Get subscriptions first with a simple query
+        const { data: subscriptionsData, error: subscriptionsError } = await supabase
+          .from('subscriptions')
+          .select('*')
+          .order('created_at', { ascending: false });
 
-      return combinedData;
+        if (subscriptionsError) {
+          console.error('Error fetching subscriptions:', subscriptionsError);
+          throw subscriptionsError;
+        }
+
+        console.log('Subscriptions found:', subscriptionsData?.length);
+
+        if (!subscriptionsData || subscriptionsData.length === 0) {
+          return [];
+        }
+
+        // Get all unique user IDs from subscriptions
+        const userIds = [...new Set(subscriptionsData.map(s => s.user_id))];
+        console.log('User IDs from subscriptions:', userIds);
+
+        // Get profiles for these users
+        const { data: profiles, error: profilesError } = await supabase
+          .from('profiles')
+          .select('user_id, full_name')
+          .in('user_id', userIds);
+
+        if (profilesError) {
+          console.error('Error fetching profiles:', profilesError);
+        }
+
+        // Get doctor profiles for specialties
+        const { data: doctorProfiles, error: doctorProfilesError } = await supabase
+          .from('doctor_profiles')
+          .select('user_id, specialty')
+          .in('user_id', userIds);
+
+        if (doctorProfilesError) {
+          console.error('Error fetching doctor profiles:', doctorProfilesError);
+        }
+
+        // Get user emails from auth with better error handling
+        let authUsers: any[] = [];
+        try {
+          const { data: authData, error: authError } = await supabase.auth.admin.listUsers();
+          if (authError) {
+            console.error('Error fetching auth users:', authError);
+          } else {
+            authUsers = authData?.users || [];
+          }
+        } catch (authError) {
+          console.error('Failed to fetch auth users:', authError);
+        }
+
+        // Combine all data with fallbacks
+        const combinedData = subscriptionsData.map(subscription => {
+          const profile = profiles?.find(p => p.user_id === subscription.user_id);
+          const doctorProfile = doctorProfiles?.find(dp => dp.user_id === subscription.user_id);
+          const authUser = authUsers.find(u => u.id === subscription.user_id);
+          
+          return {
+            ...subscription,
+            doctor_name: profile?.full_name || `Usuario ${subscription.user_id.slice(-8)}`,
+            doctor_email: authUser?.email || 'N/A',
+            specialty: doctorProfile?.specialty || 'N/A'
+          } as SubscriptionWithDoctor;
+        });
+
+        console.log('Combined data:', combinedData.length, 'subscriptions processed');
+        return combinedData;
+      } catch (error) {
+        console.error('Critical error in subscription query:', error);
+        throw error;
+      }
     },
+    retry: 2,
+    staleTime: 30000, // Cache for 30 seconds
   });
 
   const filteredSubscriptions = subscriptions?.filter(sub => {
