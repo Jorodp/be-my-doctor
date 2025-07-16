@@ -139,8 +139,7 @@ export const DoctorDashboard = () => {
   const { user, doctorProfile, userRole, signOut } = useAuth();
   const { toast } = useToast();
   
-  // NEW LOGIC: Always allow access to dashboard
-  // Subscription guard will handle subscription validation for doctors
+  // Direct access to dashboard - SubscriptionGuard handles subscription validation
   return (
     <SubscriptionGuard>
       <DoctorDashboardContent 
