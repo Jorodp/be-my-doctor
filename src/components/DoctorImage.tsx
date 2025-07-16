@@ -23,8 +23,6 @@ export const DoctorImage = ({
   fallbackClassName,
   size = 'md'
 }: DoctorImageProps) => {
-  const { signedUrl, loading, error } = useSignedUrl('doctor-photos', profileImageUrl);
-  
   const getImageSrc = () => {
     if (!profileImageUrl) return undefined;
     
@@ -33,8 +31,8 @@ export const DoctorImage = ({
       return profileImageUrl;
     }
     
-    // For storage paths, use public URL from doctor-photos bucket
-    return `https://rvsoeuwlgnovcmemlmqz.supabase.co/storage/v1/object/public/doctor-photos/${profileImageUrl.replace('doctor-profiles/', '')}`;
+    // For storage paths, use public URL from doctor-profiles bucket
+    return `https://rvsoeuwlgnovcmemlmqz.supabase.co/storage/v1/object/public/doctor-profiles/${profileImageUrl}`;
   };
 
   const imageSrc = getImageSrc();
@@ -43,7 +41,7 @@ export const DoctorImage = ({
     // Special handling for large profile images
     return (
       <div className={`${sizeClasses[size]} rounded-3xl overflow-hidden shadow-2xl ring-4 ring-background/50 ${className || ''}`}>
-        {imageSrc && !loading ? (
+        {imageSrc ? (
           <img 
             src={imageSrc}
             alt={`Dr. ${doctorName}`}
@@ -56,7 +54,7 @@ export const DoctorImage = ({
         ) : null}
         
         {/* Fallback */}
-        <div className={`w-full h-full bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center ${imageSrc && !loading ? 'hidden' : ''}`}>
+        <div className={`w-full h-full bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center ${imageSrc ? 'hidden' : ''}`}>
           <div className="text-center">
             <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
               <div className="text-4xl font-bold text-primary">
