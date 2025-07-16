@@ -21,6 +21,7 @@ import BookAppointment from "./pages/BookAppointment";
 import { CompleteDoctorProfile } from "./pages/CompleteDoctorProfile";
 import { CompletePatientProfile } from "./pages/CompletePatientProfile";
 import PendingVerification from "./pages/PendingVerification";
+import AdminSubscriptions from "./pages/AdminSubscriptions";
 
 const queryClient = new QueryClient();
 
@@ -65,8 +66,16 @@ const App = () => (
                 <ProtectedRoute role="admin">
                   <AdminDashboard />
                 </ProtectedRoute>
-              } 
-            />
+               } 
+             />
+             <Route 
+               path="/admin/subscriptions" 
+               element={
+                 <ProtectedRoute role="admin">
+                   <AdminSubscriptions />
+                 </ProtectedRoute>
+               } 
+             />
             <Route path="/search" element={<DoctorSearch />} />
             <Route path="/doctor/:doctorId" element={<DoctorProfile />} />
             <Route 

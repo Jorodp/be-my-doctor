@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, UserCheck, Clock, BarChart3, Shield, Settings, Star, Calendar, Activity, CreditCard } from 'lucide-react';
+import { Users, UserCheck, Clock, BarChart3, Shield, Settings, Star, Calendar, Activity, CreditCard, FileText } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
 import { DoctorsList } from '@/components/admin/DoctorsList';
@@ -405,6 +405,18 @@ export const AdminDashboard = () => {
             <TabsTrigger value="reports">Reportes</TabsTrigger>
             <TabsTrigger value="system">Sistema</TabsTrigger>
           </TabsList>
+
+          {/* Navigation to Subscriptions Page */}
+          <div className="mb-6">
+            <Button 
+              onClick={() => window.location.href = '/admin/subscriptions'}
+              className="w-full justify-start"
+              variant="outline"
+            >
+              <FileText className="mr-2 h-4 w-4" />
+              Ver Suscripciones de Médicos
+            </Button>
+          </div>
 
           <TabsContent value="overview">
             <div className="grid gap-6">
