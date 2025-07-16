@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
+import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -12,6 +12,7 @@ import { Search, Star, MapPin, Clock, Filter } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { BackToHomeButton } from '@/components/ui/BackToHomeButton';
 import { useToast } from '@/hooks/use-toast';
+import { AuthPrompt } from '@/components/AuthPrompt';
 
 interface Doctor {
   id: string;
@@ -46,12 +47,15 @@ export default function DoctorSearch() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [filteredDoctors, setFilteredDoctors] = useState<Doctor[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
   const [selectedSpecialty, setSelectedSpecialty] = useState(searchParams.get('specialty') || 'all');
   const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'rating');
+  const [showAuthPrompt, setShowAuthPrompt] = useState(false);
+  const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
 
   useEffect(() => {
     fetchDoctors();
@@ -204,6 +208,15 @@ export default function DoctorSearch() {
     setFilteredDoctors(filtered);
   };
 
+  const handleDoctorClick = (doctor: Doctor) => {
+    if (!user) {
+      setSelectedDoctor(doctor);
+      setShowAuthPrompt(true);
+    } else {
+      navigate(`/doctor/${doctor.user_id}`);
+    }
+  };
+
   const renderStars = (rating: number) => {
     const stars = [];
     const fullStars = Math.floor(rating);
@@ -220,6 +233,15 @@ export default function DoctorSearch() {
     }
     return stars;
   };
+
+  if (showAuthPrompt && selectedDoctor) {
+    return (
+      <AuthPrompt 
+        doctorName={selectedDoctor.profile?.full_name || 'Doctor'} 
+        redirectPath={`/doctor/${selectedDoctor.user_id}`}
+      />
+    );
+  }
 
   if (loading) {
     return (
@@ -374,11 +396,12 @@ export default function DoctorSearch() {
                     )}
 
                     {/* Action Button */}
-                    <Link to={`/doctor/${doctor.user_id}`}>
-                      <Button className="w-full">
-                        Ver Perfil
-                      </Button>
-                    </Link>
+                    <Button 
+                      className="w-full"
+                      onClick={() => handleDoctorClick(doctor)}
+                    >
+                      Ver Perfil
+                    </Button>
                   </div>
                 </CardContent>
               </Card>

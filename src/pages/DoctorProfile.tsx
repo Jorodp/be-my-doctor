@@ -9,6 +9,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { BackToHomeButton } from '@/components/ui/BackToHomeButton';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { AuthPrompt } from '@/components/AuthPrompt';
 import { 
   Star, 
   MapPin, 
@@ -57,22 +58,56 @@ export default function DoctorProfile() {
   const [ratings, setRatings] = useState<Rating[]>([]);
   const [averageRating, setAverageRating] = useState(0);
   const [loading, setLoading] = useState(true);
-
-  // Redirect to auth if not logged in
-  useEffect(() => {
-    if (!user) {
-      const currentPath = window.location.pathname;
-      navigate(`/auth?redirect=${encodeURIComponent(currentPath)}`);
-      return;
-    }
-  }, [user, navigate]);
+  const [showAuthPrompt, setShowAuthPrompt] = useState(false);
 
   useEffect(() => {
-    if (doctorId && user) {
-      fetchDoctorProfile();
-      fetchRatings();
+    if (doctorId) {
+      if (!user) {
+        // Fetch basic doctor info for the auth prompt
+        fetchDoctorBasicInfo();
+      } else {
+        fetchDoctorProfile();
+        fetchRatings();
+      }
     }
   }, [doctorId, user]);
+
+  const fetchDoctorBasicInfo = async () => {
+    if (!doctorId) return;
+
+    try {
+      // Fetch basic doctor info even when not authenticated
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('full_name, phone')
+        .eq('user_id', doctorId)
+        .single();
+
+      if (profileData) {
+        setDoctor({
+          id: '',
+          user_id: doctorId,
+          specialty: '',
+          biography: null,
+          years_experience: null,
+          consultation_fee: null,
+          profile_image_url: null,
+          professional_license: '',
+          office_address: null,
+          office_phone: null,
+          practice_locations: null,
+          consultorios: null,
+          profile: profileData
+        });
+      }
+      setShowAuthPrompt(true);
+    } catch (error) {
+      console.error('Error fetching basic doctor info:', error);
+      navigate('/search');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchDoctorProfile = async () => {
     if (!doctorId) return;
@@ -190,8 +225,7 @@ export default function DoctorProfile() {
 
   const handleBookAppointment = () => {
     if (!user) {
-      const currentPath = window.location.pathname;
-      navigate(`/auth?redirect=${encodeURIComponent(currentPath)}`);
+      setShowAuthPrompt(true);
       return;
     }
     navigate(`/book/${doctorId}`);
@@ -199,6 +233,15 @@ export default function DoctorProfile() {
 
   if (loading) {
     return <LoadingSpinner />;
+  }
+
+  if (showAuthPrompt && doctor) {
+    return (
+      <AuthPrompt 
+        doctorName={doctor.profile?.full_name || 'Doctor'} 
+        redirectPath={`/doctor/${doctorId}`}
+      />
+    );
   }
 
   if (!doctor) {
