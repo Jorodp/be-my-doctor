@@ -162,6 +162,31 @@ const ManualPaymentModal = ({ onPaymentAdded }: ManualPaymentModalProps) => {
         throw error;
       }
 
+      // Crear log de creación
+      try {
+        const { data: user } = await supabase.auth.getUser();
+        const { data: insertedSubscription } = await supabase
+          .from('subscriptions')
+          .select('id')
+          .eq('user_id', selectedDoctorId)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+
+        if (insertedSubscription) {
+          await supabase.from('subscription_logs').insert({
+            subscription_id: insertedSubscription.id,
+            admin_user_id: user.user?.id,
+            action: 'created',
+            old_values: null,
+            new_values: subscriptionData,
+            notes: `Suscripción manual creada por administrador. Recibo: ${receiptNumber || 'N/A'}. Observaciones: ${observations || 'N/A'}`
+          });
+        }
+      } catch (logError) {
+        console.error('Error creating log:', logError);
+      }
+
       toast({
         title: "Pago registrado exitosamente",
         description: `Suscripción ${plan === 'monthly' ? 'mensual' : 'anual'} activada para Dr. ${getSelectedDoctorName()}`,

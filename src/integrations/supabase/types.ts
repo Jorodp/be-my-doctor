@@ -451,15 +451,60 @@ export type Database = {
           },
         ]
       }
+      subscription_logs: {
+        Row: {
+          action: string
+          admin_user_id: string | null
+          created_at: string
+          id: string
+          new_values: Json | null
+          notes: string | null
+          old_values: Json | null
+          subscription_id: string | null
+        }
+        Insert: {
+          action: string
+          admin_user_id?: string | null
+          created_at?: string
+          id?: string
+          new_values?: Json | null
+          notes?: string | null
+          old_values?: Json | null
+          subscription_id?: string | null
+        }
+        Update: {
+          action?: string
+          admin_user_id?: string | null
+          created_at?: string
+          id?: string
+          new_values?: Json | null
+          notes?: string | null
+          old_values?: Json | null
+          subscription_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_logs_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscriptions: {
         Row: {
           amount: number
+          cancelled_at: string | null
+          cancelled_by: string | null
           created_at: string
           currency: string | null
           ends_at: string
           id: string
+          observations: string | null
           payment_method: string | null
           plan: string
+          receipt_number: string | null
           starts_at: string
           status: string
           stripe_customer_id: string | null
@@ -469,12 +514,16 @@ export type Database = {
         }
         Insert: {
           amount: number
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           created_at?: string
           currency?: string | null
           ends_at: string
           id?: string
+          observations?: string | null
           payment_method?: string | null
           plan: string
+          receipt_number?: string | null
           starts_at?: string
           status?: string
           stripe_customer_id?: string | null
@@ -484,12 +533,16 @@ export type Database = {
         }
         Update: {
           amount?: number
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           created_at?: string
           currency?: string | null
           ends_at?: string
           id?: string
+          observations?: string | null
           payment_method?: string | null
           plan?: string
+          receipt_number?: string | null
           starts_at?: string
           status?: string
           stripe_customer_id?: string | null

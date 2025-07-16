@@ -23,47 +23,76 @@ interface EditSubscriptionModalProps {
 
 const EditSubscriptionModal = ({ subscription, isOpen, onClose, onUpdated }: EditSubscriptionModalProps) => {
   const [loading, setLoading] = useState(false);
-  const [plan, setPlan] = useState<'monthly' | 'annual'>(subscription?.plan || 'monthly');
-  const [paidAt, setPaidAt] = useState<Date>(subscription?.paid_at ? new Date(subscription.paid_at) : new Date());
-  const [endsAt, setEndsAt] = useState<Date>(subscription?.ends_at ? new Date(subscription.ends_at) : new Date());
+  const [expirationDate, setExpirationDate] = useState<Date | null>(
+    subscription?.ends_at ? new Date(subscription.ends_at) : null
+  );
+  const [amount, setAmount] = useState(subscription?.amount || 0);
   const [receiptNumber, setReceiptNumber] = useState(subscription?.receipt_number || '');
   const [observations, setObservations] = useState(subscription?.observations || '');
   const { toast } = useToast();
 
-  const getAmount = (planType: 'monthly' | 'annual') => {
-    return planType === 'monthly' ? 799 : 7990;
-  };
-
   const handleSubmit = async () => {
-    if (!subscription?.id) return;
+    if (!subscription || !expirationDate) {
+      toast({
+        title: "Error",
+        description: "Por favor completa todos los campos obligatorios",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setLoading(true);
     try {
+      const oldValues = {
+        ends_at: subscription.ends_at,
+        receipt_number: subscription.receipt_number,
+        observations: subscription.observations,
+        amount: subscription.amount
+      };
+
+      const newValues = {
+        ends_at: expirationDate.toISOString(),
+        receipt_number: receiptNumber.trim() || null,
+        observations: observations.trim() || null,
+        amount: amount
+      };
+
       const { error } = await supabase
         .from('subscriptions')
-        .update({
-          plan: plan,
-          amount: getAmount(plan),
-          paid_at: paidAt.toISOString(),
-          ends_at: endsAt.toISOString(),
-          updated_at: new Date().toISOString()
-        })
+        .update(newValues)
         .eq('id', subscription.id);
 
       if (error) throw error;
 
+      // Crear log de cambios
+      try {
+        const { data: user } = await supabase.auth.getUser();
+        await supabase.from('subscription_logs').insert({
+          subscription_id: subscription.id,
+          admin_user_id: user.user?.id,
+          action: 'updated',
+          old_values: oldValues,
+          new_values: newValues,
+          notes: `Suscripción editada por administrador`
+        });
+      } catch (logError) {
+        console.error('Error creating log:', logError);
+      }
+
       toast({
         title: "Suscripción actualizada",
-        description: "Los cambios se han guardado correctamente",
+        description: "Los cambios se han guardado exitosamente",
       });
 
-      onUpdated();
       onClose();
-    } catch (error) {
+      if (onUpdated) {
+        onUpdated();
+      }
+    } catch (error: any) {
       console.error('Error updating subscription:', error);
       toast({
         title: "Error",
-        description: "No se pudo actualizar la suscripción",
+        description: `No se pudo actualizar la suscripción: ${error.message}`,
         variant: "destructive",
       });
     } finally {
@@ -87,41 +116,41 @@ const EditSubscriptionModal = ({ subscription, isOpen, onClose, onUpdated }: Edi
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Plan */}
+          {/* Monto */}
           <div className="space-y-2">
-            <Label>Plan de Suscripción</Label>
-            <Select value={plan} onValueChange={(value: 'monthly' | 'annual') => setPlan(value)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="monthly">Mensual - $7.99 USD/mes</SelectItem>
-                <SelectItem value="annual">Anual - $79.90 USD/año</SelectItem>
-              </SelectContent>
-            </Select>
+            <Label>Monto Pagado (en centavos)</Label>
+            <Input
+              type="number"
+              value={amount}
+              onChange={(e) => setAmount(Number(e.target.value))}
+              placeholder="Ej: 79900 para $799.00"
+            />
+            <p className="text-xs text-muted-foreground">
+              Equivale a: ${(amount / 100).toFixed(2)} {subscription?.currency || 'MXN'}
+            </p>
           </div>
 
-          {/* Paid At */}
+          {/* Fecha de Expiración */}
           <div className="space-y-2">
-            <Label>Fecha de Pago</Label>
+            <Label>Fecha de Expiración *</Label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   className={cn(
                     "w-full justify-start text-left font-normal",
-                    !paidAt && "text-muted-foreground"
+                    !expirationDate && "text-muted-foreground"
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {paidAt ? format(paidAt, "PPP", { locale: es }) : "Seleccionar fecha"}
+                  {expirationDate ? format(expirationDate, "PPP", { locale: es }) : "Seleccionar fecha"}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
                 <Calendar
                   mode="single"
-                  selected={paidAt}
-                  onSelect={(date) => date && setPaidAt(date)}
+                  selected={expirationDate}
+                  onSelect={(date) => date && setExpirationDate(date)}
                   initialFocus
                   className="p-3 pointer-events-auto"
                 />
@@ -129,35 +158,7 @@ const EditSubscriptionModal = ({ subscription, isOpen, onClose, onUpdated }: Edi
             </Popover>
           </div>
 
-          {/* Ends At */}
-          <div className="space-y-2">
-            <Label>Fecha de Expiración</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !endsAt && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {endsAt ? format(endsAt, "PPP", { locale: es }) : "Seleccionar fecha"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={endsAt}
-                  onSelect={(date) => date && setEndsAt(date)}
-                  initialFocus
-                  className="p-3 pointer-events-auto"
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-
-          {/* Receipt Number */}
+          {/* Número de Recibo */}
           <div className="space-y-2">
             <Label>Número de Recibo</Label>
             <Input
@@ -167,13 +168,13 @@ const EditSubscriptionModal = ({ subscription, isOpen, onClose, onUpdated }: Edi
             />
           </div>
 
-          {/* Observations */}
+          {/* Observaciones */}
           <div className="space-y-2">
             <Label>Observaciones</Label>
             <Textarea
               value={observations}
               onChange={(e) => setObservations(e.target.value)}
-              placeholder="Notas adicionales..."
+              placeholder="Notas adicionales, método de pago específico, etc."
               rows={3}
             />
           </div>
@@ -183,7 +184,11 @@ const EditSubscriptionModal = ({ subscription, isOpen, onClose, onUpdated }: Edi
             <Button variant="outline" onClick={onClose} className="flex-1">
               Cancelar
             </Button>
-            <Button onClick={handleSubmit} disabled={loading} className="flex-1">
+            <Button 
+              onClick={handleSubmit} 
+              disabled={loading || !expirationDate} 
+              className="flex-1"
+            >
               {loading ? "Guardando..." : "Guardar Cambios"}
             </Button>
           </div>
