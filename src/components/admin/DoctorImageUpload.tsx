@@ -97,6 +97,15 @@ export const DoctorImageUpload: React.FC<DoctorImageUploadProps> = ({
     try {
       setUploading(true);
       
+      // Verificar autenticación
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('Usuario no autenticado');
+      }
+
+      console.log('Usuario autenticado:', session.user.id);
+      console.log('Subiendo imagen para doctor:', doctorId);
+      
       // Crear preview
       const previewUrl = URL.createObjectURL(file);
       setPreview(previewUrl);
@@ -106,6 +115,7 @@ export const DoctorImageUpload: React.FC<DoctorImageUploadProps> = ({
       
       // Subir al bucket doctor-profiles
       const fileName = `${doctorId}/profile.jpg`;
+      console.log('Nombre del archivo:', fileName);
 
       const { error: uploadError } = await supabase.storage
         .from('doctor-profiles')
@@ -114,21 +124,41 @@ export const DoctorImageUpload: React.FC<DoctorImageUploadProps> = ({
           contentType: 'image/jpeg'
         });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('Error de Supabase Storage:', uploadError);
+        throw uploadError;
+      }
 
-      // Actualizar perfil del médico
-      const { error: updateError } = await supabase
+      console.log('Imagen subida exitosamente a:', fileName);
+
+      // Generar URL pública
+      const { data: { publicUrl } } = supabase.storage
+        .from('doctor-profiles')
+        .getPublicUrl(fileName);
+
+      console.log('URL pública generada:', publicUrl);
+
+      // Actualizar perfil del médico en doctor_profiles
+      const { error: updateDoctorError } = await supabase
         .from('doctor_profiles')
         .update({ profile_image_url: fileName })
         .eq('user_id', doctorId);
 
-      if (updateError) throw updateError;
-
+      if (updateDoctorError) {
+        console.error('Error actualizando doctor_profiles:', updateDoctorError);
+        throw updateDoctorError;
+      }
       // También actualizar la tabla profiles si existe
-      await supabase
+      const { error: updateProfileError } = await supabase
         .from('profiles')
         .update({ profile_image_url: fileName })
         .eq('user_id', doctorId);
+
+      if (updateProfileError) {
+        console.warn('Error actualizando profiles (opcional):', updateProfileError);
+      }
+
+      console.log('Perfil actualizado correctamente');
 
       toast({
         title: "Foto actualizada",
@@ -158,11 +188,20 @@ export const DoctorImageUpload: React.FC<DoctorImageUploadProps> = ({
     try {
       setUploading(true);
 
+      // Verificar autenticación
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('Usuario no autenticado');
+      }
+
+      const fileName = `${doctorId}/profile.jpg`;
+
       if (currentImageUrl) {
         // Eliminar del storage
+        console.log('Eliminando imagen:', fileName);
         const { error: deleteError } = await supabase.storage
           .from('doctor-profiles')
-          .remove([currentImageUrl]);
+          .remove([fileName]);
 
         if (deleteError) {
           console.warn('Error deleting from storage:', deleteError);
