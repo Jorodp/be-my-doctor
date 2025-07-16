@@ -44,8 +44,19 @@ const SubscriptionSection = () => {
       setActionLoading(true);
       console.log(`Starting ${planType} subscription process...`);
       
+      // Get current session for authentication
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session?.access_token) {
+        console.error('❌ No valid session found:', sessionError);
+        throw new Error('No hay una sesión válida. Por favor, inicia sesión nuevamente.');
+      }
+      
       const { data, error } = await supabase.functions.invoke('create-doctor-subscription', {
-        body: { plan_type: planType }
+        body: { plan_type: planType },
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        }
       });
       
       if (error) {
