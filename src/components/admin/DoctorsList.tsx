@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Search, Eye, Edit, UserPlus, CheckCircle, XCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { DoctorImage } from '@/components/DoctorImage';
 
 interface Doctor {
   id: string;
@@ -20,6 +21,7 @@ interface Doctor {
   consultation_fee: number | null;
   verification_status: 'pending' | 'verified' | 'rejected';
   years_experience: number | null;
+  profile_image_url: string | null;
   profile: {
     full_name: string | null;
     email: string | null;
@@ -63,7 +65,8 @@ export const DoctorsList = () => {
           biography,
           consultation_fee,
           verification_status,
-          years_experience
+          years_experience,
+          profile_image_url
         `);
 
       if (error) throw error;
@@ -269,6 +272,11 @@ export const DoctorsList = () => {
                 <div className="flex justify-between items-start">
                   <div className="space-y-2 flex-1">
                     <div className="flex items-center gap-3">
+                      <DoctorImage 
+                        profileImageUrl={doctor.profile_image_url}
+                        doctorName={doctor.profile?.full_name}
+                        size="sm"
+                      />
                       <h3 className="font-semibold">{doctor.profile?.full_name || 'Sin nombre'}</h3>
                       {getStatusBadge(doctor.verification_status)}
                     </div>

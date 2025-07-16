@@ -90,6 +90,8 @@ export const EditDoctorProfile = ({
     setLoading(true);
 
     try {
+      console.log('EditDoctorProfile: Starting update process');
+      
       // Update profiles table
       const { error: profileError } = await supabase
         .from('profiles')
@@ -99,7 +101,10 @@ export const EditDoctorProfile = ({
         })
         .eq('user_id', profile.user_id);
 
-      if (profileError) throw profileError;
+      if (profileError) {
+        console.error('EditDoctorProfile: Profile update error:', profileError);
+        throw profileError;
+      }
 
       // Update doctor_profiles table
       const { error: doctorError } = await supabase
@@ -116,17 +121,23 @@ export const EditDoctorProfile = ({
         })
         .eq('user_id', profile.user_id);
 
-      if (doctorError) throw doctorError;
+      if (doctorError) {
+        console.error('EditDoctorProfile: Doctor profile update error:', doctorError);
+        throw doctorError;
+      }
+
+      console.log('EditDoctorProfile: Updates completed successfully');
 
       toast({
         title: "Perfil actualizado",
         description: "Los datos del doctor han sido actualizados correctamente",
       });
 
+      // Call onProfileUpdated to refresh the parent component data
       onProfileUpdated();
       onClose();
     } catch (error: any) {
-      console.error('Error updating doctor profile:', error);
+      console.error('EditDoctorProfile: Error updating doctor profile:', error);
       toast({
         title: "Error",
         description: error.message || "No se pudo actualizar el perfil",
@@ -197,9 +208,12 @@ export const EditDoctorProfile = ({
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Foto de Perfil</h3>
             <DoctorImageUpload
-              doctorId={doctorProfile.user_id}
+              doctorId={doctorProfile?.user_id}
               currentImageUrl={currentProfileImage}
-              onImageUpdated={onProfileUpdated}
+              onImageUpdated={() => {
+                console.log('EditDoctorProfile: Image updated, refreshing data');
+                onProfileUpdated();
+              }}
               disabled={loading}
             />
           </div>
