@@ -42,18 +42,35 @@ const SubscriptionSection = () => {
   const createSubscription = async (planType: 'monthly' | 'annual') => {
     try {
       setActionLoading(true);
+      console.log(`Starting ${planType} subscription process...`);
+      
       const { data, error } = await supabase.functions.invoke('create-doctor-subscription', {
         body: { plan_type: planType }
       });
-      if (error) throw error;
       
+      if (error) {
+        console.error('Error from edge function:', error);
+        throw new Error(error.message || 'Error al crear la sesión de pago');
+      }
+      
+      if (!data?.url) {
+        console.error('No checkout URL received:', data);
+        throw new Error('No se recibió la URL de checkout');
+      }
+      
+      console.log('Opening Stripe checkout:', data.url);
       // Open Stripe checkout in new tab
       window.open(data.url, '_blank');
-    } catch (error) {
+      
+      toast({
+        title: "Redirigiendo a Stripe",
+        description: "Se abrió una nueva pestaña para completar el pago",
+      });
+    } catch (error: any) {
       console.error('Error creating subscription:', error);
       toast({
         title: "Error",
-        description: "No se pudo crear la sesión de pago",
+        description: error.message || "No se pudo crear la sesión de pago",
         variant: "destructive",
       });
     } finally {
@@ -98,8 +115,8 @@ const SubscriptionSection = () => {
   const isActive = subscriptionData?.subscribed && subscriptionData?.status === 'active';
   const planName = subscriptionData?.plan === 'monthly' ? 'Mensual' : 
                    subscriptionData?.plan === 'annual' ? 'Anual' : 'Ninguno';
-  const monthlyPrice = 799; // $7.99 USD
-  const annualPrice = 7990; // $79.90 USD (equivalent to ~$6.66/month)
+  const monthlyPrice = 200000; // $2,000 MXN (in cents)
+  const annualPrice = 2000000; // $20,000 MXN (in cents)
 
   return (
     <div className="space-y-6">
@@ -181,9 +198,9 @@ const SubscriptionSection = () => {
             <CardContent className="space-y-4">
               <div className="text-center">
                 <div className="text-3xl font-bold text-primary">
-                  ${(monthlyPrice / 100).toFixed(2)}
+                  ${(monthlyPrice / 100).toLocaleString('es-MX')}
                 </div>
-                <div className="text-sm text-muted-foreground">USD por mes</div>
+                <div className="text-sm text-muted-foreground">MXN por mes</div>
               </div>
               
               <ul className="space-y-2 text-sm">
@@ -224,7 +241,7 @@ const SubscriptionSection = () => {
           <Card className="relative border-primary">
             <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
               <Badge className="bg-primary text-primary-foreground">
-                Ahorra 17%
+                Ahorra $4,000 MXN
               </Badge>
             </div>
             <CardHeader>
@@ -239,11 +256,11 @@ const SubscriptionSection = () => {
             <CardContent className="space-y-4">
               <div className="text-center">
                 <div className="text-3xl font-bold text-primary">
-                  ${(annualPrice / 100).toFixed(2)}
+                  ${(annualPrice / 100).toLocaleString('es-MX')}
                 </div>
-                <div className="text-sm text-muted-foreground">USD por año</div>
+                <div className="text-sm text-muted-foreground">MXN por año</div>
                 <div className="text-xs text-green-600 font-medium mt-1">
-                  (~${((annualPrice / 100) / 12).toFixed(2)} USD/mes)
+                  (~${((annualPrice / 100) / 12).toLocaleString('es-MX')} MXN/mes)
                 </div>
               </div>
               
