@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Upload, Save, X, Camera, Trash2 } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { User } from 'lucide-react';
+import { DoctorImageUpload } from './DoctorImageUpload';
 
 interface DoctorProfile {
   id: string;
@@ -199,61 +200,12 @@ export const EditDoctorProfile = ({
           {/* Profile Photo */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Foto de Perfil</h3>
-            <div className="flex items-center gap-6">
-              <Avatar className="h-24 w-24">
-                <AvatarImage 
-                  src={currentProfileImage ? supabase.storage.from('doctor-profiles').getPublicUrl(currentProfileImage).data.publicUrl : undefined} 
-                  alt="Foto del doctor" 
-                />
-                <AvatarFallback>
-                  <User className="h-12 w-12" />
-                </AvatarFallback>
-              </Avatar>
-              
-              <div className="flex flex-col gap-2">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={onFileSelect}
-                  className="hidden"
-                />
-                
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploadingImage}
-                >
-                  {uploadingImage ? (
-                    <>
-                      <LoadingSpinner className="mr-2 h-4 w-4" />
-                      Subiendo...
-                    </>
-                  ) : (
-                    <>
-                      <Camera className="mr-2 h-4 w-4" />
-                      {currentProfileImage ? 'Cambiar Foto' : 'Subir Foto'}
-                    </>
-                  )}
-                </Button>
-                
-                {currentProfileImage && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleImageDelete}
-                    className="text-destructive hover:text-destructive"
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Eliminar Foto
-                  </Button>
-                )}
-              </div>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              La foto debe ser cuadrada (1:1) y no mayor a 5MB. Formatos permitidos: JPG, PNG, WebP.
-            </p>
+            <DoctorImageUpload
+              doctorId={doctorProfile.user_id}
+              currentImageUrl={currentProfileImage}
+              onImageUpdated={onProfileUpdated}
+              disabled={loading}
+            />
           </div>
 
           {/* Professional Information */}
