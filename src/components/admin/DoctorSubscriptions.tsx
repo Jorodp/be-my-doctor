@@ -208,8 +208,6 @@ const DoctorSubscriptions = () => {
             </div>
             <div className="flex gap-2">
               <ManualPaymentModal 
-                doctorId=""
-                doctorName="Seleccionar Doctor"
                 onPaymentAdded={refetch}
               />
               <Button 

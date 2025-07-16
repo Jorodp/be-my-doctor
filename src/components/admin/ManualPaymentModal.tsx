@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,12 +15,20 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
 interface ManualPaymentModalProps {
-  doctorId: string;
-  doctorName: string;
   onPaymentAdded?: () => void;
 }
 
-const ManualPaymentModal = ({ doctorId, doctorName, onPaymentAdded }: ManualPaymentModalProps) => {
+interface Doctor {
+  user_id: string;
+  full_name: string;
+}
+
+interface PaymentSettings {
+  monthly_price: number;
+  annual_price: number;
+}
+
+const ManualPaymentModal = ({ onPaymentAdded }: ManualPaymentModalProps) => {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [plan, setPlan] = useState<'monthly' | 'annual' | ''>('');
@@ -28,7 +36,51 @@ const ManualPaymentModal = ({ doctorId, doctorName, onPaymentAdded }: ManualPaym
   const [expirationDate, setExpirationDate] = useState<Date | null>(null);
   const [receiptNumber, setReceiptNumber] = useState('');
   const [observations, setObservations] = useState('');
+  const [selectedDoctorId, setSelectedDoctorId] = useState<string>('');
+  const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [paymentSettings, setPaymentSettings] = useState<PaymentSettings | null>(null);
+  const [loadingData, setLoadingData] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (open) {
+      loadDoctorsAndSettings();
+    }
+  }, [open]);
+
+  const loadDoctorsAndSettings = async () => {
+    setLoadingData(true);
+    try {
+      // Load doctors
+      const { data: doctorsData, error: doctorsError } = await supabase
+        .from('profiles')
+        .select('user_id, full_name')
+        .eq('role', 'doctor')
+        .order('full_name');
+
+      if (doctorsError) throw doctorsError;
+
+      // Load payment settings
+      const { data: settingsData, error: settingsError } = await supabase
+        .from('payment_settings')
+        .select('monthly_price, annual_price')
+        .single();
+
+      if (settingsError) throw settingsError;
+
+      setDoctors(doctorsData || []);
+      setPaymentSettings(settingsData);
+    } catch (error) {
+      console.error('Error loading data:', error);
+      toast({
+        title: "Error",
+        description: "No se pudieron cargar los datos necesarios",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingData(false);
+    }
+  };
 
   const calculateExpiration = (planType: 'monthly' | 'annual', fromDate: Date = new Date()) => {
     return planType === 'monthly' 
@@ -51,14 +103,20 @@ const ManualPaymentModal = ({ doctorId, doctorName, onPaymentAdded }: ManualPaym
   };
 
   const getAmount = (planType: 'monthly' | 'annual') => {
-    return planType === 'monthly' ? 799 : 7990; // $7.99 or $79.90 in cents
+    if (!paymentSettings) return 0;
+    return planType === 'monthly' ? paymentSettings.monthly_price : paymentSettings.annual_price;
+  };
+
+  const getSelectedDoctorName = () => {
+    const doctor = doctors.find(d => d.user_id === selectedDoctorId);
+    return doctor ? doctor.full_name : '';
   };
 
   const handleSubmit = async () => {
-    if (!plan || !expirationDate) {
+    if (!plan || !expirationDate || !selectedDoctorId) {
       toast({
         title: "Error",
-        description: "Por favor completa todos los campos obligatorios",
+        description: "Por favor completa todos los campos obligatorios (doctor, plan y fecha de pago)",
         variant: "destructive",
       });
       return;
@@ -66,31 +124,39 @@ const ManualPaymentModal = ({ doctorId, doctorName, onPaymentAdded }: ManualPaym
 
     setLoading(true);
     try {
-      const { error } = await supabase.from('subscriptions').insert({
-        user_id: doctorId,
+      const subscriptionData: any = {
+        user_id: selectedDoctorId,
         plan: plan,
         status: 'active',
         amount: getAmount(plan),
-        currency: 'USD',
+        currency: 'MXN',
         payment_method: 'offline',
         starts_at: paymentDate.toISOString(),
         ends_at: expirationDate.toISOString(),
-        paid_at: paymentDate.toISOString(),
         stripe_customer_id: null,
         stripe_subscription_id: null,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      });
+      };
+
+      // Add optional fields if they have values
+      if (receiptNumber.trim()) {
+        subscriptionData.receipt_number = receiptNumber.trim();
+      }
+      if (observations.trim()) {
+        subscriptionData.observations = observations.trim();
+      }
+
+      const { error } = await supabase.from('subscriptions').insert(subscriptionData);
 
       if (error) throw error;
 
       toast({
         title: "Pago registrado exitosamente",
-        description: `Suscripción ${plan === 'monthly' ? 'mensual' : 'anual'} activada para ${doctorName}`,
+        description: `Suscripción ${plan === 'monthly' ? 'mensual' : 'anual'} activada para Dr. ${getSelectedDoctorName()}`,
       });
 
       // Reset form
       setPlan('');
+      setSelectedDoctorId('');
       setPaymentDate(new Date());
       setExpirationDate(null);
       setReceiptNumber('');
@@ -132,26 +198,41 @@ const ManualPaymentModal = ({ doctorId, doctorName, onPaymentAdded }: ManualPaym
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Doctor */}
+          {/* Doctor Selection */}
           <div className="space-y-2">
-            <Label>Doctor</Label>
-            <Input value={doctorName} disabled className="bg-muted" />
+            <Label>Doctor *</Label>
+            <Select value={selectedDoctorId} onValueChange={setSelectedDoctorId} disabled={loadingData}>
+              <SelectTrigger>
+                <SelectValue placeholder={loadingData ? "Cargando doctores..." : "Selecciona un doctor"} />
+              </SelectTrigger>
+              <SelectContent>
+                {doctors.map((doctor) => (
+                  <SelectItem key={doctor.user_id} value={doctor.user_id}>
+                    Dr. {doctor.full_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Plan */}
           <div className="space-y-2">
             <Label>Plan de Suscripción *</Label>
-            <Select value={plan} onValueChange={handlePlanChange}>
+            <Select value={plan} onValueChange={handlePlanChange} disabled={!paymentSettings}>
               <SelectTrigger>
-                <SelectValue placeholder="Selecciona un plan" />
+                <SelectValue placeholder={!paymentSettings ? "Cargando precios..." : "Selecciona un plan"} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="monthly">
-                  Mensual - $7.99 USD/mes
-                </SelectItem>
-                <SelectItem value="annual">
-                  Anual - $79.90 USD/año (2 meses gratis)
-                </SelectItem>
+                {paymentSettings && (
+                  <>
+                    <SelectItem value="monthly">
+                      Mensual - ${paymentSettings.monthly_price} MXN/mes
+                    </SelectItem>
+                    <SelectItem value="annual">
+                      Anual - ${paymentSettings.annual_price} MXN/año
+                    </SelectItem>
+                  </>
+                )}
               </SelectContent>
             </Select>
           </div>
@@ -243,7 +324,7 @@ const ManualPaymentModal = ({ doctorId, doctorName, onPaymentAdded }: ManualPaym
             </Button>
             <Button
               onClick={handleSubmit}
-              disabled={loading || !plan}
+              disabled={loading || !plan || !selectedDoctorId || loadingData}
               className="flex-1"
             >
               {loading ? "Registrando..." : "Registrar Pago"}
