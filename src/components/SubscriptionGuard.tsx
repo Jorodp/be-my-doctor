@@ -29,10 +29,12 @@ export function SubscriptionGuard({ children }: SubscriptionGuardProps) {
   } | null>(null);
 
   useEffect(() => {
+    console.log("SubscriptionGuard: Effect triggered", { user: user?.id, role: profile?.role });
     if (user && profile?.role === "doctor") {
       checkSubscription();
       fetchPaymentSettings();
     } else {
+      console.log("SubscriptionGuard: Not a doctor or no user, setting loading to false");
       setLoading(false);
     }
   }, [user, profile]);
@@ -72,17 +74,42 @@ export function SubscriptionGuard({ children }: SubscriptionGuardProps) {
 
   const checkSubscription = async () => {
     try {
-      const { data, error } = await supabase.functions.invoke("payments", {
-        body: { action: "check-subscription" }
+      console.log("Checking subscription for user:", user?.id);
+      
+      // Consulta directa a la tabla subscriptions para incluir suscripciones manuales
+      const { data: subscriptions, error } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', user?.id)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error("Subscription query error:", error);
+        throw error;
+      }
+
+      console.log("Subscriptions found:", subscriptions);
+
+      // Verificar si hay alguna suscripción activa y no expirada
+      const now = new Date();
+      const activeSubscription = subscriptions?.find(sub => {
+        const endsAt = new Date(sub.ends_at);
+        const isActive = sub.status === 'active' && endsAt >= now;
+        console.log(`Subscription ${sub.id}: status=${sub.status}, ends_at=${sub.ends_at}, active=${isActive}`);
+        return isActive;
       });
 
-      if (error) throw error;
-      
-      if (data.hasActiveSubscription) {
-        setSubscription(data.subscription);
+      if (activeSubscription) {
+        console.log("Active subscription found:", activeSubscription);
+        setSubscription(activeSubscription);
+      } else {
+        console.log("No active subscription found");
+        setSubscription(null);
       }
     } catch (error) {
       console.error("Error checking subscription:", error);
+      setSubscription(null);
     } finally {
       setLoading(false);
     }
@@ -142,8 +169,11 @@ export function SubscriptionGuard({ children }: SubscriptionGuardProps) {
 
   // If user has active subscription, show children
   if (subscription) {
+    console.log("SubscriptionGuard: User has active subscription, rendering children");
     return <>{children}</>;
   }
+
+  console.log("SubscriptionGuard: No active subscription, showing subscription required page");
 
   // Show subscription required page
   return (
