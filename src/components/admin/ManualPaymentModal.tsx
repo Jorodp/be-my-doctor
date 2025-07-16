@@ -113,6 +113,14 @@ const ManualPaymentModal = ({ onPaymentAdded }: ManualPaymentModalProps) => {
   };
 
   const handleSubmit = async () => {
+    console.log('Form data before validation:', {
+      plan,
+      expirationDate,
+      selectedDoctorId,
+      paymentDate,
+      paymentSettings
+    });
+
     if (!plan || !expirationDate || !selectedDoctorId) {
       toast({
         title: "Error",
@@ -130,7 +138,7 @@ const ManualPaymentModal = ({ onPaymentAdded }: ManualPaymentModalProps) => {
         status: 'active',
         amount: getAmount(plan),
         currency: 'MXN',
-        payment_method: 'offline',
+        payment_method: 'manual', // Cambio de 'offline' a 'manual'
         starts_at: paymentDate.toISOString(),
         ends_at: expirationDate.toISOString(),
         stripe_customer_id: null,
@@ -145,9 +153,14 @@ const ManualPaymentModal = ({ onPaymentAdded }: ManualPaymentModalProps) => {
         subscriptionData.observations = observations.trim();
       }
 
+      console.log('Subscription data to insert:', subscriptionData);
+
       const { error } = await supabase.from('subscriptions').insert(subscriptionData);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error details:', error);
+        throw error;
+      }
 
       toast({
         title: "Pago registrado exitosamente",
@@ -166,11 +179,15 @@ const ManualPaymentModal = ({ onPaymentAdded }: ManualPaymentModalProps) => {
       if (onPaymentAdded) {
         onPaymentAdded();
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error registering payment:', error);
+      const errorMessage = error?.message || 'Error desconocido';
+      const errorDetails = error?.details || '';
+      const errorHint = error?.hint || '';
+      
       toast({
-        title: "Error",
-        description: "No se pudo registrar el pago",
+        title: "Error al registrar pago",
+        description: `${errorMessage}${errorDetails ? ` - ${errorDetails}` : ''}${errorHint ? ` - ${errorHint}` : ''}`,
         variant: "destructive",
       });
     } finally {
