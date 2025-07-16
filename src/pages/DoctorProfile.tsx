@@ -19,7 +19,8 @@ import {
   Award,
   Phone,
   Calendar,
-  Camera
+  Camera,
+  User
 } from 'lucide-react';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 
@@ -269,93 +270,188 @@ export default function DoctorProfile() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 p-4 sm:p-6">
-      <div className="max-w-4xl mx-auto space-y-6">
-        <BackToHomeButton />
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
+      <div className="max-w-5xl mx-auto">
+        <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm border-b p-4">
+          <BackToHomeButton />
+        </div>
         
-        {/* Profile Header */}
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex flex-col md:flex-row gap-6">
-              <Avatar className="h-32 w-32 mx-auto md:mx-0">
-                <AvatarImage src={doctor.profile_image_url || ''} alt={doctor.profile?.full_name || ''} />
-                <AvatarFallback className="text-2xl">
-                  {doctor.profile?.full_name?.charAt(0) || 'D'}
-                </AvatarFallback>
-              </Avatar>
+        {/* Hero Section with Large Photo */}
+        <div className="relative">
+          {/* Background Pattern */}
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-secondary/5"></div>
+          
+          <div className="relative p-6 md:p-12">
+            <div className="flex flex-col lg:flex-row gap-8 items-center lg:items-start">
               
-              <div className="flex-1 text-center md:text-left">
-                <h1 className="text-3xl font-bold mb-2">
-                  Dr. {doctor.profile?.full_name || 'Nombre no disponible'}
-                </h1>
+              {/* Large Doctor Photo */}
+              <div className="relative">
+                <div className="w-64 h-64 md:w-80 md:h-80 rounded-3xl overflow-hidden shadow-2xl ring-4 ring-background/50">
+                  {doctor.profile_image_url ? (
+                    <img 
+                      src={doctor.profile_image_url} 
+                      alt={`Dr. ${doctor.profile?.full_name}`}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                      }}
+                    />
+                  ) : null}
+                  
+                  {/* Fallback */}
+                  <div className={`w-full h-full bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center ${doctor.profile_image_url ? 'hidden' : ''}`}>
+                    <div className="text-center">
+                      <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Stethoscope className="h-12 w-12 text-primary" />
+                      </div>
+                      <p className="text-4xl font-bold text-primary">
+                        {doctor.profile?.full_name?.charAt(0) || 'D'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
                 
-                <div className="flex flex-wrap gap-4 justify-center md:justify-start mb-4">
-                  <Badge variant="secondary" className="gap-2">
-                    <Stethoscope className="h-4 w-4" />
-                    {doctor.specialty}
-                  </Badge>
+                {/* Verification Badge */}
+                {doctor.verification_status === 'verified' && (
+                  <div className="absolute -top-2 -right-2 bg-green-500 text-white rounded-full p-2 shadow-lg">
+                    <Award className="h-6 w-6" />
+                  </div>
+                )}
+              </div>
+              
+              {/* Doctor Info */}
+              <div className="flex-1 text-center lg:text-left space-y-6">
+                
+                {/* Name and Title */}
+                <div>
+                  <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-2">
+                    Dr. {doctor.profile?.full_name || 'Nombre no disponible'}
+                  </h1>
+                  <p className="text-xl text-muted-foreground mb-4">
+                    Especialista en {doctor.specialty}
+                  </p>
                   
-                  {doctor.years_experience && (
-                    <Badge variant="outline" className="gap-2">
-                      <Award className="h-4 w-4" />
-                      {doctor.years_experience} años de experiencia
-                    </Badge>
-                  )}
-                  
-                  {averageRating > 0 && (
-                    <Badge variant="outline" className="gap-2">
-                      <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                      {averageRating} ({ratings.length} reseñas)
-                    </Badge>
-                  )}
+                  {/* Professional License */}
+                  <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full">
+                    <Award className="h-4 w-4" />
+                    <span className="text-sm font-medium">Cédula: {doctor.professional_license}</span>
+                  </div>
                 </div>
 
-                <div className="flex flex-wrap gap-4 justify-center md:justify-start text-sm text-muted-foreground mb-4">
-                  {doctor.consultation_fee && (
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="h-4 w-4" />
-                      <span>${doctor.consultation_fee} MXN por consulta</span>
+                {/* Key Stats */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {doctor.years_experience && (
+                    <div className="bg-background/50 backdrop-blur-sm rounded-2xl p-4 text-center shadow-lg">
+                      <div className="text-3xl font-bold text-primary mb-1">
+                        {doctor.years_experience}+
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        Años de experiencia
+                      </div>
                     </div>
                   )}
                   
+                  {averageRating > 0 && (
+                    <div className="bg-background/50 backdrop-blur-sm rounded-2xl p-4 text-center shadow-lg">
+                      <div className="flex items-center justify-center gap-1 mb-1">
+                        <Star className="h-6 w-6 text-yellow-400 fill-current" />
+                        <span className="text-3xl font-bold text-primary">{averageRating}</span>
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        {ratings.length} reseñas
+                      </div>
+                    </div>
+                  )}
+                  
+                  {doctor.consultation_fee && (
+                    <div className="bg-background/50 backdrop-blur-sm rounded-2xl p-4 text-center shadow-lg">
+                      <div className="text-3xl font-bold text-primary mb-1">
+                        ${doctor.consultation_fee}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        MXN por consulta
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Contact Info */}
+                <div className="flex flex-wrap gap-4 justify-center lg:justify-start">
                   {doctor.office_phone && (
-                    <div className="flex items-center gap-2">
-                      <Phone className="h-4 w-4" />
-                      <span>{doctor.office_phone}</span>
+                    <div className="flex items-center gap-2 bg-background/30 backdrop-blur-sm px-4 py-2 rounded-full">
+                      <Phone className="h-4 w-4 text-primary" />
+                      <span className="text-sm">{doctor.office_phone}</span>
                     </div>
                   )}
                   
                   {doctor.office_address && (
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4" />
-                      <span>{doctor.office_address}</span>
+                    <div className="flex items-center gap-2 bg-background/30 backdrop-blur-sm px-4 py-2 rounded-full">
+                      <MapPin className="h-4 w-4 text-primary" />
+                      <span className="text-sm">{doctor.office_address}</span>
                     </div>
                   )}
                 </div>
 
-                <Button 
-                  onClick={handleBookAppointment}
-                  size="lg"
-                  className="w-full md:w-auto"
-                >
-                  <Calendar className="h-4 w-4 mr-2" />
-                  Agendar Cita
-                </Button>
+                {/* CTA Button */}
+                <div className="pt-4">
+                  <Button 
+                    onClick={handleBookAppointment}
+                    size="lg"
+                    className="w-full lg:w-auto px-8 py-4 text-lg font-semibold shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
+                  >
+                    <Calendar className="h-5 w-5 mr-2" />
+                    Agendar Cita con Dr. {doctor.profile?.full_name?.split(' ')[0]}
+                  </Button>
+                </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        {/* Biography */}
-        {doctor.biography && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Sobre el Doctor</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground leading-relaxed">
-                {doctor.biography}
-              </p>
+        {/* Content Sections */}
+        <div className="px-6 pb-12 space-y-8">
+
+        {/* About Section with Professional Photos */}
+        {(doctor.biography || (doctor.professional_photos_urls && doctor.professional_photos_urls.length > 0)) && (
+          <Card className="overflow-hidden">
+            <CardContent className="p-0">
+              <div className="grid lg:grid-cols-2 gap-0">
+                {/* Biography */}
+                {doctor.biography && (
+                  <div className="p-8">
+                    <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+                      <User className="h-6 w-6 text-primary" />
+                      Conoce a tu Doctor
+                    </h2>
+                    <div className="prose prose-neutral max-w-none">
+                      <p className="text-muted-foreground leading-relaxed text-lg">
+                        {doctor.biography}
+                      </p>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Professional Photos Gallery */}
+                {doctor.professional_photos_urls && doctor.professional_photos_urls.length > 0 && (
+                  <div className="bg-gradient-to-br from-primary/5 to-secondary/5 p-8">
+                    <h3 className="text-xl font-semibold mb-4 text-center">Dr. {doctor.profile?.full_name?.split(' ')[0]} en acción</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      {doctor.professional_photos_urls.slice(0, 4).map((photoUrl: string, index: number) => (
+                        <div key={index} className="relative group">
+                          <AspectRatio ratio={3/4}>
+                            <img 
+                              src={photoUrl} 
+                              alt={`Dr. ${doctor.profile?.full_name} - Foto profesional ${index + 1}`}
+                              className="w-full h-full object-cover rounded-lg shadow-lg hover:scale-105 transition-transform duration-300 cursor-pointer"
+                            />
+                          </AspectRatio>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
         )}
@@ -505,6 +601,7 @@ export default function DoctorProfile() {
             </div>
           </CardContent>
         </Card>
+        </div>
       </div>
     </div>
   );
