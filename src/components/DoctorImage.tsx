@@ -6,14 +6,15 @@ interface DoctorImageProps {
   doctorName?: string | null;
   className?: string;
   fallbackClassName?: string;
-  size?: 'sm' | 'md' | 'lg' | 'xl';
+  size?: 'sm' | 'md' | 'lg' | 'xl' | 'card';
 }
 
 const sizeClasses = {
   sm: 'h-8 w-8',
   md: 'h-16 w-16', 
   lg: 'h-32 w-32',
-  xl: 'h-64 w-64 md:h-80 md:w-80'
+  xl: 'h-64 w-64 md:h-80 md:w-80',
+  card: 'w-full h-48'
 };
 
 export const DoctorImage = ({
@@ -49,10 +50,14 @@ export const DoctorImage = ({
 
   const imageSrc = getImageSrc();
 
-  if (size === 'xl') {
-    // Special handling for large profile images
+  if (size === 'xl' || size === 'card') {
+    // Special handling for large profile images and card images
+    const containerClasses = size === 'xl' 
+      ? `${sizeClasses[size]} rounded-3xl overflow-hidden shadow-2xl ring-4 ring-background/50`
+      : `${sizeClasses[size]} overflow-hidden`;
+      
     return (
-      <div className={`${sizeClasses[size]} rounded-3xl overflow-hidden shadow-2xl ring-4 ring-background/50 ${className || ''}`}>
+      <div className={`${containerClasses} ${className || ''}`}>
         <img 
           src={imageSrc}
           alt={`Dr. ${doctorName}`}

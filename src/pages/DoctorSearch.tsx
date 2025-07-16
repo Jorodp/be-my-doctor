@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { DoctorImage } from '@/components/DoctorImage';
 import { Search, Star, MapPin, Clock, Filter } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { BackToHomeButton } from '@/components/ui/BackToHomeButton';
@@ -335,11 +335,12 @@ export default function DoctorSearch() {
                 <CardContent className="p-0 overflow-hidden">
                   <div className="flex flex-col">
                     {/* Large Doctor Photo at Top */}
-                    <div className="relative h-48 overflow-hidden">
-                      <img 
-                        src={doctor.profile_image_url || `https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=400&h=300&fit=crop&crop=face`} 
-                        alt={doctor.profile?.full_name || 'Doctor'} 
-                        className="w-full h-full object-cover"
+                    <div className="relative overflow-hidden rounded-t-lg">
+                      <DoctorImage 
+                        profileImageUrl={doctor.profile_image_url}
+                        doctorName={doctor.profile?.full_name}
+                        className=""
+                        size="card"
                       />
                       {/* Availability Badge Overlay */}
                       <div className="absolute top-3 right-3">
