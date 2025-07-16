@@ -45,9 +45,15 @@ export function SubscriptionGuard({ children }: SubscriptionGuardProps) {
         .single();
 
       if (error) throw error;
+      console.log("Payment settings loaded:", data);
       setPaymentSettings(data);
     } catch (error) {
       console.error("Error fetching payment settings:", error);
+      // Set default values if fetch fails
+      setPaymentSettings({
+        monthly_price: 799,
+        annual_price: 7990
+      });
     }
   };
 
@@ -143,7 +149,7 @@ export function SubscriptionGuard({ children }: SubscriptionGuardProps) {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold mb-4">
-              ${paymentSettings?.monthly_price || 799} <span className="text-sm font-normal text-muted-foreground">MXN/mes</span>
+              ${paymentSettings?.monthly_price} <span className="text-sm font-normal text-muted-foreground">MXN/mes</span>
             </div>
             <ul className="space-y-2 mb-6">
               <li className="flex items-center gap-2">
@@ -190,10 +196,10 @@ export function SubscriptionGuard({ children }: SubscriptionGuardProps) {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold mb-2">
-              ${paymentSettings?.annual_price || 7990} <span className="text-sm font-normal text-muted-foreground">MXN/año</span>
+              ${paymentSettings?.annual_price} <span className="text-sm font-normal text-muted-foreground">MXN/año</span>
             </div>
             <div className="text-sm text-muted-foreground mb-4">
-              Equivale a ${Math.round((paymentSettings?.annual_price || 7990) / 12)} MXN/mes
+              Equivale a ${Math.round((paymentSettings?.annual_price || 0) / 12)} MXN/mes
             </div>
             <ul className="space-y-2 mb-6">
               <li className="flex items-center gap-2">
