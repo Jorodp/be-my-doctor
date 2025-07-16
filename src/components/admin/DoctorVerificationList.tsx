@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   UserCheck, 
   Clock, 
@@ -27,7 +28,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { EditDoctorProfile } from './EditDoctorProfile';
 
-interface PendingDoctor {
+interface Doctor {
   id: string;
   user_id: string;
   professional_license: string;
@@ -51,27 +52,41 @@ interface PendingDoctor {
 export const DoctorVerificationList = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [pendingDoctors, setPendingDoctors] = useState<PendingDoctor[]>([]);
+  const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [filteredDoctors, setFilteredDoctors] = useState<Doctor[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
-  const [editingDoctor, setEditingDoctor] = useState<PendingDoctor | null>(null);
+  const [editingDoctor, setEditingDoctor] = useState<Doctor | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<string>('all');
 
   useEffect(() => {
-    fetchPendingDoctors();
+    fetchDoctors();
     
-    // Set up polling to check for new pending doctors every 30 seconds
+    // Set up polling to check for new doctors every 30 seconds
     const interval = setInterval(() => {
-      fetchPendingDoctors();
+      fetchDoctors();
     }, 30000);
     
     return () => clearInterval(interval);
   }, []);
 
-  const fetchPendingDoctors = async () => {
+  useEffect(() => {
+    filterDoctors();
+  }, [doctors, statusFilter]);
+
+  const filterDoctors = () => {
+    if (statusFilter === 'all') {
+      setFilteredDoctors(doctors);
+    } else {
+      setFilteredDoctors(doctors.filter(doctor => doctor.verification_status === statusFilter));
+    }
+  };
+
+  const fetchDoctors = async () => {
     try {
-      // Fetch pending doctors with auth user data
-      const { data: doctors, error: doctorsError } = await supabase
+      // Fetch all doctors
+      const { data: doctorsData, error: doctorsError } = await supabase
         .from('doctor_profiles')
         .select(`
           id,
@@ -88,18 +103,17 @@ export const DoctorVerificationList = () => {
           practice_locations,
           created_at
         `)
-        .eq('verification_status', 'pending')
-        .order('created_at', { ascending: true });
+        .order('created_at', { ascending: false });
 
       if (doctorsError) throw doctorsError;
 
-      if (!doctors || doctors.length === 0) {
-        setPendingDoctors([]);
+      if (!doctorsData || doctorsData.length === 0) {
+        setDoctors([]);
         return;
       }
 
       // Get user profiles and auth users for email
-      const userIds = doctors.map(d => d.user_id);
+      const userIds = doctorsData.map(d => d.user_id);
       
       // Fetch profiles
       const { data: profiles } = await supabase
@@ -107,8 +121,7 @@ export const DoctorVerificationList = () => {
         .select('user_id, full_name, phone')
         .in('user_id', userIds);
 
-      // Fetch auth users to get email (we'll need to use the auth admin API or RPC)
-      // For now, let's add email to profiles if needed
+      // Fetch auth users to get email
       let authUsers: any = null;
       try {
         const response = await supabase.auth.admin.listUsers();
@@ -117,7 +130,7 @@ export const DoctorVerificationList = () => {
         console.warn('Could not fetch auth users:', authError);
       }
       
-      const doctorsWithProfiles = doctors.map(doctor => {
+      const doctorsWithProfiles = doctorsData.map(doctor => {
         const profile = profiles?.find(p => p.user_id === doctor.user_id);
         const authUser = authUsers?.users?.find((u: any) => u.id === doctor.user_id);
         
@@ -134,13 +147,13 @@ export const DoctorVerificationList = () => {
         };
       });
 
-      setPendingDoctors(doctorsWithProfiles);
+      setDoctors(doctorsWithProfiles);
     } catch (error) {
-      console.error('Error fetching pending doctors:', error);
+      console.error('Error fetching doctors:', error);
       
       // Fallback without email if auth admin fails
       try {
-        const { data: doctors, error: doctorsError } = await supabase
+        const { data: doctorsData, error: doctorsError } = await supabase
           .from('doctor_profiles')
           .select(`
             id,
@@ -157,18 +170,17 @@ export const DoctorVerificationList = () => {
             practice_locations,
             created_at
           `)
-          .eq('verification_status', 'pending')
-          .order('created_at', { ascending: true });
+          .order('created_at', { ascending: false });
 
         if (doctorsError) throw doctorsError;
 
-        const userIds = doctors?.map(d => d.user_id) || [];
+        const userIds = doctorsData?.map(d => d.user_id) || [];
         const { data: profiles } = await supabase
           .from('profiles')
           .select('user_id, full_name, phone')
           .in('user_id', userIds);
 
-        const doctorsWithProfiles = doctors?.map(doctor => {
+        const doctorsWithProfiles = doctorsData?.map(doctor => {
           const profile = profiles?.find(p => p.user_id === doctor.user_id);
           return {
             ...doctor,
@@ -183,12 +195,12 @@ export const DoctorVerificationList = () => {
           };
         }) || [];
 
-        setPendingDoctors(doctorsWithProfiles);
+        setDoctors(doctorsWithProfiles);
       } catch (fallbackError) {
         console.error('Fallback error:', fallbackError);
         toast({
           title: "Error",
-          description: "No se pudieron cargar los médicos pendientes",
+          description: "No se pudieron cargar los médicos",
           variant: "destructive"
         });
       }
@@ -229,7 +241,7 @@ export const DoctorVerificationList = () => {
       });
 
       // Refresh the list
-      fetchPendingDoctors();
+      fetchDoctors();
     } catch (error) {
       console.error('Error processing doctor:', error);
       toast({
@@ -242,7 +254,7 @@ export const DoctorVerificationList = () => {
     }
   };
 
-  const handleEditDoctor = (doctor: PendingDoctor) => {
+  const handleEditDoctor = (doctor: Doctor) => {
     setEditingDoctor(doctor);
     setIsEditModalOpen(true);
   };
@@ -253,7 +265,7 @@ export const DoctorVerificationList = () => {
   };
 
   const handleProfileUpdated = () => {
-    fetchPendingDoctors(); // Refresh the list
+    fetchDoctors(); // Refresh the list
   };
 
   if (loading) {
@@ -261,236 +273,300 @@ export const DoctorVerificationList = () => {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <UserCheck className="h-5 w-5" />
-          Verificación de Médicos ({pendingDoctors.length})
-        </CardTitle>
-        <CardDescription>
-          Médicos pendientes de verificación para comenzar a ofrecer consultas
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        {pendingDoctors.length === 0 ? (
-          <div className="text-center py-8">
-            <CheckCircle className="h-12 w-12 text-green-600 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">¡Excelente trabajo!</h3>
-            <p className="text-muted-foreground">
-              No hay médicos pendientes de verificación en este momento.
-            </p>
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <UserCheck className="h-5 w-5" />
+            Gestión de Médicos ({filteredDoctors.length})
+          </CardTitle>
+          <CardDescription>
+            Administra todos los médicos de la plataforma - verificar, editar perfiles y gestionar información
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {/* Filter Controls */}
+          <div className="mb-6">
+            <div className="flex items-center gap-4">
+              <label className="text-sm font-medium">Filtrar por estado:</label>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-48">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos los médicos</SelectItem>
+                  <SelectItem value="pending">Pendientes ({doctors.filter(d => d.verification_status === 'pending').length})</SelectItem>
+                  <SelectItem value="verified">Verificados ({doctors.filter(d => d.verification_status === 'verified').length})</SelectItem>
+                  <SelectItem value="rejected">Rechazados ({doctors.filter(d => d.verification_status === 'rejected').length})</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-        ) : (
-          <div className="space-y-4">
-            {pendingDoctors.map((doctor) => (
-              <Card key={doctor.id} className="border-l-4 border-l-orange-400">
-                <CardContent className="p-6">
-                  <div className="flex items-start gap-4">
-                    {/* Doctor Avatar and Basic Info */}
-                    <Avatar className="h-16 w-16">
-                      <AvatarImage 
-                        src={doctor.profile_image_url || undefined} 
-                        alt={doctor.profile?.full_name || 'Doctor'} 
-                      />
-                      <AvatarFallback className="bg-orange-100 text-orange-700">
-                        <User className="h-8 w-8" />
-                      </AvatarFallback>
-                    </Avatar>
-                    
-                    <div className="flex-1 space-y-2">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <h3 className="font-semibold text-lg">
-                            Dr. {doctor.profile?.full_name || 'Nombre no disponible'}
-                          </h3>
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Stethoscope className="h-4 w-4" />
-                            <span>{doctor.specialty}</span>
-                          </div>
-                        </div>
+
+          {filteredDoctors.length === 0 ? (
+            <div className="text-center py-8">
+              <CheckCircle className="h-12 w-12 text-green-600 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2">
+                {statusFilter === 'pending' ? '¡Excelente trabajo!' : 'No hay médicos'}
+              </h3>
+              <p className="text-muted-foreground">
+                {statusFilter === 'pending' 
+                  ? 'No hay médicos pendientes de verificación en este momento.'
+                  : `No hay médicos ${statusFilter === 'all' ? 'registrados' : statusFilter === 'verified' ? 'verificados' : 'rechazados'} en este momento.`
+                }
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {filteredDoctors.map((doctor) => {
+                const getStatusColor = (status: string) => {
+                  switch (status) {
+                    case 'verified': return 'border-l-green-500 bg-green-50';
+                    case 'pending': return 'border-l-orange-400 bg-orange-50';
+                    case 'rejected': return 'border-l-red-500 bg-red-50';
+                    default: return 'border-l-gray-400';
+                  }
+                };
+
+                const getStatusBadge = (status: string) => {
+                  switch (status) {
+                    case 'verified': 
+                      return (
+                        <Badge className="bg-green-100 text-green-800">
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          Verificado
+                        </Badge>
+                      );
+                    case 'pending':
+                      return (
                         <Badge variant="secondary" className="bg-orange-100 text-orange-800">
                           <Clock className="h-3 w-3 mr-1" />
                           Pendiente
                         </Badge>
-                      </div>
+                      );
+                    case 'rejected':
+                      return (
+                        <Badge variant="destructive">
+                          <XCircle className="h-3 w-3 mr-1" />
+                          Rechazado
+                        </Badge>
+                      );
+                    default: return null;
+                  }
+                };
 
-                      {/* Key Information Grid */}
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-                        <div className="space-y-2">
-                          <div className="text-sm">
-                            <span className="font-medium">Cédula:</span>{' '}
-                            <span className="text-muted-foreground">{doctor.professional_license}</span>
+                return (
+                  <Card key={doctor.id} className={`border-l-4 ${getStatusColor(doctor.verification_status)}`}>
+                    <CardContent className="p-6">
+                      <div className="flex items-start gap-4">
+                        {/* Doctor Avatar and Basic Info */}
+                        <Avatar className="h-16 w-16">
+                          <AvatarImage 
+                            src={doctor.profile_image_url || undefined} 
+                            alt={doctor.profile?.full_name || 'Doctor'} 
+                          />
+                          <AvatarFallback className="bg-orange-100 text-orange-700">
+                            <User className="h-8 w-8" />
+                          </AvatarFallback>
+                        </Avatar>
+                        
+                        <div className="flex-1 space-y-2">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <h3 className="font-semibold text-lg">
+                                Dr. {doctor.profile?.full_name || 'Nombre no disponible'}
+                              </h3>
+                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <Stethoscope className="h-4 w-4" />
+                                <span>{doctor.specialty}</span>
+                              </div>
+                            </div>
+                            {getStatusBadge(doctor.verification_status)}
                           </div>
-                          {doctor.profile?.email && (
-                            <div className="text-sm">
-                              <span className="font-medium">Email:</span>{' '}
-                              <span className="text-muted-foreground">{doctor.profile.email}</span>
-                            </div>
-                          )}
-                          {doctor.profile?.phone && (
-                            <div className="text-sm flex items-center gap-1">
-                              <Phone className="h-3 w-3" />
-                              <span className="text-muted-foreground">{doctor.profile.phone}</span>
-                            </div>
-                          )}
-                        </div>
 
-                         <div className="space-y-2">
-                           {doctor.years_experience && (
-                             <div className="text-sm flex items-center gap-1">
-                               <Award className="h-3 w-3" />
-                               <span className="text-muted-foreground">{doctor.years_experience} años de experiencia</span>
-                             </div>
-                           )}
-                           {doctor.consultation_fee && (
-                             <div className="text-sm flex items-center gap-1">
-                               <DollarSign className="h-3 w-3" />
-                               <span className="text-muted-foreground">${doctor.consultation_fee} MXN por consulta</span>
-                             </div>
-                           )}
-                           {doctor.office_address && (
-                             <div className="text-sm">
-                               <span className="font-medium">Consultorio:</span>{' '}
-                               <span className="text-muted-foreground">{doctor.office_address}</span>
-                             </div>
-                           )}
-                           <div className="text-sm flex items-center gap-1">
-                             <Calendar className="h-3 w-3" />
-                             <span className="text-muted-foreground">
-                               Registrado: {format(new Date(doctor.created_at), 'dd/MM/yyyy', { locale: es })}
-                             </span>
-                           </div>
-                         </div>
-
-                         <div className="space-y-2">
-                           {doctor.practice_locations && doctor.practice_locations.length > 0 && (
-                             <div className="text-sm">
-                               <span className="font-medium">Lugares de atención:</span>
-                               <ul className="text-muted-foreground text-xs mt-1 space-y-1">
-                                 {doctor.practice_locations.map((location, index) => (
-                                   <li key={index}>• {location}</li>
-                                 ))}
-                               </ul>
-                             </div>
-                           )}
-                        </div>
-                      </div>
-
-                      {/* Action Buttons */}
-                      <div className="flex items-center gap-3 pt-4">
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button variant="outline" size="sm">
-                              <Eye className="h-4 w-4 mr-1" />
-                              Ver Detalles
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="max-w-2xl">
-                            <DialogHeader>
-                              <DialogTitle>Perfil Completo - Dr. {doctor.profile?.full_name}</DialogTitle>
-                              <DialogDescription>
-                                Revisa toda la información antes de aprobar o rechazar
-                              </DialogDescription>
-                            </DialogHeader>
-                            <div className="space-y-6">
-                              {/* Complete profile view */}
-                              <div className="flex items-center gap-4">
-                                <Avatar className="h-20 w-20">
-                                  <AvatarImage src={doctor.profile_image_url || undefined} />
-                                  <AvatarFallback>
-                                    <User className="h-10 w-10" />
-                                  </AvatarFallback>
-                                </Avatar>
-                                <div>
-                                  <h3 className="text-xl font-semibold">
-                                    Dr. {doctor.profile?.full_name}
-                                  </h3>
-                                  <p className="text-muted-foreground">{doctor.specialty}</p>
-                                  <p className="text-sm text-muted-foreground">{doctor.profile?.email}</p>
-                                </div>
+                          {/* Key Information Grid */}
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                            <div className="space-y-2">
+                              <div className="text-sm">
+                                <span className="font-medium">Cédula:</span>{' '}
+                                <span className="text-muted-foreground">{doctor.professional_license}</span>
                               </div>
-
-                              <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                  <h4 className="font-semibold mb-2">Información Profesional</h4>
-                                  <div className="space-y-2 text-sm">
-                                    <div><strong>Cédula:</strong> {doctor.professional_license}</div>
-                                    <div><strong>Especialidad:</strong> {doctor.specialty}</div>
-                                    {doctor.years_experience && (
-                                      <div><strong>Experiencia:</strong> {doctor.years_experience} años</div>
-                                    )}
-                                    {doctor.consultation_fee && (
-                                      <div><strong>Tarifa:</strong> ${doctor.consultation_fee}</div>
-                                    )}
-                                  </div>
+                              {doctor.profile?.email && (
+                                <div className="text-sm">
+                                  <span className="font-medium">Email:</span>{' '}
+                                  <span className="text-muted-foreground">{doctor.profile.email}</span>
                                 </div>
-                                <div>
-                                  <h4 className="font-semibold mb-2">Información de Contacto</h4>
-                                  <div className="space-y-2 text-sm">
-                                    <div><strong>Email:</strong> {doctor.profile?.email}</div>
-                                    {doctor.profile?.phone && (
-                                      <div><strong>Teléfono:</strong> {doctor.profile.phone}</div>
-                                    )}
-                                    <div><strong>Registrado:</strong> {format(new Date(doctor.created_at), 'dd/MM/yyyy HH:mm', { locale: es })}</div>
-                                  </div>
-                                </div>
-                              </div>
-
-                              {doctor.biography && (
-                                <div>
-                                  <h4 className="font-semibold mb-2">Biografía Profesional</h4>
-                                  <p className="text-sm text-muted-foreground">{doctor.biography}</p>
+                              )}
+                              {doctor.profile?.phone && (
+                                <div className="text-sm flex items-center gap-1">
+                                  <Phone className="h-3 w-3" />
+                                  <span className="text-muted-foreground">{doctor.profile.phone}</span>
                                 </div>
                               )}
                             </div>
-                          </DialogContent>
-                         </Dialog>
 
-                         <Button 
-                           variant="outline" 
-                           size="sm"
-                           onClick={() => handleEditDoctor(doctor)}
-                         >
-                           <Edit className="h-4 w-4 mr-1" />
-                           Editar
-                         </Button>
+                            <div className="space-y-2">
+                              {doctor.years_experience && (
+                                <div className="text-sm flex items-center gap-1">
+                                  <Award className="h-3 w-3" />
+                                  <span className="text-muted-foreground">{doctor.years_experience} años de experiencia</span>
+                                </div>
+                              )}
+                              {doctor.consultation_fee && (
+                                <div className="text-sm flex items-center gap-1">
+                                  <DollarSign className="h-3 w-3" />
+                                  <span className="text-muted-foreground">${doctor.consultation_fee} MXN por consulta</span>
+                                </div>
+                              )}
+                              {doctor.office_address && (
+                                <div className="text-sm">
+                                  <span className="font-medium">Consultorio:</span>{' '}
+                                  <span className="text-muted-foreground">{doctor.office_address}</span>
+                                </div>
+                              )}
+                              <div className="text-sm flex items-center gap-1">
+                                <Calendar className="h-3 w-3" />
+                                <span className="text-muted-foreground">
+                                  Registrado: {format(new Date(doctor.created_at), 'dd/MM/yyyy', { locale: es })}
+                                </span>
+                              </div>
+                            </div>
 
-                         <Button 
-                           onClick={() => handleApproval(doctor.id, true)}
-                           disabled={processingId === doctor.id}
-                           className="bg-green-600 hover:bg-green-700"
-                           size="sm"
-                         >
-                          {processingId === doctor.id ? (
-                            <LoadingSpinner className="h-4 w-4 mr-1" />
-                          ) : (
-                            <CheckCircle className="h-4 w-4 mr-1" />
-                          )}
-                          Aprobar
-                        </Button>
+                            <div className="space-y-2">
+                              {doctor.practice_locations && doctor.practice_locations.length > 0 && (
+                                <div className="text-sm">
+                                  <span className="font-medium">Lugares de atención:</span>
+                                  <ul className="text-muted-foreground text-xs mt-1 space-y-1">
+                                    {doctor.practice_locations.map((location, index) => (
+                                      <li key={index}>• {location}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                            </div>
+                          </div>
 
-                        <Button 
-                          onClick={() => handleApproval(doctor.id, false)}
-                          disabled={processingId === doctor.id}
-                          variant="destructive"
-                          size="sm"
-                        >
-                          {processingId === doctor.id ? (
-                            <LoadingSpinner className="h-4 w-4 mr-1" />
-                          ) : (
-                            <XCircle className="h-4 w-4 mr-1" />
-                          )}
-                          Rechazar
-                        </Button>
+                          {/* Action Buttons */}
+                          <div className="flex items-center gap-3 pt-4">
+                            <Dialog>
+                              <DialogTrigger asChild>
+                                <Button variant="outline" size="sm">
+                                  <Eye className="h-4 w-4 mr-1" />
+                                  Ver Detalles
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent className="max-w-2xl">
+                                <DialogHeader>
+                                  <DialogTitle>Perfil Completo - Dr. {doctor.profile?.full_name}</DialogTitle>
+                                  <DialogDescription>
+                                    Revisa toda la información del médico
+                                  </DialogDescription>
+                                </DialogHeader>
+                                <div className="space-y-6">
+                                  {/* Complete profile view */}
+                                  <div className="flex items-center gap-4">
+                                    <Avatar className="h-20 w-20">
+                                      <AvatarImage src={doctor.profile_image_url || undefined} />
+                                      <AvatarFallback>
+                                        <User className="h-10 w-10" />
+                                      </AvatarFallback>
+                                    </Avatar>
+                                    <div>
+                                      <h3 className="text-xl font-semibold">
+                                        Dr. {doctor.profile?.full_name}
+                                      </h3>
+                                      <p className="text-muted-foreground">{doctor.specialty}</p>
+                                      <p className="text-sm text-muted-foreground">{doctor.profile?.email}</p>
+                                    </div>
+                                  </div>
+
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                      <h4 className="font-semibold mb-2">Información Profesional</h4>
+                                      <div className="space-y-2 text-sm">
+                                        <div><strong>Cédula:</strong> {doctor.professional_license}</div>
+                                        <div><strong>Especialidad:</strong> {doctor.specialty}</div>
+                                        {doctor.years_experience && (
+                                          <div><strong>Experiencia:</strong> {doctor.years_experience} años</div>
+                                        )}
+                                        {doctor.consultation_fee && (
+                                          <div><strong>Tarifa:</strong> ${doctor.consultation_fee}</div>
+                                        )}
+                                      </div>
+                                    </div>
+                                    <div>
+                                      <h4 className="font-semibold mb-2">Información de Contacto</h4>
+                                      <div className="space-y-2 text-sm">
+                                        <div><strong>Email:</strong> {doctor.profile?.email}</div>
+                                        {doctor.profile?.phone && (
+                                          <div><strong>Teléfono:</strong> {doctor.profile.phone}</div>
+                                        )}
+                                        <div><strong>Registrado:</strong> {format(new Date(doctor.created_at), 'dd/MM/yyyy HH:mm', { locale: es })}</div>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {doctor.biography && (
+                                    <div>
+                                      <h4 className="font-semibold mb-2">Biografía Profesional</h4>
+                                      <p className="text-sm text-muted-foreground">{doctor.biography}</p>
+                                    </div>
+                                  )}
+                                </div>
+                              </DialogContent>
+                            </Dialog>
+
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleEditDoctor(doctor)}
+                            >
+                              <Edit className="h-4 w-4 mr-1" />
+                              Editar
+                            </Button>
+
+                            {doctor.verification_status === 'pending' && (
+                              <>
+                                <Button 
+                                  onClick={() => handleApproval(doctor.id, true)}
+                                  disabled={processingId === doctor.id}
+                                  className="bg-green-600 hover:bg-green-700"
+                                  size="sm"
+                                >
+                                  {processingId === doctor.id ? (
+                                    <LoadingSpinner className="h-4 w-4 mr-1" />
+                                  ) : (
+                                    <CheckCircle className="h-4 w-4 mr-1" />
+                                  )}
+                                  Aprobar
+                                </Button>
+
+                                <Button 
+                                  onClick={() => handleApproval(doctor.id, false)}
+                                  disabled={processingId === doctor.id}
+                                  variant="destructive"
+                                  size="sm"
+                                >
+                                  {processingId === doctor.id ? (
+                                    <LoadingSpinner className="h-4 w-4 mr-1" />
+                                  ) : (
+                                    <XCircle className="h-4 w-4 mr-1" />
+                                  )}
+                                  Rechazar
+                                </Button>
+                              </>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-      </CardContent>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Edit Doctor Modal */}
       {editingDoctor && (
@@ -520,6 +596,6 @@ export const DoctorVerificationList = () => {
           onProfileUpdated={handleProfileUpdated}
         />
       )}
-    </Card>
+    </div>
   );
 };
