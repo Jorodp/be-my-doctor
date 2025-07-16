@@ -47,6 +47,7 @@ import { DashboardHeader } from '@/components/DashboardHeader';
 import { DoctorProfileDisplay } from '@/components/DoctorProfileDisplay';
 import { ConsultationFlow } from '@/components/ConsultationFlow';
 import { SubscriptionGuard } from '@/components/SubscriptionGuard';
+import SubscriptionSection from '@/components/SubscriptionSection';
 
 interface DoctorProfile {
   id: string;
@@ -793,12 +794,13 @@ const DoctorDashboardContent = ({ user, doctorProfile, userRole, signOut, toast 
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="overview">Resumen</TabsTrigger>
             <TabsTrigger value="profile">Perfil</TabsTrigger>
             <TabsTrigger value="schedule">Agenda</TabsTrigger>
             <TabsTrigger value="appointments">Citas</TabsTrigger>
             <TabsTrigger value="ratings">Calificaciones</TabsTrigger>
+            <TabsTrigger value="plans">Planes</TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
@@ -1387,6 +1389,24 @@ const DoctorDashboardContent = ({ user, doctorProfile, userRole, signOut, toast 
                     ))}
                   </div>
                 )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Plans Tab */}
+          <TabsContent value="plans" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <DollarSign className="h-5 w-5" />
+                  Gestión de Suscripción
+                </CardTitle>
+                <CardDescription>
+                  Administra tu suscripción a la plataforma Be My Doctor
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <SubscriptionSection />
               </CardContent>
             </Card>
           </TabsContent>
