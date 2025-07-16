@@ -36,16 +36,19 @@ export const DoctorImage = ({
       return profileImageUrl;
     }
     
-    // For storage paths, use public URL from doctor-profiles bucket
+    // For storage paths, use public URL from doctor-profiles bucket with cache busting
     const { data: { publicUrl } } = supabase
       .storage
       .from('doctor-profiles')
       .getPublicUrl(profileImageUrl);
     
-    console.log('DoctorImage profile_image_url:', profileImageUrl);
-    console.log('DoctorImage publicUrl:', publicUrl);
+    // Add timestamp to avoid cache issues
+    const finalUrl = `${publicUrl}?t=${Date.now()}`;
     
-    return publicUrl;
+    console.log('DoctorImage profile_image_url:', profileImageUrl);
+    console.log('DoctorImage publicUrl with cache bust:', finalUrl);
+    
+    return finalUrl;
   };
 
   const imageSrc = getImageSrc();

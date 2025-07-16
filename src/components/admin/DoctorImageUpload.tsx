@@ -138,20 +138,27 @@ export const DoctorImageUpload: React.FC<DoctorImageUploadProps> = ({
 
       console.log('URL pública generada:', publicUrl);
 
-      // Actualizar perfil del médico en doctor_profiles
+      // Actualizar perfil del médico en doctor_profiles con timestamp para evitar cache
       const { error: updateDoctorError } = await supabase
         .from('doctor_profiles')
-        .update({ profile_image_url: fileName })
+        .update({ 
+          profile_image_url: fileName,
+          updated_at: new Date().toISOString()
+        })
         .eq('user_id', doctorId);
 
       if (updateDoctorError) {
         console.error('Error actualizando doctor_profiles:', updateDoctorError);
         throw updateDoctorError;
       }
+      
       // También actualizar la tabla profiles si existe
       const { error: updateProfileError } = await supabase
         .from('profiles')
-        .update({ profile_image_url: fileName })
+        .update({ 
+          profile_image_url: fileName,
+          updated_at: new Date().toISOString()
+        })
         .eq('user_id', doctorId);
 
       if (updateProfileError) {
@@ -165,7 +172,10 @@ export const DoctorImageUpload: React.FC<DoctorImageUploadProps> = ({
         description: "La foto del médico ha sido procesada y guardada correctamente",
       });
 
-      onImageUpdated();
+      // Forzar re-fetch después de un pequeño delay para asegurar que la DB se actualice
+      setTimeout(() => {
+        onImageUpdated();
+      }, 500);
       
     } catch (error: any) {
       console.error('Error uploading image:', error);
