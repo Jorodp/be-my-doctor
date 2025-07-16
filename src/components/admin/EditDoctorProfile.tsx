@@ -7,9 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Upload, Save, X, Camera, Trash2 } from 'lucide-react';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { User } from 'lucide-react';
+import { Save, X } from 'lucide-react';
 import { DoctorImageUpload } from './DoctorImageUpload';
 
 interface DoctorProfile {
@@ -51,9 +49,7 @@ export const EditDoctorProfile = ({
 }: EditDoctorProfileProps) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [uploadingImage, setUploadingImage] = useState(false);
   const [currentProfileImage, setCurrentProfileImage] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [profileData, setProfileData] = useState({
     full_name: '',
     phone: '',
