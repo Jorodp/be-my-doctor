@@ -332,21 +332,33 @@ export default function DoctorSearch() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredDoctors.map((doctor) => (
               <Card key={doctor.id} className="hover:shadow-lg transition-all duration-300 hover-scale">
-                <CardContent className="p-6">
-                  <div className="space-y-4">
-                    {/* Doctor Avatar and Basic Info */}
-                    <div className="flex items-start gap-4">
-                      <Avatar className="h-16 w-16">
-                        <AvatarImage 
-                          src={doctor.profile_image_url || `https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=150&h=150&fit=crop&crop=face`} 
-                          alt={doctor.profile?.full_name || 'Doctor'} 
-                        />
-                        <AvatarFallback>
-                          {doctor.profile?.full_name?.split(' ').map(n => n[0]).join('') || 'DR'}
-                        </AvatarFallback>
-                      </Avatar>
-                      
-                      <div className="flex-1 min-w-0">
+                <CardContent className="p-0 overflow-hidden">
+                  <div className="flex flex-col">
+                    {/* Large Doctor Photo at Top */}
+                    <div className="relative h-48 overflow-hidden">
+                      <img 
+                        src={doctor.profile_image_url || `https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=400&h=300&fit=crop&crop=face`} 
+                        alt={doctor.profile?.full_name || 'Doctor'} 
+                        className="w-full h-full object-cover"
+                      />
+                      {/* Availability Badge Overlay */}
+                      <div className="absolute top-3 right-3">
+                        {doctor.is_available ? (
+                          <Badge className="bg-green-500 text-white">
+                            Disponible
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary" className="bg-gray-500 text-white">
+                            No disponible
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Content Below Photo */}
+                    <div className="p-4 space-y-3">
+                      {/* Doctor Name and Specialty */}
+                      <div className="text-center">
                         <h3 className="font-semibold text-lg truncate">
                           Dr. {doctor.profile?.full_name || 'Nombre no disponible'}
                         </h3>
@@ -354,54 +366,42 @@ export default function DoctorSearch() {
                         
                         {/* Experience */}
                         {doctor.years_experience && (
-                          <p className="text-sm text-muted-foreground">
+                          <p className="text-xs text-muted-foreground mt-1">
                             {doctor.years_experience} años de experiencia
                           </p>
                         )}
                       </div>
-                    </div>
 
-                    {/* Rating */}
-                    <div className="flex items-center gap-2">
-                      <div className="flex">
-                        {renderStars(doctor.average_rating)}
+                      {/* Rating */}
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="flex">
+                          {renderStars(doctor.average_rating)}
+                        </div>
+                        <span className="text-sm font-medium">
+                          {doctor.average_rating > 0 ? doctor.average_rating.toFixed(1) : 'Sin calificar'}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          ({doctor.total_ratings})
+                        </span>
                       </div>
-                      <span className="text-sm font-medium">
-                        {doctor.average_rating > 0 ? doctor.average_rating.toFixed(1) : 'Sin calificar'}
-                      </span>
-                      <span className="text-sm text-muted-foreground">
-                        ({doctor.total_ratings} reseña{doctor.total_ratings !== 1 ? 's' : ''})
-                      </span>
-                    </div>
 
-                    {/* Availability Status */}
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4" />
-                      {doctor.is_available ? (
-                        <Badge className="bg-green-100 text-green-800">
-                          Disponible
-                        </Badge>
-                      ) : (
-                        <Badge variant="secondary">
-                          No disponible
-                        </Badge>
+                      {/* Consultation Fee */}
+                      {doctor.consultation_fee && (
+                        <div className="text-center">
+                          <div className="text-lg font-semibold text-primary">
+                            ${doctor.consultation_fee.toLocaleString()}
+                          </div>
+                        </div>
                       )}
+
+                      {/* Action Button */}
+                      <Button 
+                        className="w-full"
+                        onClick={() => handleDoctorClick(doctor)}
+                      >
+                        Ver Perfil
+                      </Button>
                     </div>
-
-                    {/* Consultation Fee (visible to everyone) */}
-                    {doctor.consultation_fee && (
-                      <div className="text-lg font-semibold text-primary">
-                        ${doctor.consultation_fee.toLocaleString()}
-                      </div>
-                    )}
-
-                    {/* Action Button */}
-                    <Button 
-                      className="w-full"
-                      onClick={() => handleDoctorClick(doctor)}
-                    >
-                      Ver Perfil
-                    </Button>
                   </div>
                 </CardContent>
               </Card>
