@@ -67,7 +67,7 @@ const Footer = () => {
             <ul className="space-y-2">
               <li>
                 <a 
-                  href="https://rvsoeuwlgnovcmemlmqz.supabase.co/storage/v1/object/public/legal-documents//aviso-de-privacidad.pdf" 
+                  href="https://rvsoeuwlgnovcmemlmqz.supabase.co/storage/v1/object/public/legal-documents/aviso-de-privacidad.pdf" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="text-background/80 hover:text-primary transition-smooth"
@@ -77,7 +77,7 @@ const Footer = () => {
               </li>
               <li>
                 <a 
-                  href="https://rvsoeuwlgnovcmemlmqz.supabase.co/storage/v1/object/public/legal-documents//terminos-y-condiciones.docx" 
+                  href="https://rvsoeuwlgnovcmemlmqz.supabase.co/storage/v1/object/public/legal-documents/terminos-y-condiciones.docx" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="text-background/80 hover:text-primary transition-smooth"
