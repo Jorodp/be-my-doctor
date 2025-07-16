@@ -61,10 +61,11 @@ export const DoctorImage = ({
         <img 
           src={imageSrc}
           alt={`Dr. ${doctorName}`}
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover object-center"
+          style={{ aspectRatio: size === 'card' ? '4/3' : 'auto' }}
           onError={(e) => {
             console.log('DoctorImage: Error loading image, using placeholder:', imageSrc);
-            e.currentTarget.src = '/placeholder-doctor.png';
+            e.currentTarget.src = 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=400&h=300&fit=crop&crop=face';
           }}
         />
       </div>
