@@ -97,7 +97,7 @@ serve(async (req) => {
     }
 
     // Get origin for URLs
-    const origin = req.headers.get("origin") || "https://5bee6252-13cc-4dc8-849d-50c7ff6e61ad.lovableproject.com";
+    const origin = req.headers.get("origin") || "https://bemy.com.mx";
     console.log("Using origin:", origin);
 
     // Set correct price IDs
