@@ -118,47 +118,89 @@ export function SubscriptionGuard({ children }: SubscriptionGuardProps) {
   const handleSubscribe = async (plan: "monthly" | "annual") => {
     try {
       setLoading(true);
-      console.log(`Starting ${plan} subscription process...`);
+      console.log(`🚀 Starting ${plan} subscription process...`);
+      console.log('🔑 Auth token available:', !!supabase.auth.getSession());
+      
+      // Get current session to validate auth token
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session?.access_token) {
+        console.error('❌ No valid session found:', sessionError);
+        throw new Error('No hay una sesión válida. Por favor, inicia sesión nuevamente.');
+      }
+      
+      console.log('✅ Valid session found, token length:', session.access_token.length);
+      console.log('📤 Calling edge function with plan_type:', plan);
       
       const { data, error } = await supabase.functions.invoke('create-doctor-subscription', {
-        body: { plan_type: plan }
+        body: { plan_type: plan },
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        }
       });
       
+      console.log('📥 Edge function response:', { data, error });
+      
       if (error) {
-        console.error('Error from edge function:', error);
+        console.error('❌ Error from edge function:', error);
+        
+        // Check if it's a network/connectivity error
+        if (error.message?.includes('fetch')) {
+          throw new Error('Error de conexión. Verifica tu internet e inténtalo de nuevo.');
+        }
+        
+        // Check if it's an auth error
+        if (error.message?.includes('authentication') || error.message?.includes('Authentication')) {
+          throw new Error('Error de autenticación. Inicia sesión nuevamente.');
+        }
+        
         throw new Error(error.message || 'Error al crear la sesión de pago');
       }
       
+      console.log('✅ Edge function success, checking URL...');
+      
       if (!data?.url) {
-        console.error('No checkout URL received:', data);
-        throw new Error('No se recibió la URL de checkout');
+        console.error('❌ No checkout URL received:', data);
+        throw new Error('No se recibió la URL de checkout de Stripe');
       }
       
-      console.log('Opening Stripe checkout:', data.url);
+      console.log('🔍 Received URL:', data.url);
       
       // Validate URL before redirecting
       if (!data.url || data.url === "https://checkout.stripe.com/test-session-url") {
+        console.warn('⚠️ Test URL detected or invalid URL');
         toast({
-          title: "Error de configuración",
-          description: "La URL de Stripe no es válida. Contacte al administrador.",
+          title: "Función en modo de prueba",
+          description: "La función está funcionando pero en modo de prueba. Contacte al administrador.",
           variant: "destructive",
         });
         return;
       }
       
+      console.log('🎯 Redirecting to Stripe checkout:', data.url);
+      
       // Redirect to Stripe checkout
       window.location.href = data.url;
       
+    } catch (error: any) {
+      console.error("❌ Error creating subscription:", error);
+      
+      // More specific error handling
+      let errorMessage = "No se pudo crear la sesión de pago";
+      
+      if (error.message?.includes('authentication') || error.message?.includes('Authentication')) {
+        errorMessage = "Error de autenticación. Por favor, inicia sesión nuevamente.";
+      } else if (error.message?.includes('network') || error.message?.includes('fetch')) {
+        errorMessage = "Error de conexión. Verifica tu internet e inténtalo de nuevo.";
+      } else if (error.message?.includes('Stripe')) {
+        errorMessage = "Error en el sistema de pagos. Inténtalo más tarde.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
       
       toast({
-        title: "Redirigiendo a Stripe",
-        description: "Se abrió una nueva pestaña para completar el pago",
-      });
-    } catch (error: any) {
-      console.error("Error creating subscription:", error);
-      toast({
         title: "Error",
-        description: error.message || "No se pudo crear la sesión de pago",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
