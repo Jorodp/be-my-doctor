@@ -54,7 +54,18 @@ async function createSubscription(req: Request, data: any) {
   if (!userData.user) throw new Error("User not authenticated");
 
   const { plan } = data; // 'monthly' or 'annual'
-  const amount = plan === "annual" ? 4800 : 500; // MXN cents
+  
+  // Get payment settings from database
+  const { data: settings, error: settingsError } = await supabaseAdmin
+    .from("payment_settings")
+    .select("monthly_price, annual_price")
+    .single();
+
+  if (settingsError) throw new Error("Could not fetch payment settings");
+  
+  const amount = plan === "annual" 
+    ? Math.round(settings.annual_price * 100) 
+    : Math.round(settings.monthly_price * 100); // Convert to centavos
 
   // Check if customer exists
   const customers = await stripe.customers.list({
@@ -90,8 +101,8 @@ async function createSubscription(req: Request, data: any) {
       },
     ],
     mode: "subscription",
-    success_url: `${req.headers.get("origin")}/doctor/dashboard?payment=success`,
-    cancel_url: `${req.headers.get("origin")}/doctor/dashboard?payment=cancelled`,
+    success_url: `${req.headers.get("origin")}/dashboard/doctor?payment=success`,
+    cancel_url: `${req.headers.get("origin")}/dashboard/doctor?payment=cancelled`,
     metadata: {
       user_id: userData.user.id,
       plan,
@@ -213,7 +224,9 @@ async function checkSubscription(req: Request, data: any) {
     .eq("user_id", userData.user.id)
     .eq("status", "active")
     .gte("ends_at", new Date().toISOString())
-    .single();
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
 
   return new Response(
     JSON.stringify({ 
