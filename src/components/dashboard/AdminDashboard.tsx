@@ -392,16 +392,12 @@ export const AdminDashboard = () => {
 
         {/* Main Management Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-9">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="overview">Resumen</TabsTrigger>
-            <TabsTrigger value="users">Usuarios</TabsTrigger>
             <TabsTrigger value="doctors">Doctores</TabsTrigger>
             <TabsTrigger value="patients">Pacientes</TabsTrigger>
-            <TabsTrigger value="assistants">Asistentes</TabsTrigger>
             <TabsTrigger value="appointments">Citas</TabsTrigger>
             <TabsTrigger value="payments">Pagos</TabsTrigger>
-            <TabsTrigger value="reports">Reportes</TabsTrigger>
-            <TabsTrigger value="system">Sistema</TabsTrigger>
           </TabsList>
 
           {/* Navigation to Subscriptions Page */}
@@ -465,152 +461,42 @@ export const AdminDashboard = () => {
                           <Users className="h-6 w-6" />
                           Ver Pacientes
                         </Button>
-                        <Button variant="outline" className="h-20 flex flex-col gap-2" onClick={() => setActiveTab('assistants')}>
-                          <Shield className="h-6 w-6" />
-                          Asistentes
+                        <Button variant="outline" className="h-20 flex flex-col gap-2" onClick={() => setActiveTab('appointments')}>
+                          <Calendar className="h-6 w-6" />
+                          Gestionar Citas
                         </Button>
                         <Button variant="outline" className="h-20 flex flex-col gap-2" onClick={() => setActiveTab('payments')}>
                           <CreditCard className="h-6 w-6" />
                           Pagos
                         </Button>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
+                       </div>
+                     </div>
+                   </div>
+                 </CardContent>
+               </Card>
+             </div>
+           </TabsContent>
 
-          <TabsContent value="users">
-            <UserManagement />
-          </TabsContent>
+           <TabsContent value="doctors">
+             <DoctorVerificationList />
+           </TabsContent>
 
-          <TabsContent value="doctors">
-            <DoctorVerificationList />
-          </TabsContent>
+           <TabsContent value="patients">
+             <PatientsList />
+           </TabsContent>
 
-          <TabsContent value="patients">
-            <PatientsList />
-          </TabsContent>
+           <TabsContent value="appointments">
+             <AdminAppointments />
+           </TabsContent>
 
-          <TabsContent value="assistants">
-            <AssistantsList />
-          </TabsContent>
-
-          <TabsContent value="appointments">
-            <AdminAppointments />
-          </TabsContent>
-
-          <TabsContent value="payments">
-            <div className="space-y-6">
-              <PaymentSettings />
-              <SubscriptionRenewals />
-            </div>
-          </TabsContent>
-
-          <TabsContent value="reports">
-            <AdminReports />
-          </TabsContent>
-
-          <TabsContent value="documents">
-            <PatientDocumentManagement />
-          </TabsContent>
-
-          <TabsContent value="system">
-            <Card>
-              <CardHeader>
-                <CardTitle>Configuración del Sistema</CardTitle>
-                <CardDescription>
-                  Administración general de la plataforma
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="text-lg">Estado del Sistema</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-3">
-                          <div className="flex justify-between items-center">
-                            <span>Base de datos</span>
-                            <Badge className="bg-green-100 text-green-800">Conectada</Badge>
-                          </div>
-                          <div className="flex justify-between items-center">
-                            <span>Autenticación</span>
-                            <Badge className="bg-green-100 text-green-800">Activa</Badge>
-                          </div>
-                          <div className="flex justify-between items-center">
-                            <span>Notificaciones</span>
-                            <Badge className="bg-green-100 text-green-800">Funcionando</Badge>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="text-lg">Estadísticas Generales</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-3">
-                          <div className="flex justify-between items-center">
-                            <span>Total usuarios</span>
-                            <span className="font-semibold">{stats.patients + stats.doctors + stats.assistants + 1}</span>
-                          </div>
-                          <div className="flex justify-between items-center">
-                            <span>Citas completadas</span>
-                            <span className="font-semibold">{stats.totalAppointments}</span>
-                          </div>
-                          <div className="flex justify-between items-center">
-                            <span>Calificación promedio</span>
-                            <span className="font-semibold">{stats.averageRating}/5.0</span>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg">Herramientas de Administración</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                        <Button variant="outline" className="justify-start">
-                          <BarChart3 className="h-4 w-4 mr-2" />
-                          Generar Reportes
-                        </Button>
-                        <Button variant="outline" className="justify-start">
-                          <Settings className="h-4 w-4 mr-2" />
-                          Configuración General
-                        </Button>
-                        <Button variant="outline" className="justify-start">
-                          <Users className="h-4 w-4 mr-2" />
-                          Gestión de Usuarios
-                        </Button>
-                        <Button variant="outline" className="justify-start">
-                          <Calendar className="h-4 w-4 mr-2" />
-                          Administrar Citas
-                        </Button>
-                        <Button variant="outline" className="justify-start">
-                          <Activity className="h-4 w-4 mr-2" />
-                          Monitoreo del Sistema
-                        </Button>
-                        <Button variant="outline" className="justify-start">
-                          <Shield className="h-4 w-4 mr-2" />
-                          Seguridad y Permisos
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
-    </DashboardLayout>
-  );
-};
+           <TabsContent value="payments">
+             <div className="space-y-6">
+               <PaymentSettings />
+               <SubscriptionRenewals />
+             </div>
+           </TabsContent>
+         </Tabs>
+       </div>
+     </DashboardLayout>
+   );
+ };

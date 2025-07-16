@@ -52,8 +52,9 @@ serve(async (req) => {
       throw new Error('Access denied: Admin role required');
     }
 
-    const body = await req.json();
-    const { action, appointmentId, newStatus, newDate, newTime, patientId, doctorId, cancelReason } = body;
+    const body = await req.text();
+    const parsedBody = body ? JSON.parse(body) : {};
+    const { action, appointmentId, newStatus, newDate, newTime, patientId, doctorId, cancelReason } = parsedBody;
 
     console.log('Processing appointment action:', { action, appointmentId, newStatus });
 
