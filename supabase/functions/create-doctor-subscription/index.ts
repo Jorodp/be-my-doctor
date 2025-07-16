@@ -275,8 +275,8 @@ serve(async (req) => {
 
     console.log("✅ Plan validation successful:", { priceId, planType });
 
-    // Get origin for URLs
-    const origin = req.headers.get("origin") || "https://bemy.com.mx";
+    // Get origin for URLs - TEMPORARILY using Lovable domain while bemy.com.mx syncs
+    const origin = req.headers.get("origin") || "https://preview--be-my-doctor.lovable.app";
     console.log("Using origin:", origin);
 
     // Check for existing Stripe customer
