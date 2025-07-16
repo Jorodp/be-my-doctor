@@ -374,6 +374,7 @@ export type Database = {
       profiles: {
         Row: {
           address: string | null
+          assigned_doctor_id: string | null
           created_at: string
           date_of_birth: string | null
           full_name: string | null
@@ -387,6 +388,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          assigned_doctor_id?: string | null
           created_at?: string
           date_of_birth?: string | null
           full_name?: string | null
@@ -400,6 +402,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          assigned_doctor_id?: string | null
           created_at?: string
           date_of_birth?: string | null
           full_name?: string | null

@@ -15,6 +15,7 @@ import { AssistantAppointmentCreator } from '@/components/AssistantAppointmentCr
 import { AssistantUpcomingAppointments } from '@/components/AssistantUpcomingAppointments';
 import { UploadPatientFiles } from '@/components/UploadPatientFiles';
 import { AssistantPaymentManager } from '@/components/AssistantPaymentManager';
+import { AssistantAccessGuard } from '@/components/AssistantAccessGuard';
 
 interface Appointment {
   id: string;
@@ -29,6 +30,14 @@ interface Appointment {
 }
 
 export const AssistantDashboard = () => {
+  return (
+    <AssistantAccessGuard>
+      <AssistantDashboardContent />
+    </AssistantAccessGuard>
+  );
+};
+
+const AssistantDashboardContent = () => {
   const { user, signOut } = useAuth();
   const { toast } = useToast();
   const [todayAppointments, setTodayAppointments] = useState<Appointment[]>([]);
