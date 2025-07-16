@@ -318,7 +318,7 @@ serve(async (req) => {
     console.log("🔧 Stripe session parameters:", JSON.stringify(sessionParams, null, 2));
 
     // FALLBACK TEST: Return fake URL to test if Stripe is the issue
-    const enableFallback = false; // Set to true to test
+    const enableFallback = true; // Set to true to test
     if (enableFallback) {
       console.log("🧪 FALLBACK MODE: Returning test URL instead of calling Stripe");
       return new Response(JSON.stringify({ 
