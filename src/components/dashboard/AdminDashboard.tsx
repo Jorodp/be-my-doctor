@@ -20,7 +20,8 @@ import { PaymentSettings } from '@/components/admin/PaymentSettings';
 import { SubscriptionRenewals } from '@/components/admin/SubscriptionRenewals';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { DashboardHeader } from '@/components/DashboardHeader';
+import { DashboardLayout } from '@/components/ui/DashboardLayout';
+import { useNavigate } from 'react-router-dom';
 
 interface DoctorProfile {
   id: string;
@@ -228,14 +229,11 @@ export const AdminDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
-      <DashboardHeader
-        title="Panel de Administración"
-        subtitle="Gestiona la plataforma Be My Doctor"
-        onSignOut={signOut}
-      />
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <DashboardLayout
+      title="Panel de Administración"
+      subtitle="Gestiona la plataforma Be My Doctor"
+    >
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <Card className="border-primary">
@@ -612,7 +610,7 @@ export const AdminDashboard = () => {
             </Card>
           </TabsContent>
         </Tabs>
-      </main>
-    </div>
+      </div>
+    </DashboardLayout>
   );
 };

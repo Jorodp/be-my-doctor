@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { DashboardHeader } from "@/components/DashboardHeader";
+import { DashboardLayout } from "@/components/ui/DashboardLayout";
 import { AssignedDoctorInfo } from "@/components/AssignedDoctorInfo";
 import { PatientDocumentManager } from "@/components/PatientDocumentManager";
 import { PendingRatingValidator } from "@/components/PendingRatingValidator";
@@ -15,14 +15,12 @@ export const PatientDashboard = () => {
   const [validatorOpen, setValidatorOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
-      <DashboardHeader
-        title="Panel del Paciente"
-        subtitle="Gestiona tus citas y consultas médicas"
-        onSignOut={signOut}
-      />
+    <DashboardLayout
+      title="Panel del Paciente"
+      subtitle="Gestiona tus citas y consultas médicas"
+    >
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         <Tabs defaultValue="citas" className="space-y-6">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="citas" className="flex items-center gap-2">
@@ -104,7 +102,7 @@ export const PatientDashboard = () => {
             <ChatInterface />
           </TabsContent>
         </Tabs>
-      </main>
-    </div>
+      </div>
+    </DashboardLayout>
   );
 };

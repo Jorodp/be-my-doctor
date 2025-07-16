@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/dialog";
 import ManualPaymentModal from "@/components/admin/ManualPaymentModal";
 import EditSubscriptionModal from "@/components/admin/EditSubscriptionModal";
+import { DashboardLayout } from "@/components/ui/DashboardLayout";
 
 interface SubscriptionWithDoctor {
   id: string;
@@ -357,273 +358,270 @@ const AdminSubscriptionsPage = () => {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
-            <FileText className="h-8 w-8 text-primary" />
-            Suscripciones de Médicos
-          </h1>
-          <p className="text-muted-foreground mt-2">
-            Gestiona todas las suscripciones de la plataforma
-          </p>
+    <DashboardLayout
+      title="Suscripciones de Médicos"
+      subtitle="Gestiona todas las suscripciones de la plataforma"
+      breadcrumbs={[
+        {
+          label: "Suscripciones"
+        }
+      ]}
+    >
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+
+        {/* Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Total Suscripciones</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{subscriptions?.length || 0}</div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Activas</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">
+                {subscriptions?.filter(s => new Date(s.ends_at) > new Date()).length || 0}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Pagos Manuales</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-blue-600">
+                {subscriptions?.filter(s => s.payment_method === 'manual').length || 0}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Ingresos Totales</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-purple-600">
+                {formatCurrency(subscriptions?.reduce((sum, s) => sum + (s.amount || 0), 0) || 0, 'MXN')}
+              </div>
+            </CardContent>
+          </Card>
         </div>
-      </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {/* Main Table */}
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Total Suscripciones</CardTitle>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <Crown className="h-5 w-5 text-primary" />
+                  Todas las Suscripciones
+                </CardTitle>
+                <CardDescription>
+                  Historial completo de suscripciones y pagos
+                </CardDescription>
+              </div>
+              <div className="flex gap-2">
+                <ManualPaymentModal 
+                  onPaymentAdded={refetch}
+                />
+                <Button variant="outline" onClick={() => refetch()}>
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Actualizar
+                </Button>
+              </div>
+            </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{subscriptions?.length || 0}</div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Activas</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {subscriptions?.filter(s => new Date(s.ends_at) > new Date()).length || 0}
+          
+          <CardContent className="space-y-4">
+            {/* Filters */}
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex items-center space-x-2 flex-1">
+                <Search className="h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar por doctor, email o especialidad..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="max-w-sm"
+                />
+              </div>
+              
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Filtrar por estado" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas</SelectItem>
+                  <SelectItem value="active">Activas</SelectItem>
+                  <SelectItem value="cancelled">Canceladas</SelectItem>
+                  <SelectItem value="expired">Expiradas</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <Select value={paymentMethodFilter} onValueChange={setPaymentMethodFilter}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Método de pago" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="stripe">Stripe</SelectItem>
+                  <SelectItem value="manual">Manual</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-          </CardContent>
-        </Card>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Pagos Manuales</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-600">
-              {subscriptions?.filter(s => s.payment_method === 'manual').length || 0}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Ingresos Totales</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-purple-600">
-              {formatCurrency(subscriptions?.reduce((sum, s) => sum + (s.amount || 0), 0) || 0, 'MXN')}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Main Table */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <Crown className="h-5 w-5 text-primary" />
-                Todas las Suscripciones
-              </CardTitle>
-              <CardDescription>
-                Historial completo de suscripciones y pagos
-              </CardDescription>
-            </div>
-            <div className="flex gap-2">
-              <ManualPaymentModal 
-                onPaymentAdded={refetch}
-              />
-              <Button variant="outline" onClick={() => refetch()}>
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Actualizar
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        
-        <CardContent className="space-y-4">
-          {/* Filters */}
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex items-center space-x-2 flex-1">
-              <Search className="h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar por doctor, email o especialidad..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="max-w-sm"
-              />
-            </div>
-            
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Filtrar por estado" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas</SelectItem>
-                <SelectItem value="active">Activas</SelectItem>
-                <SelectItem value="cancelled">Canceladas</SelectItem>
-                <SelectItem value="expired">Expiradas</SelectItem>
-              </SelectContent>
-            </Select>
-            
-            <Select value={paymentMethodFilter} onValueChange={setPaymentMethodFilter}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Método de pago" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="stripe">Stripe</SelectItem>
-                <SelectItem value="manual">Manual</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Table */}
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Doctor</TableHead>
-                  <TableHead>Plan</TableHead>
-                  <TableHead>Método de Pago</TableHead>
-                  <TableHead>Fecha de Inicio</TableHead>
-                  <TableHead>Expiración</TableHead>
-                  <TableHead>Monto</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead>Recibo/Observaciones</TableHead>
-                  <TableHead>Acciones</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredSubscriptions?.map((subscription) => (
-                  <TableRow key={subscription.id}>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">{subscription.doctor_name}</div>
-                        <div className="text-sm text-muted-foreground">{subscription.specialty}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell>{getPlanBadge(subscription.plan)}</TableCell>
-                    <TableCell>{getPaymentMethodBadge(subscription.payment_method)}</TableCell>
-                    <TableCell>
-                      {format(new Date(subscription.starts_at), 'dd/MM/yyyy', { locale: es })}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Calendar className="h-3 w-3 text-muted-foreground" />
-                        {format(new Date(subscription.ends_at), 'dd/MM/yyyy', { locale: es })}
-                      </div>
-                    </TableCell>
-                    <TableCell>{formatCurrency(subscription.amount, subscription.currency)}</TableCell>
-                    <TableCell>{getStatusBadge(subscription)}</TableCell>
-                    <TableCell>
-                      <div className="text-xs text-muted-foreground max-w-[150px] truncate">
-                        {subscription.receipt_number && (
-                          <div>Recibo: {subscription.receipt_number}</div>
-                        )}
-                        {subscription.observations && (
-                          <div title={subscription.observations}>
-                            {subscription.observations}
-                          </div>
-                        )}
-                        {!subscription.receipt_number && !subscription.observations && "-"}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        {/* Ver historial */}
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleViewLogs(subscription)}
-                        >
-                          <History className="h-4 w-4" />
-                        </Button>
-                        
-                        {/* Editar (solo pagos manuales) */}
-                        {subscription.payment_method === 'manual' && subscription.status !== 'cancelled' && (
+            {/* Table */}
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Doctor</TableHead>
+                    <TableHead>Plan</TableHead>
+                    <TableHead>Método de Pago</TableHead>
+                    <TableHead>Fecha de Inicio</TableHead>
+                    <TableHead>Expiración</TableHead>
+                    <TableHead>Monto</TableHead>
+                    <TableHead>Estado</TableHead>
+                    <TableHead>Recibo/Observaciones</TableHead>
+                    <TableHead>Acciones</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredSubscriptions?.map((subscription) => (
+                    <TableRow key={subscription.id}>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{subscription.doctor_name}</div>
+                          <div className="text-sm text-muted-foreground">{subscription.specialty}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell>{getPlanBadge(subscription.plan)}</TableCell>
+                      <TableCell>{getPaymentMethodBadge(subscription.payment_method)}</TableCell>
+                      <TableCell>
+                        {format(new Date(subscription.starts_at), 'dd/MM/yyyy', { locale: es })}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3 text-muted-foreground" />
+                          {format(new Date(subscription.ends_at), 'dd/MM/yyyy', { locale: es })}
+                        </div>
+                      </TableCell>
+                      <TableCell>{formatCurrency(subscription.amount, subscription.currency)}</TableCell>
+                      <TableCell>{getStatusBadge(subscription)}</TableCell>
+                      <TableCell>
+                        <div className="text-xs text-muted-foreground max-w-[150px] truncate">
+                          {subscription.receipt_number && (
+                            <div>Recibo: {subscription.receipt_number}</div>
+                          )}
+                          {subscription.observations && (
+                            <div title={subscription.observations}>
+                              {subscription.observations}
+                            </div>
+                          )}
+                          {!subscription.receipt_number && !subscription.observations && "-"}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-1">
+                          {/* Ver historial */}
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleEdit(subscription)}
+                            onClick={() => handleViewLogs(subscription)}
                           >
-                            <Edit className="h-4 w-4" />
+                            <History className="h-4 w-4" />
                           </Button>
-                        )}
+                          
+                          {/* Editar (solo pagos manuales) */}
+                          {subscription.payment_method === 'manual' && subscription.status !== 'cancelled' && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleEdit(subscription)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          )}
 
-                        {/* Cancelar suscripción activa */}
-                        {subscription.status === 'active' && (
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="outline" size="sm" className="text-orange-600 hover:text-orange-800">
-                                <Ban className="h-4 w-4" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>¿Cancelar suscripción?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Esta acción cancelará la suscripción de {subscription.doctor_name}. 
-                                  El doctor perderá acceso inmediatamente.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                <AlertDialogAction 
-                                  onClick={() => handleCancelSubscription(subscription)}
-                                  className="bg-orange-600 hover:bg-orange-700"
-                                >
-                                  Sí, cancelar
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        )}
+                          {/* Cancelar suscripción activa */}
+                          {subscription.status === 'active' && (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="outline" size="sm" className="text-orange-600 hover:text-orange-800">
+                                  <Ban className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>¿Cancelar suscripción?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Esta acción cancelará la suscripción de {subscription.doctor_name}. 
+                                    El doctor perderá acceso inmediatamente.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                  <AlertDialogAction 
+                                    onClick={() => handleCancelSubscription(subscription)}
+                                    className="bg-orange-600 hover:bg-orange-700"
+                                  >
+                                    Sí, cancelar
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          )}
 
-                        {/* Eliminar (solo pagos manuales) */}
-                        {subscription.payment_method === 'manual' && (
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="outline" size="sm" className="text-red-600 hover:text-red-800">
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>¿Eliminar suscripción?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Esta acción eliminará completamente la suscripción de {subscription.doctor_name}. 
-                                  Esta acción NO se puede deshacer.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                <AlertDialogAction 
-                                  onClick={() => handleDeleteSubscription(subscription)}
-                                  className="bg-red-600 hover:bg-red-700"
-                                >
-                                  Sí, eliminar
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-
-          {filteredSubscriptions?.length === 0 && (
-            <div className="text-center py-8 text-muted-foreground">
-              <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>No se encontraron suscripciones</p>
+                          {/* Eliminar (solo pagos manuales) */}
+                          {subscription.payment_method === 'manual' && (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="outline" size="sm" className="text-red-600 hover:text-red-800">
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>¿Eliminar suscripción?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Esta acción eliminará completamente la suscripción de {subscription.doctor_name}. 
+                                    Esta acción NO se puede deshacer.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                  <AlertDialogAction 
+                                    onClick={() => handleDeleteSubscription(subscription)}
+                                    className="bg-red-600 hover:bg-red-700"
+                                  >
+                                    Sí, eliminar
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
-          )}
-        </CardContent>
-      </Card>
+
+            {filteredSubscriptions?.length === 0 && (
+              <div className="text-center py-8 text-muted-foreground">
+                <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>No se encontraron suscripciones</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
       {/* Edit Modal */}
       <EditSubscriptionModal
@@ -711,8 +709,9 @@ const AdminSubscriptionsPage = () => {
             )}
           </div>
         </DialogContent>
-      </Dialog>
-    </div>
+        </Dialog>
+      </div>
+    </DashboardLayout>
   );
 };
 

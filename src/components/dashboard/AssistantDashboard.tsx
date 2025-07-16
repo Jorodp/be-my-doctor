@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
-import { DashboardHeader } from '@/components/DashboardHeader';
+import { DashboardLayout } from '@/components/ui/DashboardLayout';
 import { PatientDocumentManager } from '@/components/PatientDocumentManager';
 import { AssignedDoctorInfo } from '@/components/AssignedDoctorInfo';
 import { AssistantScheduleManager } from '@/components/AssistantScheduleManager';
@@ -161,14 +161,11 @@ export const AssistantDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
-      <DashboardHeader
-        title="Panel del Asistente"
-        subtitle="Gestiona la agenda del médico asignado"
-        onSignOut={signOut}
-      />
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <DashboardLayout
+      title="Panel del Asistente"
+      subtitle="Gestiona la agenda del médico asignado"
+    >
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs defaultValue="overview" className="space-y-6">
           <TabsList className="grid w-full grid-cols-8 text-xs">
             <TabsTrigger value="overview">Resumen</TabsTrigger>
@@ -215,7 +212,7 @@ export const AssistantDashboard = () => {
             )}
           </TabsContent>
         </Tabs>
-      </main>
-    </div>
+      </div>
+    </DashboardLayout>
   );
 };
