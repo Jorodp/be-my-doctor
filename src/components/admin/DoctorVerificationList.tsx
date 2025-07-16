@@ -362,7 +362,7 @@ export const DoctorVerificationList = () => {
                         {/* Doctor Avatar and Basic Info */}
                         <Avatar className="h-16 w-16">
                           <AvatarImage 
-                            src={doctor.profile_image_url || undefined} 
+                            src={doctor.profile_image_url ? (doctor.profile_image_url.startsWith('http') ? doctor.profile_image_url : `${supabase.storage.from('patient-profiles').getPublicUrl(doctor.profile_image_url).data.publicUrl}`) : undefined} 
                             alt={doctor.profile?.full_name || 'Doctor'} 
                           />
                           <AvatarFallback className="bg-orange-100 text-orange-700">
