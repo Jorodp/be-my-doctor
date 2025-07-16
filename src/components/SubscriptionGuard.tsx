@@ -135,8 +135,19 @@ export function SubscriptionGuard({ children }: SubscriptionGuardProps) {
       }
       
       console.log('Opening Stripe checkout:', data.url);
-      // Open Stripe checkout in new tab
-      window.open(data.url, '_blank');
+      
+      // Validate URL before redirecting
+      if (!data.url || data.url === "https://checkout.stripe.com/test-session-url") {
+        toast({
+          title: "Error de configuración",
+          description: "La URL de Stripe no es válida. Contacte al administrador.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Redirect to Stripe checkout
+      window.location.href = data.url;
       
       
       toast({
