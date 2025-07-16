@@ -44,11 +44,12 @@ interface DoctorCalendarScheduleProps {
   doctorId: string;
 }
 
-const timeSlots = [
-  '08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
-  '12:00', '12:30', '13:00', '13:30', '14:00', '14:30', '15:00', '15:30',
-  '16:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00', '19:30', '20:00'
-];
+// Generar slots de tiempo cada 30 minutos de 00:00 a 23:30
+const timeSlots = Array.from({ length: 48 }, (_, i) => {
+  const hours = Math.floor(i / 2);
+  const minutes = (i % 2) * 30;
+  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+});
 
 export const DoctorCalendarSchedule = ({ doctorId }: DoctorCalendarScheduleProps) => {
   const [loading, setLoading] = useState(true);
@@ -112,7 +113,10 @@ export const DoctorCalendarSchedule = ({ doctorId }: DoctorCalendarScheduleProps
   };
 
   const addTimeSlot = async () => {
+    console.log('Adding time slot:', { selectedDate, newStartTime, newEndTime });
+    
     if (!selectedDate || !newStartTime || !newEndTime) {
+      console.log('Missing data:', { selectedDate: !!selectedDate, newStartTime: !!newStartTime, newEndTime: !!newEndTime });
       toast({
         title: "Error",
         description: "Selecciona fecha, hora de inicio y fin",
