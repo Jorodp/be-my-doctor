@@ -289,7 +289,7 @@ export default function DoctorProfile() {
                 <div className="w-64 h-64 md:w-80 md:h-80 rounded-3xl overflow-hidden shadow-2xl ring-4 ring-background/50">
                   {doctor.profile_image_url ? (
                     <img 
-                      src={doctor.profile_image_url} 
+                      src={doctor.profile_image_url.startsWith('http') ? doctor.profile_image_url : `${supabase.storage.from('doctor-photos').getPublicUrl(doctor.profile_image_url).data.publicUrl}`} 
                       alt={`Dr. ${doctor.profile?.full_name}`}
                       className="w-full h-full object-cover"
                       onError={(e) => {
