@@ -4,9 +4,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Crown, Search, RefreshCw, Calendar, DollarSign, User, Mail } from "lucide-react";
+import { Crown, Search, RefreshCw, Calendar, DollarSign, User, Mail, Receipt } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import ManualPaymentModal from "./ManualPaymentModal";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -205,14 +206,21 @@ const DoctorSubscriptions = () => {
                 Gestiona y supervisa las suscripciones de todos los médicos
               </CardDescription>
             </div>
-            <Button 
-              variant="outline" 
-              onClick={() => refetch()}
-              disabled={isLoading}
-            >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Actualizar
-            </Button>
+            <div className="flex gap-2">
+              <ManualPaymentModal 
+                doctorId=""
+                doctorName="Seleccionar Doctor"
+                onPaymentAdded={refetch}
+              />
+              <Button 
+                variant="outline" 
+                onClick={() => refetch()}
+                disabled={isLoading}
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Actualizar
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
