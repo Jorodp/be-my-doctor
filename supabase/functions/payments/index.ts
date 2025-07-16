@@ -20,6 +20,7 @@ serve(async (req) => {
 
   try {
     const { action, ...data } = await req.json();
+    console.log("Payment function called with action:", action);
 
     switch (action) {
       case "create-subscription":
@@ -30,6 +31,8 @@ serve(async (req) => {
         return await markCashPayment(req, data);
       case "check-subscription":
         return await checkSubscription(req, data);
+      case "webhook":
+        return await handleWebhook(req);
       default:
         return new Response(
           JSON.stringify({ error: "Invalid action" }),
@@ -46,26 +49,41 @@ serve(async (req) => {
 });
 
 async function createSubscription(req: Request, data: any) {
+  console.log("Creating subscription with data:", data);
+  
   const authHeader = req.headers.get("Authorization");
   if (!authHeader) throw new Error("Missing authorization header");
 
   const token = authHeader.replace("Bearer ", "");
-  const { data: userData } = await supabaseAdmin.auth.getUser(token);
-  if (!userData.user) throw new Error("User not authenticated");
+  const { data: userData, error: userError } = await supabaseAdmin.auth.getUser(token);
+  if (userError || !userData.user) {
+    console.error("User authentication error:", userError);
+    throw new Error("User not authenticated");
+  }
+
+  console.log("Authenticated user:", userData.user.email);
 
   const { plan } = data; // 'monthly' or 'annual'
   
   // Get payment settings from database
+  console.log("Fetching payment settings...");
   const { data: settings, error: settingsError } = await supabaseAdmin
     .from("payment_settings")
     .select("monthly_price, annual_price")
     .single();
 
-  if (settingsError) throw new Error("Could not fetch payment settings");
+  if (settingsError) {
+    console.error("Settings error:", settingsError);
+    throw new Error("Could not fetch payment settings");
+  }
+  
+  console.log("Payment settings:", settings);
   
   const amount = plan === "annual" 
     ? Math.round(settings.annual_price * 100) 
     : Math.round(settings.monthly_price * 100); // Convert to centavos
+
+  console.log(`Creating ${plan} subscription for ${amount} centavos`);
 
   // Check if customer exists
   const customers = await stripe.customers.list({
@@ -76,15 +94,18 @@ async function createSubscription(req: Request, data: any) {
   let customerId;
   if (customers.data.length > 0) {
     customerId = customers.data[0].id;
+    console.log("Found existing customer:", customerId);
   } else {
     const customer = await stripe.customers.create({
       email: userData.user.email!,
       metadata: { user_id: userData.user.id },
     });
     customerId = customer.id;
+    console.log("Created new customer:", customerId);
   }
 
   // Create subscription checkout session
+  console.log("Creating Stripe checkout session...");
   const session = await stripe.checkout.sessions.create({
     customer: customerId,
     line_items: [
@@ -108,6 +129,8 @@ async function createSubscription(req: Request, data: any) {
       plan,
     },
   });
+
+  console.log("Checkout session created:", session.id);
 
   return new Response(
     JSON.stringify({ url: session.url }),
@@ -235,4 +258,112 @@ async function checkSubscription(req: Request, data: any) {
     }),
     { headers: corsHeaders }
   );
+}
+
+async function handleWebhook(req: Request) {
+  console.log("Webhook received");
+  
+  const signature = req.headers.get("stripe-signature");
+  if (!signature) {
+    console.error("No Stripe signature found");
+    throw new Error("No Stripe signature found");
+  }
+
+  const body = await req.text();
+  
+  let event;
+  try {
+    event = stripe.webhooks.constructEvent(
+      body,
+      signature,
+      Deno.env.get("STRIPE_WEBHOOK_SECRET") || ""
+    );
+  } catch (err) {
+    console.error("Webhook signature verification failed:", err);
+    throw new Error("Webhook signature verification failed");
+  }
+
+  console.log("Processing event:", event.type);
+
+  if (event.type === "checkout.session.completed") {
+    const session = event.data.object as any;
+    console.log("Checkout session completed:", session.id);
+    
+    if (session.mode === "subscription") {
+      const subscription = await stripe.subscriptions.retrieve(session.subscription);
+      console.log("Retrieved subscription:", subscription.id);
+      
+      const userId = session.metadata?.user_id;
+      const plan = session.metadata?.plan;
+      
+      if (!userId) {
+        console.error("No user_id in session metadata");
+        return new Response("No user_id found", { status: 400, headers: corsHeaders });
+      }
+
+      // Create subscription record
+      const { error } = await supabaseAdmin
+        .from("subscriptions")
+        .insert({
+          user_id: userId,
+          stripe_subscription_id: subscription.id,
+          stripe_customer_id: subscription.customer as string,
+          plan: plan || "monthly",
+          status: "active",
+          amount: subscription.items.data[0].price.unit_amount! / 100,
+          currency: subscription.currency,
+          starts_at: new Date(subscription.current_period_start * 1000).toISOString(),
+          ends_at: new Date(subscription.current_period_end * 1000).toISOString(),
+        });
+
+      if (error) {
+        console.error("Error creating subscription record:", error);
+        throw error;
+      }
+
+      console.log("Subscription record created for user:", userId);
+    }
+  }
+
+  if (event.type === "customer.subscription.updated") {
+    const subscription = event.data.object as any;
+    console.log("Subscription updated:", subscription.id);
+    
+    // Update subscription in database
+    const { error } = await supabaseAdmin
+      .from("subscriptions")
+      .update({
+        status: subscription.status,
+        ends_at: new Date(subscription.current_period_end * 1000).toISOString(),
+      })
+      .eq("stripe_subscription_id", subscription.id);
+
+    if (error) {
+      console.error("Error updating subscription:", error);
+      throw error;
+    }
+  }
+
+  if (event.type === "customer.subscription.deleted") {
+    const subscription = event.data.object as any;
+    console.log("Subscription cancelled:", subscription.id);
+    
+    // Mark subscription as cancelled
+    const { error } = await supabaseAdmin
+      .from("subscriptions")
+      .update({
+        status: "cancelled",
+        ends_at: new Date().toISOString(),
+      })
+      .eq("stripe_subscription_id", subscription.id);
+
+    if (error) {
+      console.error("Error cancelling subscription:", error);
+      throw error;
+    }
+  }
+
+  return new Response(JSON.stringify({ received: true }), {
+    headers: corsHeaders,
+  });
 }

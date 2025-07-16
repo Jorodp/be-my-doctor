@@ -39,14 +39,27 @@ export function SubscriptionGuard({ children }: SubscriptionGuardProps) {
 
   const fetchPaymentSettings = async () => {
     try {
+      console.log("Fetching payment settings...");
       const { data, error } = await supabase
         .from("payment_settings")
         .select("monthly_price, annual_price")
-        .single();
+        .maybeSingle();
 
-      if (error) throw error;
-      console.log("Payment settings loaded:", data);
-      setPaymentSettings(data);
+      if (error) {
+        console.error("Payment settings error:", error);
+        throw error;
+      }
+      
+      if (data) {
+        console.log("Payment settings loaded:", data);
+        setPaymentSettings(data);
+      } else {
+        console.log("No payment settings found, using defaults");
+        setPaymentSettings({
+          monthly_price: 799,
+          annual_price: 7990
+        });
+      }
     } catch (error) {
       console.error("Error fetching payment settings:", error);
       // Set default values if fetch fails
@@ -78,6 +91,8 @@ export function SubscriptionGuard({ children }: SubscriptionGuardProps) {
   const handleSubscribe = async (plan: "monthly" | "annual") => {
     try {
       setLoading(true);
+      console.log(`Starting ${plan} subscription process...`);
+      
       const { data, error } = await supabase.functions.invoke("payments", {
         body: { 
           action: "create-subscription",
@@ -85,20 +100,25 @@ export function SubscriptionGuard({ children }: SubscriptionGuardProps) {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Function invocation error:", error);
+        throw error;
+      }
 
-      // Open Stripe checkout in a new tab
-      window.open(data.url, '_blank');
+      console.log("Function response:", data);
+
+      if (!data.url) {
+        throw new Error("No checkout URL received");
+      }
+
+      // Open Stripe checkout in the same window
+      window.location.href = data.url;
       
-      toast({
-        title: "Redirigiendo a Stripe",
-        description: "Se ha abierto una nueva ventana para completar el pago.",
-      });
     } catch (error) {
       console.error("Error creating subscription:", error);
       toast({
         title: "Error",
-        description: "No se pudo crear la suscripción. Intenta de nuevo.",
+        description: `Error al crear la suscripción: ${error.message}`,
         variant: "destructive",
       });
     } finally {

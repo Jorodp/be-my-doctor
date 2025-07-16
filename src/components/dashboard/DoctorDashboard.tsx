@@ -168,6 +168,29 @@ export const DoctorDashboard = () => {
 
 const DoctorDashboardContent = ({ user, doctorProfile, userRole, signOut, toast }: any) => {
   
+  // Check for payment status in URL
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const paymentStatus = urlParams.get('payment');
+    
+    if (paymentStatus === 'success') {
+      toast({
+        title: "¡Pago exitoso!",
+        description: "Tu suscripción ha sido activada. Bienvenido a Be My Doctor.",
+      });
+      // Remove payment parameter from URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (paymentStatus === 'cancelled') {
+      toast({
+        title: "Pago cancelado",
+        description: "El proceso de pago fue cancelado. Puedes intentar de nuevo cuando gustes.",
+        variant: "destructive",
+      });
+      // Remove payment parameter from URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, [toast]);
+  
   // State
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<DoctorProfile | null>(null);
