@@ -45,7 +45,7 @@ import { PatientHistoryModal } from '@/components/PatientHistoryModal';
 import { AppointmentActions } from '@/components/AppointmentActions';
 import { DashboardHeader } from '@/components/DashboardHeader';
 import { DoctorProfileDisplay } from '@/components/DoctorProfileDisplay';
-import { ConsultationManager } from '@/components/ConsultationManager';
+import { ConsultationFlow } from '@/components/ConsultationFlow';
 import { SubscriptionGuard } from '@/components/SubscriptionGuard';
 
 interface DoctorProfile {
@@ -139,20 +139,8 @@ export const DoctorDashboard = () => {
   const { user, doctorProfile, userRole, signOut } = useAuth();
   const { toast } = useToast();
   
-  // Check if doctor needs to complete profile or is pending verification
-  if (!doctorProfile) {
-    return <Navigate to="/complete-doctor-profile" replace />;
-  }
-  
-  if (doctorProfile.verification_status === 'pending') {
-    return <Navigate to="/pending-verification" replace />;
-  }
-  
-  if (doctorProfile.verification_status === 'rejected') {
-    return <Navigate to="/pending-verification" replace />;
-  }
-
-  // Wrap the entire dashboard with subscription guard
+  // NEW LOGIC: Always allow access to dashboard
+  // Subscription guard will handle subscription validation for doctors
   return (
     <SubscriptionGuard>
       <DoctorDashboardContent 
@@ -190,6 +178,25 @@ const DoctorDashboardContent = ({ user, doctorProfile, userRole, signOut, toast 
       window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, [toast]);
+
+  // Show verification status alert if doctor is not verified
+  useEffect(() => {
+    if (doctorProfile) {
+      if (doctorProfile.verification_status === 'pending') {
+        toast({
+          title: "Perfil pendiente de verificación",
+          description: "Tu perfil está siendo revisado por nuestro equipo. No aparecerás en el buscador hasta ser verificado.",
+          variant: "default",
+        });
+      } else if (doctorProfile.verification_status === 'rejected') {
+        toast({
+          title: "Perfil rechazado",
+          description: "Tu perfil necesita correcciones. Revisa los comentarios del administrador.",
+          variant: "destructive",
+        });
+      }
+    }
+  }, [doctorProfile, toast]);
   
   // State
   const [loading, setLoading] = useState(true);
@@ -1395,15 +1402,15 @@ const DoctorDashboardContent = ({ user, doctorProfile, userRole, signOut, toast 
         doctorUserId={user?.id || ''}
       />
 
-      {/* Consultation Modal */}
+      {/* Consultation Flow with Document Validation */}
       {selectedAppointment && (
-        <ConsultationModal
+        <ConsultationFlow
+          appointment={selectedAppointment}
           isOpen={consultationModalOpen}
           onClose={() => {
             setConsultationModalOpen(false)
             setSelectedAppointment(null)
           }}
-          appointment={selectedAppointment}
           onConsultationComplete={handleConsultationComplete}
         />
       )}

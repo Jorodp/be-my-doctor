@@ -23,47 +23,19 @@ export default function Dashboard() {
     if (!user || !userRole) return;
 
     try {
-      // PRIORITY: For verified doctors, go directly to dashboard
+      // NEW LOGIC: Direct access to dashboards for all users
+      
+      // For doctors: Always allow access to dashboard, regardless of verification status
       if (userRole === 'doctor') {
-        if (doctorProfile && doctorProfile.verification_status === 'verified') {
-          console.log('Verified doctor detected, redirecting to dashboard...');
-          setProfileComplete(true);
-          setHasRedirected(true);
-          return; // This will trigger redirect to /dashboard/doctor in the render
-        }
-        
-        // For non-verified doctors, check if profile needs completion
-        const isComplete = profile && 
-          doctorProfile && 
-          profile.full_name && 
-          profile.full_name.trim() !== '' &&
-          doctorProfile.specialty && 
-          doctorProfile.specialty.trim() !== '' &&
-          doctorProfile.professional_license && 
-          doctorProfile.professional_license.trim() !== '';
-          
-        if (!isComplete || !doctorProfile) {
-          setHasRedirected(true);
-          navigate('/profile/doctor', { replace: true });
-          return;
-        }
-        
-        // For pending/rejected doctors, redirect to pending verification
-        if (doctorProfile.verification_status === 'pending') {
-          setHasRedirected(true);
-          navigate('/pending-verification', { replace: true });
-          return;
-        }
-        
-        if (doctorProfile.verification_status === 'rejected') {
-          setHasRedirected(true);
-          navigate('/pending-verification', { replace: true });
-          return;
-        }
+        console.log('Doctor detected, redirecting to dashboard...');
+        setProfileComplete(true);
+        setHasRedirected(true);
+        return;
       }
 
-      // Check for intended doctor booking first
+      // For patients: Always allow access to dashboard
       if (userRole === 'patient') {
+        // Check for intended doctor booking first
         const intendedDoctorId = localStorage.getItem('intended_doctor_id');
         if (intendedDoctorId) {
           localStorage.removeItem('intended_doctor_id');
@@ -71,20 +43,18 @@ export default function Dashboard() {
           navigate(`/book/${intendedDoctorId}`, { replace: true });
           return;
         }
+        
+        console.log('Patient detected, redirecting to dashboard...');
+        setProfileComplete(true);
+        setHasRedirected(true);
+        return;
       }
 
-      // Check if profile is complete for patients
-      if (userRole === 'patient') {
-        // For patients, check required fields: full_name (profile_image_url and id_document_url optional for now)
-        const isComplete = profile && 
-          profile.full_name && 
-          profile.full_name.trim() !== '';
-          
-        if (!isComplete) {
-          setHasRedirected(true);
-          navigate('/profile/patient', { replace: true });
-          return;
-        }
+      // For assistants and admins: Direct access
+      if (userRole === 'assistant' || userRole === 'admin') {
+        setProfileComplete(true);
+        setHasRedirected(true);
+        return;
       }
 
       setProfileComplete(true);

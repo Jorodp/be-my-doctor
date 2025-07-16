@@ -77,6 +77,7 @@ const App = () => (
                 </ProtectedRoute>
               } 
             />
+            {/* These routes are kept for backward compatibility but are not used in the new flow */}
             <Route 
               path="/profile/doctor" 
               element={
@@ -93,6 +94,7 @@ const App = () => (
                 </ProtectedRoute>
               } 
             />
+            {/* Legacy routes - kept for compatibility */}
             <Route 
               path="/complete-doctor-profile" 
               element={
