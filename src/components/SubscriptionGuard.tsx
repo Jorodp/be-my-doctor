@@ -120,7 +120,7 @@ export function SubscriptionGuard({ children }: SubscriptionGuardProps) {
       setLoading(true);
       console.log(`Starting ${plan} subscription process...`);
       
-      const { data, error } = await supabase.functions.invoke('test-function', {
+      const { data, error } = await supabase.functions.invoke('create-doctor-subscription', {
         body: { plan_type: plan }
       });
       

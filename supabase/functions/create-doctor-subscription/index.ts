@@ -104,39 +104,48 @@ serve(async (req) => {
       logStep("New customer created", { customerId });
     }
 
-    // Set price IDs based on plan type
-    const priceId = plan_type === 'monthly' 
+    // Set price IDs based on plan type - USING EXACT PRICE IDs PROVIDED
+    const selectedPriceId = plan_type === 'monthly' 
       ? "price_1RlLZh2QFgncbl10moSdGhjZ" 
       : "price_1RlLaW2QFgncbl10pCwWOFFM";
 
-    logStep("Creating checkout session", { priceId, planType: plan_type });
+    logStep("Creating checkout session", { priceId: selectedPriceId, planType: plan_type });
 
+    // Get the app URL from request origin or use default
     const origin = req.headers.get("origin") || "https://5bee6252-13cc-4dc8-849d-50c7ff6e61ad.lovableproject.com";
     
+    // Create checkout session with EXACT CONFIGURATION as specified
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       line_items: [
         {
-          price: priceId,
+          price: selectedPriceId,
           quantity: 1,
         },
       ],
       mode: "subscription",
-      success_url: `${origin}/dashboard/doctor?subscription=success`,
-      cancel_url: `${origin}/dashboard/doctor?subscription=cancelled`,
+      success_url: `${origin}/dashboard/doctor?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${origin}/dashboard/doctor`,
+      client_reference_id: user.id,
       metadata: {
-        user_id: user.id,
+        userRole: "doctor",
         plan_type: plan_type,
-        role: "doctor"
+        user_id: user.id
       }
     });
 
-    logStep("Checkout session created", { sessionId: session.id, url: session.url });
+    logStep("Checkout session created successfully", { 
+      sessionId: session.id, 
+      url: session.url,
+      mode: session.mode 
+    });
 
+    // Return the URL as specified
     return new Response(JSON.stringify({ url: session.url }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
+    
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logStep("ERROR in create-doctor-subscription", { 
