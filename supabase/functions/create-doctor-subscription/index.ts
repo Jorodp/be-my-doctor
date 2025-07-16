@@ -21,6 +21,7 @@ serve(async (req) => {
     logStep("Function started");
 
     const { plan_type } = await req.json();
+    logStep("Request body parsed", { plan_type });
     if (!plan_type || !['monthly', 'annual'].includes(plan_type)) {
       throw new Error("Invalid plan_type. Must be 'monthly' or 'annual'");
     }
@@ -111,7 +112,7 @@ serve(async (req) => {
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    logStep("ERROR in create-doctor-subscription", { message: errorMessage });
+    logStep("ERROR in create-doctor-subscription", { message: errorMessage, stack: error?.stack });
     return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
