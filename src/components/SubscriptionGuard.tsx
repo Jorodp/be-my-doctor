@@ -58,16 +58,16 @@ export function SubscriptionGuard({ children }: SubscriptionGuardProps) {
       } else {
         console.log("No payment settings found, using defaults");
         setPaymentSettings({
-          monthly_price: 799,
-          annual_price: 7990
+          monthly_price: 2000,
+          annual_price: 20000
         });
       }
     } catch (error) {
       console.error("Error fetching payment settings:", error);
       // Set default values if fetch fails
       setPaymentSettings({
-        monthly_price: 799,
-        annual_price: 7990
+        monthly_price: 2000,
+        annual_price: 20000
       });
     }
   };
@@ -120,32 +120,34 @@ export function SubscriptionGuard({ children }: SubscriptionGuardProps) {
       setLoading(true);
       console.log(`Starting ${plan} subscription process...`);
       
-      const { data, error } = await supabase.functions.invoke("payments", {
-        body: { 
-          action: "create-subscription",
-          plan 
-        }
+      const { data, error } = await supabase.functions.invoke('create-doctor-subscription', {
+        body: { plan_type: plan }
       });
-
-      if (error) {
-        console.error("Function invocation error:", error);
-        throw error;
-      }
-
-      console.log("Function response:", data);
-
-      if (!data.url) {
-        throw new Error("No checkout URL received");
-      }
-
-      // Open Stripe checkout in the same window
-      window.location.href = data.url;
       
-    } catch (error) {
+      if (error) {
+        console.error('Error from edge function:', error);
+        throw new Error(error.message || 'Error al crear la sesión de pago');
+      }
+      
+      if (!data?.url) {
+        console.error('No checkout URL received:', data);
+        throw new Error('No se recibió la URL de checkout');
+      }
+      
+      console.log('Opening Stripe checkout:', data.url);
+      // Open Stripe checkout in new tab
+      window.open(data.url, '_blank');
+      
+      
+      toast({
+        title: "Redirigiendo a Stripe",
+        description: "Se abrió una nueva pestaña para completar el pago",
+      });
+    } catch (error: any) {
       console.error("Error creating subscription:", error);
       toast({
         title: "Error",
-        description: `Error al crear la suscripción: ${error.message}`,
+        description: error.message || "No se pudo crear la sesión de pago",
         variant: "destructive",
       });
     } finally {
