@@ -20,31 +20,51 @@ serve(async (req) => {
   try {
     logStep("Function started");
 
-    const { plan_type } = await req.json();
+    // Get request body
+    const body = await req.json();
+    const { plan_type } = body;
     logStep("Request body parsed", { plan_type });
+    
     if (!plan_type || !['monthly', 'annual'].includes(plan_type)) {
       throw new Error("Invalid plan_type. Must be 'monthly' or 'annual'");
     }
 
+    // Check Stripe key
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
-    if (!stripeKey) throw new Error("STRIPE_SECRET_KEY is not set");
+    if (!stripeKey) {
+      logStep("ERROR: STRIPE_SECRET_KEY not found");
+      throw new Error("STRIPE_SECRET_KEY is not set");
+    }
     logStep("Stripe key verified");
 
-    // Use service role key for database operations
+    // Get user from auth header
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      logStep("ERROR: No authorization header");
+      throw new Error("No authorization header provided");
+    }
+
+    // Create Supabase client
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
       { auth: { persistSession: false } }
     );
 
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("No authorization header provided");
-
     const token = authHeader.replace("Bearer ", "");
+    logStep("Getting user from token");
+    
     const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
-    if (userError) throw new Error(`Authentication error: ${userError.message}`);
+    if (userError) {
+      logStep("ERROR: Authentication failed", { error: userError.message });
+      throw new Error(`Authentication error: ${userError.message}`);
+    }
+    
     const user = userData.user;
-    if (!user?.email) throw new Error("User not authenticated or email not available");
+    if (!user?.email) {
+      logStep("ERROR: No user or email found");
+      throw new Error("User not authenticated or email not available");
+    }
     logStep("User authenticated", { userId: user.id, email: user.email });
 
     // Verify user is a doctor
@@ -55,19 +75,24 @@ serve(async (req) => {
       .single();
 
     if (profileError || profile?.role !== "doctor") {
+      logStep("ERROR: User is not a doctor", { profileError, role: profile?.role });
       throw new Error("User is not authorized to create doctor subscriptions");
     }
     logStep("Doctor authorization verified");
 
+    // Initialize Stripe
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
 
     // Check if customer exists
+    logStep("Checking for existing customer");
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     let customerId;
+    
     if (customers.data.length > 0) {
       customerId = customers.data[0].id;
       logStep("Existing customer found", { customerId });
     } else {
+      logStep("Creating new customer");
       const customer = await stripe.customers.create({
         email: user.email,
         metadata: {
@@ -86,6 +111,8 @@ serve(async (req) => {
 
     logStep("Creating checkout session", { priceId, planType: plan_type });
 
+    const origin = req.headers.get("origin") || "https://5bee6252-13cc-4dc8-849d-50c7ff6e61ad.lovableproject.com";
+    
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       line_items: [
@@ -95,8 +122,8 @@ serve(async (req) => {
         },
       ],
       mode: "subscription",
-      success_url: `${req.headers.get("origin")}/dashboard/doctor?subscription=success`,
-      cancel_url: `${req.headers.get("origin")}/dashboard/doctor?subscription=cancelled`,
+      success_url: `${origin}/dashboard/doctor?subscription=success`,
+      cancel_url: `${origin}/dashboard/doctor?subscription=cancelled`,
       metadata: {
         user_id: user.id,
         plan_type: plan_type,
@@ -112,7 +139,10 @@ serve(async (req) => {
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    logStep("ERROR in create-doctor-subscription", { message: errorMessage, stack: error?.stack });
+    logStep("ERROR in create-doctor-subscription", { 
+      message: errorMessage, 
+      stack: error instanceof Error ? error.stack : undefined 
+    });
     return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
