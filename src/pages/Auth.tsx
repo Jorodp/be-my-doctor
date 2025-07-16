@@ -124,10 +124,17 @@ export default function Auth() {
     });
 
     if (error) {
+      console.log('Reset password error:', error);
+      let errorMessage = error.message;
+      
+      if (error.message.includes('email rate limit exceeded') || error.message.includes('over_email_send_rate_limit')) {
+        errorMessage = 'Has excedido el límite de envío de correos. Por favor espera unos minutos antes de intentar de nuevo.';
+      }
+      
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message
+        description: errorMessage
       });
     } else {
       toast({
