@@ -29,7 +29,7 @@ import { es } from 'date-fns/locale';
 import { DashboardLayout } from '@/components/ui/DashboardLayout';
 import { SubscriptionGuard } from '@/components/SubscriptionGuard';
 import { ConsultationFlowManager } from '@/components/ConsultationFlowManager';
-import { AssistantScheduleManager } from '@/components/AssistantScheduleManager';
+import { DoctorCalendarSchedule } from '@/components/DoctorCalendarSchedule';
 
 interface DoctorProfile {
   id: string;
@@ -513,11 +513,11 @@ const DoctorDashboardContent = () => {
               <CardHeader>
                 <CardTitle>Gestión de Agenda</CardTitle>
                 <CardDescription>
-                  Configura tu disponibilidad por días y horarios
+                  Configura tu disponibilidad usando el calendario visual
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {user && <AssistantScheduleManager doctorId={user.id} />}
+                {user && <DoctorCalendarSchedule doctorId={user.id} />}
               </CardContent>
             </Card>
           </TabsContent>
