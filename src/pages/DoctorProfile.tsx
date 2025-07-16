@@ -58,17 +58,39 @@ export default function DoctorProfile() {
   const [averageRating, setAverageRating] = useState(0);
   const [loading, setLoading] = useState(true);
 
+  // Redirect to auth if not logged in
   useEffect(() => {
-    if (doctorId) {
+    if (!user) {
+      const currentPath = window.location.pathname;
+      navigate(`/auth?redirect=${encodeURIComponent(currentPath)}`);
+      return;
+    }
+  }, [user, navigate]);
+
+  useEffect(() => {
+    if (doctorId && user) {
       fetchDoctorProfile();
       fetchRatings();
     }
-  }, [doctorId]);
+  }, [doctorId, user]);
 
   const fetchDoctorProfile = async () => {
     if (!doctorId) return;
 
     try {
+      // First check if doctor has active subscription
+      const { data: subscription } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', doctorId)
+        .eq('status', 'active')
+        .gte('ends_at', new Date().toISOString())
+        .single();
+
+      if (!subscription) {
+        throw new Error('Doctor not available - no active subscription');
+      }
+
       // Fetch doctor profile
       const { data: doctorData, error: doctorError } = await supabase
         .from('doctor_profiles')
@@ -168,7 +190,8 @@ export default function DoctorProfile() {
 
   const handleBookAppointment = () => {
     if (!user) {
-      navigate('/auth');
+      const currentPath = window.location.pathname;
+      navigate(`/auth?redirect=${encodeURIComponent(currentPath)}`);
       return;
     }
     navigate(`/book/${doctorId}`);

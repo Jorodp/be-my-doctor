@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Navigate, useLocation, Link } from 'react-router-dom';
+import { Navigate, useLocation, Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,6 +21,7 @@ export default function Auth() {
   const { user, signIn, signUp } = useAuth();
   const { toast } = useToast();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'signin' | 'signup'>('signin');
@@ -46,8 +47,10 @@ export default function Auth() {
 
   // Redirect if already authenticated
   if (user) {
-    const from = location.state?.from?.pathname || '/dashboard';
-    return <Navigate to={from} replace />;
+    const redirectTo = searchParams.get('redirect') || 
+                      location.state?.from?.pathname || 
+                      '/dashboard';
+    return <Navigate to={redirectTo} replace />;
   }
 
   const handleSignIn = async (e: React.FormEvent) => {

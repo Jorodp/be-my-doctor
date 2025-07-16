@@ -72,7 +72,7 @@ export default function DoctorSearch() {
 
   const fetchDoctors = async () => {
     try {
-      // Fetch verified doctors
+      // Fetch verified doctors with active subscriptions
       const { data: doctorProfiles, error } = await supabase
         .from('doctor_profiles')
         .select(`
@@ -94,27 +94,45 @@ export default function DoctorSearch() {
 
       const userIds = doctorProfiles.map(d => d.user_id);
 
-      // Get all profiles for these doctors in a single query
+      // Filter doctors with active subscriptions
+      const { data: activeSubscriptions } = await supabase
+        .from('subscriptions')
+        .select('user_id')
+        .in('user_id', userIds)
+        .eq('status', 'active')
+        .gte('ends_at', new Date().toISOString());
+
+      const subscribedUserIds = new Set(activeSubscriptions?.map(sub => sub.user_id) || []);
+      
+      // Only include doctors with active subscriptions
+      const subscribedDoctors = doctorProfiles.filter(doctor => 
+        subscribedUserIds.has(doctor.user_id)
+      );
+
+      // Convert Set to Array for Supabase queries
+      const subscribedUserIdsArray = Array.from(subscribedUserIds);
+      
+      // Get all profiles for subscribed doctors only
       const { data: allProfiles } = await supabase
         .from('profiles')
         .select('user_id, full_name')
-        .in('user_id', userIds);
+        .in('user_id', subscribedUserIdsArray);
 
-      // Get all ratings in a single query
+      // Get all ratings for subscribed doctors only
       const { data: allRatings } = await supabase
         .from('ratings')
         .select('doctor_user_id, rating')
-        .in('doctor_user_id', userIds);
+        .in('doctor_user_id', subscribedUserIdsArray);
 
-      // Get all availability in a single query
+      // Get all availability for subscribed doctors only
       const { data: allAvailability } = await supabase
         .from('doctor_availability')
         .select('doctor_user_id, is_available')
-        .in('doctor_user_id', userIds)
+        .in('doctor_user_id', subscribedUserIdsArray)
         .eq('is_available', true);
 
-      // Process the data
-      const doctorsWithDetails = doctorProfiles.map((doctor) => {
+      // Process only subscribed doctors
+      const doctorsWithDetails = subscribedDoctors.map((doctor) => {
         // Find profile for this doctor
         const profile = allProfiles?.find(p => p.user_id === doctor.user_id);
 
