@@ -11,11 +11,17 @@ import {
   Play,
   Square,
   UserCheck,
-  AlertTriangle
+  AlertTriangle,
+  Timer,
+  Stethoscope,
+  CheckCircle,
+  Phone
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { format, differenceInMinutes } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 interface Appointment {
   id: string;
@@ -33,6 +39,7 @@ interface Appointment {
   total_clinic_time_minutes?: number;
   patient_profile?: {
     full_name: string;
+    phone?: string;
     profile_image_url?: string;
   };
 }
@@ -57,10 +64,11 @@ export const ConsultationFlowManager: React.FC<ConsultationFlowManagerProps> = (
     
     setLoading(appointmentId);
     try {
+      const arrivalTime = new Date().toISOString();
       const { error } = await supabase
         .from('appointments')
         .update({
-          patient_arrived_at: new Date().toISOString(),
+          patient_arrived_at: arrivalTime,
           marked_arrived_by: user.id,
           consultation_status: 'waiting'
         })
@@ -70,7 +78,7 @@ export const ConsultationFlowManager: React.FC<ConsultationFlowManagerProps> = (
 
       toast({
         title: "Paciente registrado",
-        description: "Se ha marcado la llegada del paciente",
+        description: `Paciente marcado como presente a las ${format(new Date(arrivalTime), 'HH:mm')}`,
       });
 
       onAppointmentUpdate();
@@ -89,14 +97,29 @@ export const ConsultationFlowManager: React.FC<ConsultationFlowManagerProps> = (
   const startConsultation = async (appointmentId: string) => {
     if (!user) return;
     
+    const appointment = appointments.find(apt => apt.id === appointmentId);
+    if (!appointment?.patient_arrived_at) {
+      toast({
+        title: "Error",
+        description: "El paciente debe estar marcado como presente antes de iniciar la consulta",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setLoading(appointmentId);
     try {
+      const consultationStartTime = new Date();
+      const arrivalTime = new Date(appointment.patient_arrived_at);
+      const waitingTimeMinutes = differenceInMinutes(consultationStartTime, arrivalTime);
+
       const { error } = await supabase
         .from('appointments')
         .update({
-          consultation_started_at: new Date().toISOString(),
+          consultation_started_at: consultationStartTime.toISOString(),
           consultation_started_by: user.id,
-          consultation_status: 'in_progress'
+          consultation_status: 'in_progress',
+          waiting_time_minutes: waitingTimeMinutes
         })
         .eq('id', appointmentId);
 
@@ -104,7 +127,7 @@ export const ConsultationFlowManager: React.FC<ConsultationFlowManagerProps> = (
 
       toast({
         title: "Consulta iniciada",
-        description: "Se ha iniciado la consulta médica",
+        description: `Consulta iniciada. Tiempo de espera: ${waitingTimeMinutes} minutos`,
       });
 
       onAppointmentUpdate();
@@ -123,17 +146,38 @@ export const ConsultationFlowManager: React.FC<ConsultationFlowManagerProps> = (
   const endConsultation = async (appointmentId: string) => {
     if (!user) return;
     
+    const appointment = appointments.find(apt => apt.id === appointmentId);
+    if (!appointment?.consultation_started_at) {
+      toast({
+        title: "Error",
+        description: "La consulta debe estar iniciada para poder finalizarla",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setLoading(appointmentId);
     try {
-      const now = new Date().toISOString();
+      const consultationEndTime = new Date();
+      const consultationStartTime = new Date(appointment.consultation_started_at);
+      const consultationDurationMinutes = differenceInMinutes(consultationEndTime, consultationStartTime);
+      
+      // Calculate total clinic time if patient arrived
+      let totalClinicTimeMinutes = null;
+      if (appointment.patient_arrived_at) {
+        const arrivalTime = new Date(appointment.patient_arrived_at);
+        totalClinicTimeMinutes = differenceInMinutes(consultationEndTime, arrivalTime);
+      }
       
       const { error } = await supabase
         .from('appointments')
         .update({
-          consultation_ended_at: now,
+          consultation_ended_at: consultationEndTime.toISOString(),
           consultation_ended_by: user.id,
           consultation_status: 'completed',
-          status: 'completed'
+          status: 'completed',
+          consultation_duration_minutes: consultationDurationMinutes,
+          total_clinic_time_minutes: totalClinicTimeMinutes
         })
         .eq('id', appointmentId);
 
@@ -141,7 +185,7 @@ export const ConsultationFlowManager: React.FC<ConsultationFlowManagerProps> = (
 
       toast({
         title: "Consulta finalizada",
-        description: "Se ha finalizado la consulta médica",
+        description: `Consulta completada. Duración: ${consultationDurationMinutes} min. Tiempo total: ${totalClinicTimeMinutes || 0} min`,
       });
 
       onAppointmentUpdate();
@@ -175,7 +219,7 @@ export const ConsultationFlowManager: React.FC<ConsultationFlowManagerProps> = (
             size="sm"
             onClick={() => markPatientArrived(appointment.id)}
             disabled={loading === appointment.id}
-            className="gap-2"
+            className="gap-2 animate-pulse border-blue-200 text-blue-700 hover:bg-blue-50"
           >
             <UserCheck className="h-4 w-4" />
             {loading === appointment.id ? 'Registrando...' : 'Paciente llegó'}
@@ -190,7 +234,7 @@ export const ConsultationFlowManager: React.FC<ConsultationFlowManagerProps> = (
               size="sm"
               onClick={() => startConsultation(appointment.id)}
               disabled={loading === appointment.id}
-              className="gap-2"
+              className="gap-2 bg-green-600 hover:bg-green-700"
             >
               <Play className="h-4 w-4" />
               {loading === appointment.id ? 'Iniciando...' : 'Iniciar consulta'}
@@ -198,8 +242,8 @@ export const ConsultationFlowManager: React.FC<ConsultationFlowManagerProps> = (
           );
         }
         return (
-          <Badge variant="secondary" className="gap-1">
-            <Clock className="h-3 w-3" />
+          <Badge variant="secondary" className="gap-1 bg-yellow-100 text-yellow-800 animate-pulse">
+            <Timer className="h-3 w-3" />
             Esperando
           </Badge>
         );
@@ -220,8 +264,8 @@ export const ConsultationFlowManager: React.FC<ConsultationFlowManagerProps> = (
           );
         }
         return (
-          <Badge variant="default" className="gap-1">
-            <Users className="h-3 w-3" />
+          <Badge variant="default" className="gap-1 bg-green-100 text-green-800">
+            <Stethoscope className="h-3 w-3" />
             En consulta
           </Badge>
         );
@@ -239,6 +283,10 @@ export const ConsultationFlowManager: React.FC<ConsultationFlowManagerProps> = (
     }
   };
 
+  const formatTime = (dateString: string) => {
+    return format(new Date(dateString), 'HH:mm', { locale: es });
+  };
+
   const getWaitingTime = (appointment: Appointment) => {
     if (appointment.patient_arrived_at && !appointment.consultation_started_at) {
       const arrivedTime = new Date(appointment.patient_arrived_at);
@@ -247,6 +295,39 @@ export const ConsultationFlowManager: React.FC<ConsultationFlowManagerProps> = (
       return `${waitingMinutes}min esperando`;
     }
     return null;
+  };
+
+  const getTimelineSteps = (appointment: Appointment) => {
+    return [
+      {
+        label: 'Programada',
+        time: formatTime(appointment.starts_at),
+        icon: Clock,
+        completed: true,
+        active: appointment.consultation_status === 'scheduled'
+      },
+      {
+        label: 'Llegó',
+        time: appointment.patient_arrived_at ? formatTime(appointment.patient_arrived_at) : '--:--',
+        icon: UserCheck,
+        completed: !!appointment.patient_arrived_at,
+        active: appointment.consultation_status === 'waiting'
+      },
+      {
+        label: 'En Consulta',
+        time: appointment.consultation_started_at ? formatTime(appointment.consultation_started_at) : '--:--',
+        icon: Stethoscope,
+        completed: !!appointment.consultation_started_at,
+        active: appointment.consultation_status === 'in_progress'
+      },
+      {
+        label: 'Completada',
+        time: appointment.consultation_ended_at ? formatTime(appointment.consultation_ended_at) : '--:--',
+        icon: CheckCircle,
+        completed: !!appointment.consultation_ended_at,
+        active: appointment.consultation_status === 'completed'
+      }
+    ];
   };
 
   // Sort appointments by consultation flow priority
@@ -277,7 +358,7 @@ export const ConsultationFlowManager: React.FC<ConsultationFlowManagerProps> = (
           Flujo de Consultas - {userRole === 'doctor' ? 'Doctor' : 'Asistente'}
         </CardTitle>
         <p className="text-sm text-muted-foreground">
-          Gestiona el flujo de consultas del día
+          Gestiona el flujo de consultas del día con tiempos de espera y duración
         </p>
       </CardHeader>
       
@@ -291,57 +372,114 @@ export const ConsultationFlowManager: React.FC<ConsultationFlowManagerProps> = (
             </p>
           </div>
         ) : (
-          <div className="space-y-3">
-            {sortedAppointments.map((appointment) => (
-              <Card key={appointment.id} className="border-l-4 border-l-primary">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3 flex-1">
-                      <Avatar className="h-10 w-10">
-                        <AvatarImage 
-                          src={appointment.patient_profile?.profile_image_url} 
-                          alt={appointment.patient_profile?.full_name || 'Paciente'} 
-                        />
-                        <AvatarFallback>
-                          {appointment.patient_profile?.full_name?.charAt(0) || 'P'}
-                        </AvatarFallback>
-                      </Avatar>
-                      
-                      <div className="flex-1">
-                        <h4 className="font-semibold">
-                          {appointment.patient_profile?.full_name || 'Paciente'}
-                        </h4>
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                          <span className="flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            {new Date(appointment.starts_at).toLocaleTimeString('es-ES', {
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
-                          </span>
-                          {getWaitingTime(appointment) && (
-                            <span className="text-orange-600 font-medium">
-                              {getWaitingTime(appointment)}
+          <div className="space-y-4">
+            {sortedAppointments.map((appointment) => {
+              const timelineSteps = getTimelineSteps(appointment);
+              const waitingTime = getWaitingTime(appointment);
+
+              return (
+                <Card key={appointment.id} className="transition-all duration-200 hover:shadow-md">
+                  <CardContent className="p-6">
+                    {/* Header with patient info */}
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-12 w-12">
+                          <AvatarImage 
+                            src={appointment.patient_profile?.profile_image_url} 
+                            alt={appointment.patient_profile?.full_name || 'Paciente'} 
+                          />
+                          <AvatarFallback>
+                            {appointment.patient_profile?.full_name?.charAt(0) || 'P'}
+                          </AvatarFallback>
+                        </Avatar>
+                        
+                        <div>
+                          <h4 className="font-semibold text-lg">
+                            {appointment.patient_profile?.full_name || 'Paciente'}
+                          </h4>
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                            <span className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              Programada: {formatTime(appointment.starts_at)}
                             </span>
-                          )}
+                            {appointment.patient_profile?.phone && (
+                              <span className="flex items-center gap-1">
+                                <Phone className="h-3 w-3" />
+                                {appointment.patient_profile.phone}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
+                      
+                      <div className="flex items-center gap-3">
+                        {getActionButton(appointment)}
+                      </div>
                     </div>
-                    
-                    <div className="flex items-center gap-3">
-                      {getActionButton(appointment)}
+
+                    {/* Timeline */}
+                    <div className="grid grid-cols-4 gap-2 mb-4">
+                      {timelineSteps.map((step, index) => {
+                        const Icon = step.icon;
+                        return (
+                          <div 
+                            key={step.label}
+                            className={`text-center p-3 rounded-lg transition-all duration-300 ${
+                              step.active ? 'bg-blue-50 border-2 border-blue-200 animate-pulse' : 
+                              step.completed ? 'bg-green-50 border border-green-200' : 
+                              'bg-gray-50 border border-gray-200'
+                            }`}
+                          >
+                            <Icon className={`h-6 w-6 mx-auto mb-1 transition-colors ${
+                              step.completed ? 'text-green-600' : 
+                              step.active ? 'text-blue-600' : 'text-gray-400'
+                            }`} />
+                            <p className="text-xs font-medium">{step.label}</p>
+                            <p className="text-xs text-muted-foreground">{step.time}</p>
+                          </div>
+                        );
+                      })}
                     </div>
-                  </div>
-                  
-                  <div className="mt-3">
-                    <ConsultationProgress 
-                      appointment={appointment} 
-                      showPatientView={false} 
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+
+                    {/* Time information */}
+                    {(appointment.waiting_time_minutes || appointment.consultation_duration_minutes || waitingTime) && (
+                      <div className="flex gap-4 p-3 bg-muted rounded-lg">
+                        {waitingTime && (
+                          <div className="flex items-center gap-2">
+                            <Timer className="h-4 w-4 text-yellow-600" />
+                            <span className="text-sm text-yellow-600 font-medium">{waitingTime}</span>
+                          </div>
+                        )}
+                        {appointment.waiting_time_minutes && (
+                          <div className="flex items-center gap-2">
+                            <Timer className="h-4 w-4 text-blue-600" />
+                            <span className="text-sm">
+                              Esperó: <strong>{appointment.waiting_time_minutes} min</strong>
+                            </span>
+                          </div>
+                        )}
+                        {appointment.consultation_duration_minutes && (
+                          <div className="flex items-center gap-2">
+                            <Stethoscope className="h-4 w-4 text-green-600" />
+                            <span className="text-sm">
+                              Consulta: <strong>{appointment.consultation_duration_minutes} min</strong>
+                            </span>
+                          </div>
+                        )}
+                        {appointment.total_clinic_time_minutes && (
+                          <div className="flex items-center gap-2">
+                            <Clock className="h-4 w-4 text-purple-600" />
+                            <span className="text-sm">
+                              Total: <strong>{appointment.total_clinic_time_minutes} min</strong>
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         )}
       </CardContent>

@@ -19,7 +19,8 @@ import {
   Stethoscope,
   Users,
   Phone,
-  MapPin
+  MapPin,
+  Timer
 } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
@@ -27,6 +28,7 @@ import { format, addDays, startOfDay, endOfDay } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { DashboardLayout } from '@/components/ui/DashboardLayout';
 import { SubscriptionGuard } from '@/components/SubscriptionGuard';
+import { ConsultationFlowManager } from '@/components/ConsultationFlowManager';
 
 interface DoctorProfile {
   id: string;
@@ -51,6 +53,14 @@ interface Appointment {
   status: string;
   notes: string | null;
   patient_user_id: string;
+  doctor_user_id: string;
+  consultation_status: string;
+  patient_arrived_at?: string;
+  consultation_started_at?: string;
+  consultation_ended_at?: string;
+  waiting_time_minutes?: number;
+  consultation_duration_minutes?: number;
+  total_clinic_time_minutes?: number;
   patient_profile?: {
     full_name: string;
     phone: string;
@@ -465,8 +475,12 @@ const DoctorDashboardContent = () => {
         </div>
 
         {/* Main Content Tabs */}
-        <Tabs defaultValue="today" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+        <Tabs defaultValue="consultas" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="consultas" className="flex items-center gap-2">
+              <Timer className="h-4 w-4" />
+              Flujo de Consultas
+            </TabsTrigger>
             <TabsTrigger value="today" className="flex items-center gap-2">
               <Clock className="h-4 w-4" />
               Citas de Hoy
@@ -480,6 +494,14 @@ const DoctorDashboardContent = () => {
               Calificaciones
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="consultas">
+            <ConsultationFlowManager 
+              appointments={todayAppointments}
+              userRole="doctor"
+              onAppointmentUpdate={fetchAllData}
+            />
+          </TabsContent>
 
           <TabsContent value="today">
             <Card>
