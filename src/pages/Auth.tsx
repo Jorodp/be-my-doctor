@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { BackToHomeButton } from '@/components/ui/BackToHomeButton';
+import { Home, ArrowLeft, Search, UserCircle } from 'lucide-react';
 import { Database } from '@/integrations/supabase/types';
 
 
@@ -109,11 +110,33 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-section px-4">
-      {/* Back to Home Button */}
-      <div className="absolute top-4 left-4">
-        <BackToHomeButton />
-      </div>
+    <div className="min-h-screen flex flex-col">
+      {/* Navigation Header */}
+      <header className="bg-white border-b border-gray-200 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center gap-4">
+              <Link to="/" className="flex items-center gap-2 text-primary hover:text-primary/80 transition-colors">
+                <ArrowLeft className="h-5 w-5" />
+                <span className="font-medium">Volver al inicio</span>
+              </Link>
+            </div>
+            <div className="flex items-center gap-2">
+              <img src="/lovable-uploads/2176a5eb-dd8e-4ff9-8a38-3cfe98feb63a.png" alt="Be My Doctor" className="h-8 w-auto" />
+              <span className="font-bold text-lg text-primary">Be My Doctor</span>
+            </div>
+            <div className="flex items-center gap-4">
+              <Link to="/search" className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors">
+                <Search className="h-5 w-5" />
+                <span>Buscar médicos</span>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Auth Content */}
+      <div className="flex-1 flex items-center justify-center bg-gradient-section px-4 py-8">
       
       <div className="flex flex-col items-center gap-6 w-full max-w-md">
         <Card className="w-full">
@@ -291,6 +314,7 @@ export default function Auth() {
           </Tabs>
         </CardContent>
       </Card>
+      </div>
       </div>
     </div>
   );
