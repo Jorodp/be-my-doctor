@@ -159,6 +159,33 @@ export type Database = {
           },
         ]
       }
+      conversations: {
+        Row: {
+          assistant_id: string | null
+          created_at: string | null
+          doctor_id: string
+          id: string
+          patient_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          assistant_id?: string | null
+          created_at?: string | null
+          doctor_id: string
+          id?: string
+          patient_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          assistant_id?: string | null
+          created_at?: string | null
+          doctor_id?: string
+          id?: string
+          patient_id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       doctor_availability: {
         Row: {
           created_at: string
@@ -251,6 +278,38 @@ export type Database = {
           years_experience?: number | null
         }
         Relationships: []
+      }
+      messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string | null
+          id: string
+          sender_id: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string | null
+          id?: string
+          sender_id: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string | null
+          id?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       notifications: {
         Row: {
