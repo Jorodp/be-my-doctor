@@ -47,36 +47,61 @@ const SubscriptionSection = () => {
       // Get current session for authentication
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       if (sessionError || !session?.access_token) {
-        console.error('❌ No valid session found:', sessionError);
-        throw new Error('No hay una sesión válida. Por favor, inicia sesión nuevamente.');
+        toast({
+          title: "Error de autenticación",
+          description: "Por favor, inicia sesión nuevamente.",
+          variant: "destructive",
+        });
+        return;
       }
       
       const { data, error } = await supabase.functions.invoke('create-doctor-subscription', {
         body: { plan_type: planType },
         headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json'
+          'Authorization': `Bearer ${session.access_token}`
         }
       });
       
       if (error) {
         console.error('Error from edge function:', error);
-        throw new Error(error.message || 'Error al crear la sesión de pago');
+        
+        // Handle specific errors
+        if (error.message?.includes("Authentication")) {
+          toast({
+            title: "Error de autenticación",
+            description: "Por favor, inicia sesión nuevamente.",
+            variant: "destructive",
+          });
+        } else if (error.message?.includes("Invalid JSON") || error.message?.includes("plan_type is required")) {
+          toast({
+            title: "Error de configuración",
+            description: "Error en la configuración del plan. Inténtalo de nuevo.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: error.message || 'Error al crear la sesión de pago',
+            variant: "destructive",
+          });
+        }
+        return;
       }
       
       if (!data?.url) {
-        console.error('No checkout URL received:', data);
-        throw new Error('No se recibió la URL de checkout');
+        toast({
+          title: "Error",
+          description: "No se recibió la URL de checkout",
+          variant: "destructive",
+        });
+        return;
       }
       
-      console.log('Opening Stripe checkout:', data.url);
-      // Open Stripe checkout in new tab
-      window.open(data.url, '_blank');
+      console.log('Received checkout URL:', data.url);
       
-      toast({
-        title: "Redirigiendo a Stripe",
-        description: "Se abrió una nueva pestaña para completar el pago",
-      });
+      // Redirect directly to Stripe checkout
+      window.location.href = data.url;
+      
     } catch (error: any) {
       console.error('Error creating subscription:', error);
       toast({
