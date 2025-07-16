@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { DoctorImage } from '@/components/DoctorImage';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -286,31 +287,11 @@ export default function DoctorProfile() {
               
               {/* Large Doctor Photo */}
               <div className="relative">
-                <div className="w-64 h-64 md:w-80 md:h-80 rounded-3xl overflow-hidden shadow-2xl ring-4 ring-background/50">
-                  {doctor.profile_image_url ? (
-                    <img 
-                      src={doctor.profile_image_url.startsWith('http') ? doctor.profile_image_url : `${supabase.storage.from('doctor-photos').getPublicUrl(doctor.profile_image_url).data.publicUrl}`} 
-                      alt={`Dr. ${doctor.profile?.full_name}`}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        e.currentTarget.style.display = 'none';
-                        e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                      }}
-                    />
-                  ) : null}
-                  
-                  {/* Fallback */}
-                  <div className={`w-full h-full bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center ${doctor.profile_image_url ? 'hidden' : ''}`}>
-                    <div className="text-center">
-                      <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <Stethoscope className="h-12 w-12 text-primary" />
-                      </div>
-                      <p className="text-4xl font-bold text-primary">
-                        {doctor.profile?.full_name?.charAt(0) || 'D'}
-                      </p>
-                    </div>
-                  </div>
-                </div>
+                <DoctorImage 
+                  profileImageUrl={doctor.profile_image_url}
+                  doctorName={doctor.profile?.full_name}
+                  size="xl"
+                />
                 
                 {/* Verification Badge */}
                 {doctor.verification_status === 'verified' && (

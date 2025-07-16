@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
+import { DoctorImage } from '@/components/DoctorImage';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -360,15 +361,11 @@ export const DoctorVerificationList = () => {
                     <CardContent className="p-6">
                       <div className="flex items-start gap-4">
                         {/* Doctor Avatar and Basic Info */}
-                        <Avatar className="h-16 w-16">
-                          <AvatarImage 
-                            src={doctor.profile_image_url ? (doctor.profile_image_url.startsWith('http') ? doctor.profile_image_url : `${supabase.storage.from('doctor-photos').getPublicUrl(doctor.profile_image_url).data.publicUrl}`) : undefined} 
-                            alt={doctor.profile?.full_name || 'Doctor'} 
-                          />
-                          <AvatarFallback className="bg-orange-100 text-orange-700">
-                            <User className="h-8 w-8" />
-                          </AvatarFallback>
-                        </Avatar>
+                        <DoctorImage 
+                          profileImageUrl={doctor.profile_image_url}
+                          doctorName={doctor.profile?.full_name}
+                          size="md"
+                        />
                         
                         <div className="flex-1 space-y-2">
                           <div className="flex items-start justify-between">
