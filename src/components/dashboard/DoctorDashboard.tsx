@@ -29,6 +29,7 @@ import { es } from 'date-fns/locale';
 import { DashboardLayout } from '@/components/ui/DashboardLayout';
 import { SubscriptionGuard } from '@/components/SubscriptionGuard';
 import { ConsultationFlowManager } from '@/components/ConsultationFlowManager';
+import { AssistantScheduleManager } from '@/components/AssistantScheduleManager';
 
 interface DoctorProfile {
   id: string;
@@ -476,10 +477,14 @@ const DoctorDashboardContent = () => {
 
         {/* Main Content Tabs */}
         <Tabs defaultValue="consultas" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="consultas" className="flex items-center gap-2">
               <Timer className="h-4 w-4" />
               Flujo de Consultas
+            </TabsTrigger>
+            <TabsTrigger value="schedule" className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              Agenda
             </TabsTrigger>
             <TabsTrigger value="today" className="flex items-center gap-2">
               <Clock className="h-4 w-4" />
@@ -501,6 +506,20 @@ const DoctorDashboardContent = () => {
               userRole="doctor"
               onAppointmentUpdate={fetchAllData}
             />
+          </TabsContent>
+
+          <TabsContent value="schedule">
+            <Card>
+              <CardHeader>
+                <CardTitle>Gestión de Agenda</CardTitle>
+                <CardDescription>
+                  Configura tu disponibilidad por días y horarios
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {user && <AssistantScheduleManager doctorId={user.id} />}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="today">
