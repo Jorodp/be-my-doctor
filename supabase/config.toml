@@ -56,3 +56,6 @@ verify_jwt = false
 
 [functions.doctor-customer-portal]
 verify_jwt = false
+
+[functions.test-function]
+verify_jwt = false
