@@ -90,24 +90,23 @@ export const EditDoctorProfile = ({
     setUploadingImage(true);
     try {
       const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}.${fileExt}`;
-      const filePath = `doctor-profiles/${fileName}`;
+      const fileName = `${doctorProfile.user_id}/profile.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
-        .from('patient-profiles')
-        .upload(filePath, file);
+        .from('doctor-profiles')
+        .upload(fileName, file, { upsert: true });
 
       if (uploadError) throw uploadError;
 
-      // Update doctor profile with new image URL
+      // Update doctor profile with new image URL (just the relative path)
       const { error: updateError } = await supabase
         .from('doctor_profiles')
-        .update({ profile_image_url: filePath })
+        .update({ profile_image_url: fileName })
         .eq('user_id', doctorProfile.user_id);
 
       if (updateError) throw updateError;
 
-      setCurrentProfileImage(filePath);
+      setCurrentProfileImage(fileName);
       
       toast({
         title: "Foto actualizada",
@@ -133,7 +132,7 @@ export const EditDoctorProfile = ({
     try {
       // Delete from storage
       const { error: deleteError } = await supabase.storage
-        .from('patient-profiles')
+        .from('doctor-profiles')
         .remove([currentProfileImage]);
 
       if (deleteError) throw deleteError;
@@ -287,7 +286,7 @@ export const EditDoctorProfile = ({
             <div className="flex items-center gap-6">
               <Avatar className="h-24 w-24">
                 <AvatarImage 
-                  src={currentProfileImage ? `${supabase.storage.from('patient-profiles').getPublicUrl(currentProfileImage).data.publicUrl}` : undefined} 
+                  src={currentProfileImage ? supabase.storage.from('doctor-profiles').getPublicUrl(currentProfileImage).data.publicUrl : undefined} 
                   alt="Foto del doctor" 
                 />
                 <AvatarFallback>

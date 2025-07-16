@@ -1,5 +1,5 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useSignedUrl } from '@/hooks/useSignedUrl';
+import { supabase } from '@/integrations/supabase/client';
 
 interface DoctorImageProps {
   profileImageUrl?: string | null;
@@ -24,15 +24,27 @@ export const DoctorImage = ({
   size = 'md'
 }: DoctorImageProps) => {
   const getImageSrc = () => {
-    if (!profileImageUrl) return undefined;
+    if (!profileImageUrl) {
+      console.log('DoctorImage: No profile image URL provided, using placeholder');
+      return '/placeholder-doctor.png';
+    }
     
     // If it's already a full URL, use it directly
     if (profileImageUrl.startsWith('http')) {
+      console.log('DoctorImage: Using full URL:', profileImageUrl);
       return profileImageUrl;
     }
     
     // For storage paths, use public URL from doctor-profiles bucket
-    return `https://rvsoeuwlgnovcmemlmqz.supabase.co/storage/v1/object/public/doctor-profiles/${profileImageUrl}`;
+    const { data: { publicUrl } } = supabase
+      .storage
+      .from('doctor-profiles')
+      .getPublicUrl(profileImageUrl);
+    
+    console.log('DoctorImage profile_image_url:', profileImageUrl);
+    console.log('DoctorImage publicUrl:', publicUrl);
+    
+    return publicUrl;
   };
 
   const imageSrc = getImageSrc();
@@ -41,28 +53,15 @@ export const DoctorImage = ({
     // Special handling for large profile images
     return (
       <div className={`${sizeClasses[size]} rounded-3xl overflow-hidden shadow-2xl ring-4 ring-background/50 ${className || ''}`}>
-        {imageSrc ? (
-          <img 
-            src={imageSrc}
-            alt={`Dr. ${doctorName}`}
-            className="w-full h-full object-cover"
-            onError={(e) => {
-              e.currentTarget.style.display = 'none';
-              e.currentTarget.nextElementSibling?.classList.remove('hidden');
-            }}
-          />
-        ) : null}
-        
-        {/* Fallback */}
-        <div className={`w-full h-full bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center ${imageSrc ? 'hidden' : ''}`}>
-          <div className="text-center">
-            <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-              <div className="text-4xl font-bold text-primary">
-                {doctorName?.charAt(0) || 'D'}
-              </div>
-            </div>
-          </div>
-        </div>
+        <img 
+          src={imageSrc}
+          alt={`Dr. ${doctorName}`}
+          className="w-full h-full object-cover"
+          onError={(e) => {
+            console.log('DoctorImage: Error loading image, using placeholder:', imageSrc);
+            e.currentTarget.src = '/placeholder-doctor.png';
+          }}
+        />
       </div>
     );
   }
@@ -71,10 +70,26 @@ export const DoctorImage = ({
     <Avatar className={`${sizeClasses[size]} ${className || ''}`}>
       <AvatarImage 
         src={imageSrc}
-        alt={doctorName || 'Doctor'} 
+        alt={doctorName || 'Doctor'}
+        onError={() => {
+          console.log('DoctorImage Avatar: Error loading image, fallback will show:', imageSrc);
+        }}
       />
       <AvatarFallback className={`bg-orange-100 text-orange-700 ${fallbackClassName || ''}`}>
-        {doctorName?.split(' ').map(n => n[0]).join('') || 'D'}
+        <img 
+          src="/placeholder-doctor.png" 
+          alt="Doctor placeholder"
+          className="w-full h-full object-cover rounded-full"
+          onError={() => {
+            // Final fallback to initials if placeholder also fails
+            const initials = doctorName?.split(' ').map(n => n[0]).join('') || 'D';
+            const target = document.querySelector(`[alt="${doctorName || 'Doctor'}"]`)?.parentElement?.querySelector('.fallback-initials');
+            if (target) target.textContent = initials;
+          }}
+        />
+        <span className="fallback-initials absolute inset-0 flex items-center justify-center text-sm font-semibold opacity-0">
+          {doctorName?.split(' ').map(n => n[0]).join('') || 'D'}
+        </span>
       </AvatarFallback>
     </Avatar>
   );
