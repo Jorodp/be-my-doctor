@@ -16,43 +16,73 @@ export type Database = {
     Tables: {
       appointments: {
         Row: {
+          consultation_duration_minutes: number | null
+          consultation_ended_at: string | null
+          consultation_ended_by: string | null
+          consultation_started_at: string | null
+          consultation_started_by: string | null
+          consultation_status: string | null
           created_at: string
           created_by: string | null
           doctor_user_id: string
           ends_at: string
           id: string
+          marked_arrived_by: string | null
           notes: string | null
+          patient_arrived_at: string | null
           patient_user_id: string
           price: number | null
           starts_at: string
           status: Database["public"]["Enums"]["appointment_status"]
+          total_clinic_time_minutes: number | null
           updated_at: string
+          waiting_time_minutes: number | null
         }
         Insert: {
+          consultation_duration_minutes?: number | null
+          consultation_ended_at?: string | null
+          consultation_ended_by?: string | null
+          consultation_started_at?: string | null
+          consultation_started_by?: string | null
+          consultation_status?: string | null
           created_at?: string
           created_by?: string | null
           doctor_user_id: string
           ends_at: string
           id?: string
+          marked_arrived_by?: string | null
           notes?: string | null
+          patient_arrived_at?: string | null
           patient_user_id: string
           price?: number | null
           starts_at: string
           status?: Database["public"]["Enums"]["appointment_status"]
+          total_clinic_time_minutes?: number | null
           updated_at?: string
+          waiting_time_minutes?: number | null
         }
         Update: {
+          consultation_duration_minutes?: number | null
+          consultation_ended_at?: string | null
+          consultation_ended_by?: string | null
+          consultation_started_at?: string | null
+          consultation_started_by?: string | null
+          consultation_status?: string | null
           created_at?: string
           created_by?: string | null
           doctor_user_id?: string
           ends_at?: string
           id?: string
+          marked_arrived_by?: string | null
           notes?: string | null
+          patient_arrived_at?: string | null
           patient_user_id?: string
           price?: number | null
           starts_at?: string
           status?: Database["public"]["Enums"]["appointment_status"]
+          total_clinic_time_minutes?: number | null
           updated_at?: string
+          waiting_time_minutes?: number | null
         }
         Relationships: []
       }
