@@ -95,7 +95,20 @@ export const PatientDashboard = () => {
           </TabsContent>
 
           <TabsContent value="documentos">
-            <PatientDocumentManager appointmentPatients={[]} />
+            <Card>
+              <CardHeader>
+                <CardTitle>Mis Documentos</CardTitle>
+                <CardDescription>
+                  Gestiona tus documentos de identificación
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-8 text-muted-foreground">
+                  <FileText className="h-12 w-12 mx-auto mb-4" />
+                  <p>Gestión de documentos disponible próximamente</p>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="chat">
