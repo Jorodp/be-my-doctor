@@ -80,8 +80,8 @@ serve(async (req) => {
 
     // Set price IDs based on plan type
     const priceId = plan_type === 'monthly' 
-      ? "prod_Sgj1suU8Gudj23" 
-      : "prod_Sgj2UIVQMZAbmU";
+      ? "price_1QTHhFF5kI2Xh4nOCJXhbr9u" 
+      : "price_1QTHhqF5kI2Xh4nOeO5d5lHf";
 
     logStep("Creating checkout session", { priceId, planType: plan_type });
 
