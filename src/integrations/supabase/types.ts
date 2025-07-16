@@ -221,17 +221,24 @@ export type Database = {
       }
       doctor_profiles: {
         Row: {
+          additional_certifications_urls: string[] | null
           biography: string | null
           consultation_fee: number | null
           consultorios: Json | null
           created_at: string
+          curp_document_url: string | null
           id: string
+          identification_document_url: string | null
           office_address: string | null
           office_phone: string | null
+          office_photos_urls: string[] | null
           practice_locations: string[] | null
           professional_license: string
+          professional_license_document_url: string | null
+          professional_photos_urls: string[] | null
           profile_image_url: string | null
           specialty: string
+          university_degree_document_url: string | null
           updated_at: string
           user_id: string
           verification_status: Database["public"]["Enums"]["verification_status"]
@@ -240,17 +247,24 @@ export type Database = {
           years_experience: number | null
         }
         Insert: {
+          additional_certifications_urls?: string[] | null
           biography?: string | null
           consultation_fee?: number | null
           consultorios?: Json | null
           created_at?: string
+          curp_document_url?: string | null
           id?: string
+          identification_document_url?: string | null
           office_address?: string | null
           office_phone?: string | null
+          office_photos_urls?: string[] | null
           practice_locations?: string[] | null
           professional_license: string
+          professional_license_document_url?: string | null
+          professional_photos_urls?: string[] | null
           profile_image_url?: string | null
           specialty: string
+          university_degree_document_url?: string | null
           updated_at?: string
           user_id: string
           verification_status?: Database["public"]["Enums"]["verification_status"]
@@ -259,23 +273,63 @@ export type Database = {
           years_experience?: number | null
         }
         Update: {
+          additional_certifications_urls?: string[] | null
           biography?: string | null
           consultation_fee?: number | null
           consultorios?: Json | null
           created_at?: string
+          curp_document_url?: string | null
           id?: string
+          identification_document_url?: string | null
           office_address?: string | null
           office_phone?: string | null
+          office_photos_urls?: string[] | null
           practice_locations?: string[] | null
           professional_license?: string
+          professional_license_document_url?: string | null
+          professional_photos_urls?: string[] | null
           profile_image_url?: string | null
           specialty?: string
+          university_degree_document_url?: string | null
           updated_at?: string
           user_id?: string
           verification_status?: Database["public"]["Enums"]["verification_status"]
           verified_at?: string | null
           verified_by?: string | null
           years_experience?: number | null
+        }
+        Relationships: []
+      }
+      doctor_questionnaires: {
+        Row: {
+          created_at: string
+          description: string | null
+          doctor_user_id: string
+          id: string
+          is_active: boolean
+          questions: Json
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          doctor_user_id: string
+          id?: string
+          is_active?: boolean
+          questions?: Json
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          doctor_user_id?: string
+          id?: string
+          is_active?: boolean
+          questions?: Json
+          title?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -413,6 +467,39 @@ export type Database = {
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      questionnaire_responses: {
+        Row: {
+          appointment_id: string
+          completed_at: string
+          created_at: string
+          doctor_user_id: string
+          id: string
+          patient_user_id: string
+          questionnaire_id: string
+          responses: Json
+        }
+        Insert: {
+          appointment_id: string
+          completed_at?: string
+          created_at?: string
+          doctor_user_id: string
+          id?: string
+          patient_user_id: string
+          questionnaire_id: string
+          responses?: Json
+        }
+        Update: {
+          appointment_id?: string
+          completed_at?: string
+          created_at?: string
+          doctor_user_id?: string
+          id?: string
+          patient_user_id?: string
+          questionnaire_id?: string
+          responses?: Json
         }
         Relationships: []
       }

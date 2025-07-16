@@ -18,8 +18,10 @@ import {
   Stethoscope, 
   Award,
   Phone,
-  Calendar
+  Calendar,
+  Camera
 } from 'lucide-react';
+import { AspectRatio } from '@/components/ui/aspect-ratio';
 
 interface DoctorProfile {
   id: string;
@@ -34,6 +36,9 @@ interface DoctorProfile {
   office_phone: string | null;
   practice_locations: string[] | null;
   consultorios: any[] | null;
+  professional_photos_urls: string[] | null;
+  office_photos_urls: string[] | null;
+  verification_status: 'pending' | 'verified' | 'rejected';
   profile: {
     full_name: string | null;
     phone: string | null;
@@ -97,6 +102,9 @@ export default function DoctorProfile() {
           office_phone: null,
           practice_locations: null,
           consultorios: null,
+          professional_photos_urls: null,
+          office_photos_urls: null,
+          verification_status: 'pending',
           profile: profileData
         });
       }
@@ -385,6 +393,62 @@ export default function DoctorProfile() {
                     </CardContent>
                   </Card>
                 ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Photo Gallery */}
+        {((doctor.professional_photos_urls && doctor.professional_photos_urls.length > 0) || 
+          (doctor.office_photos_urls && doctor.office_photos_urls.length > 0)) && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Camera className="h-5 w-5" />
+                Galería Profesional
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                {/* Professional Photos */}
+                {doctor.professional_photos_urls && doctor.professional_photos_urls.length > 0 && (
+                  <div>
+                    <h4 className="font-medium mb-3">Dr. {doctor.profile?.full_name}</h4>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      {doctor.professional_photos_urls.map((photoUrl: string, index: number) => (
+                        <div key={index} className="relative group">
+                          <AspectRatio ratio={3/4}>
+                            <img 
+                              src={photoUrl} 
+                              alt={`Dr. ${doctor.profile?.full_name} - Foto profesional ${index + 1}`}
+                              className="w-full h-full object-cover rounded-lg hover:scale-105 transition-transform cursor-pointer"
+                            />
+                          </AspectRatio>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Office Photos */}
+                {doctor.office_photos_urls && doctor.office_photos_urls.length > 0 && (
+                  <div>
+                    <h4 className="font-medium mb-3">Consultorio</h4>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      {doctor.office_photos_urls.map((photoUrl: string, index: number) => (
+                        <div key={index} className="relative group">
+                          <AspectRatio ratio={4/3}>
+                            <img 
+                              src={photoUrl} 
+                              alt={`Consultorio - Foto ${index + 1}`}
+                              className="w-full h-full object-cover rounded-lg hover:scale-105 transition-transform cursor-pointer"
+                            />
+                          </AspectRatio>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
