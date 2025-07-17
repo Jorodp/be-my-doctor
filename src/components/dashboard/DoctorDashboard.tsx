@@ -111,6 +111,34 @@ const DoctorDashboardContent = () => {
     }
   }, [user]);
 
+  // Handle payment result from URL params
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const paymentStatus = urlParams.get('payment');
+    
+    if (paymentStatus === 'success') {
+      toast({
+        title: "¡Suscripción exitosa!",
+        description: "Tu suscripción ha sido activada correctamente.",
+        variant: "default",
+      });
+      // Clean URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+      // Refresh data to show updated subscription
+      setTimeout(() => {
+        fetchAllData();
+      }, 2000);
+    } else if (paymentStatus === 'cancelled') {
+      toast({
+        title: "Suscripción cancelada",
+        description: "Has cancelado el proceso de suscripción.",
+        variant: "destructive",
+      });
+      // Clean URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
+
   // Show verification status alert
   useEffect(() => {
     if (doctorProfile) {

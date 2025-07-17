@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { CalendarDays, CreditCard, RefreshCw, Crown, CheckCircle } from "lucide-react";
+import { CalendarDays, CreditCard, RefreshCw, Crown, CheckCircle, Settings } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { toast } from "@/hooks/use-toast";
@@ -23,6 +23,7 @@ export function SubscriptionStatus() {
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(false);
   const [creatingSubscription, setCreatingSubscription] = useState(false);
+  const [openingPortal, setOpeningPortal] = useState(false);
 
   useEffect(() => {
     if (user && profile?.role === "doctor") {
@@ -59,10 +60,9 @@ export function SubscriptionStatus() {
   const createSubscription = async (plan: 'monthly' | 'annual') => {
     try {
       setCreatingSubscription(true);
-      const { data, error } = await supabase.functions.invoke("payments", {
+      const { data, error } = await supabase.functions.invoke("create-doctor-subscription", {
         body: { 
-          action: "create-subscription",
-          plan 
+          plan_type: plan
         }
       });
 
@@ -92,10 +92,9 @@ export function SubscriptionStatus() {
     
     try {
       setCreatingSubscription(true);
-      const { data, error } = await supabase.functions.invoke("payments", {
+      const { data, error } = await supabase.functions.invoke("create-doctor-subscription", {
         body: { 
-          action: "create-subscription",
-          plan: subscription.plan 
+          plan_type: subscription.plan
         }
       });
 
@@ -117,6 +116,32 @@ export function SubscriptionStatus() {
       });
     } finally {
       setCreatingSubscription(false);
+    }
+  };
+
+  const openCustomerPortal = async () => {
+    try {
+      setOpeningPortal(true);
+      const { data, error } = await supabase.functions.invoke("doctor-customer-portal");
+
+      if (error) throw error;
+
+      // Open Stripe customer portal in a new tab
+      window.open(data.url, '_blank');
+      
+      toast({
+        title: "Abriendo portal de gestión",
+        description: "Se ha abierto una nueva ventana para gestionar tu suscripción.",
+      });
+    } catch (error) {
+      console.error("Error opening customer portal:", error);
+      toast({
+        title: "Error",
+        description: "No se pudo abrir el portal de gestión. Intenta de nuevo.",
+        variant: "destructive",
+      });
+    } finally {
+      setOpeningPortal(false);
     }
   };
 
@@ -193,10 +218,19 @@ export function SubscriptionStatus() {
                   variant="outline" 
                   className="flex-1"
                   onClick={handleRenew}
-                  disabled={creatingSubscription}
+                  disabled={creatingSubscription || openingPortal}
                 >
                   <CreditCard className="h-4 w-4 mr-2" />
                   {creatingSubscription ? "Procesando..." : "Renovar Suscripción"}
+                </Button>
+                
+                <Button 
+                  variant="outline" 
+                  onClick={openCustomerPortal}
+                  disabled={creatingSubscription || openingPortal}
+                >
+                  <Settings className="h-4 w-4 mr-2" />
+                  {openingPortal ? "Abriendo..." : "Gestionar"}
                 </Button>
               </div>
             </div>

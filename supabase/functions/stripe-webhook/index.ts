@@ -46,13 +46,16 @@ serve(async (req) => {
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as any;
       console.log("Checkout session completed:", session.id);
+      console.log("Session metadata:", session.metadata);
       
       if (session.mode === "subscription") {
         const subscription = await stripe.subscriptions.retrieve(session.subscription);
         console.log("Retrieved subscription:", subscription.id);
         
         const userId = session.metadata?.user_id;
-        const plan = session.metadata?.plan;
+        const plan = session.metadata?.plan || session.metadata?.plan_type; // Soporte para ambos campos
+        
+        console.log("Extracted metadata:", { userId, plan });
         
         if (!userId) {
           console.error("No user_id in session metadata");
@@ -60,26 +63,30 @@ serve(async (req) => {
         }
 
         // Create subscription record
+        const subscriptionData = {
+          user_id: userId,
+          stripe_subscription_id: subscription.id,
+          stripe_customer_id: subscription.customer as string,
+          plan: plan || "monthly",
+          status: "active",
+          amount: subscription.items.data[0].price.unit_amount! / 100,
+          currency: subscription.currency,
+          starts_at: new Date(subscription.current_period_start * 1000).toISOString(),
+          ends_at: new Date(subscription.current_period_end * 1000).toISOString(),
+        };
+        
+        console.log("Creating subscription record:", subscriptionData);
+        
         const { error } = await supabaseAdmin
           .from("subscriptions")
-          .insert({
-            user_id: userId,
-            stripe_subscription_id: subscription.id,
-            stripe_customer_id: subscription.customer as string,
-            plan: plan || "monthly",
-            status: "active",
-            amount: subscription.items.data[0].price.unit_amount! / 100,
-            currency: subscription.currency,
-            starts_at: new Date(subscription.current_period_start * 1000).toISOString(),
-            ends_at: new Date(subscription.current_period_end * 1000).toISOString(),
-          });
+          .insert(subscriptionData);
 
         if (error) {
           console.error("Error creating subscription record:", error);
           return new Response("Error creating subscription", { status: 500 });
         }
 
-        console.log("Subscription record created for user:", userId);
+        console.log("✅ Subscription record created successfully for user:", userId);
       }
     }
 
