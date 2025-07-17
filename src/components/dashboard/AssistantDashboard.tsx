@@ -16,6 +16,7 @@ import { AssistantUpcomingAppointments } from '@/components/AssistantUpcomingApp
 import { UploadPatientFiles } from '@/components/UploadPatientFiles';
 import { AssistantPaymentManager } from '@/components/AssistantPaymentManager';
 import { AssistantAccessGuard } from '@/components/AssistantAccessGuard';
+import { AssistantDoctorsList } from '@/components/AssistantDoctorsList';
 
 interface Appointment {
   id: string;
@@ -175,8 +176,9 @@ const AssistantDashboardContent = () => {
       subtitle="Gestiona la agenda del médico asignado"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-8 text-xs">
+        <Tabs defaultValue="doctors" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-9 text-xs">
+            <TabsTrigger value="doctors">Doctores</TabsTrigger>
             <TabsTrigger value="overview">Resumen</TabsTrigger>
             <TabsTrigger value="appointments">Citas</TabsTrigger>
             <TabsTrigger value="schedule">Agenda</TabsTrigger>
@@ -186,6 +188,10 @@ const AssistantDashboardContent = () => {
             <TabsTrigger value="upload-files">Archivos</TabsTrigger>
             <TabsTrigger value="documents">Documentos</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="doctors" className="space-y-6">
+            <AssistantDoctorsList />
+          </TabsContent>
 
           <TabsContent value="overview" className="space-y-6">
             <AssignedDoctorInfo doctorId={doctorId} />

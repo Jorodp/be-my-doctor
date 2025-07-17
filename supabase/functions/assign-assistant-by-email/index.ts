@@ -109,17 +109,10 @@ serve(async (req) => {
       }
 
       if (existingProfile) {
-        // Update existing profile to assistant role and assign to doctor
-        const { error: updateError } = await adminClient
-          .from("profiles")
-          .update({
-            role: "assistant",
-            assigned_doctor_id: doctor_id,
-            updated_at: new Date().toISOString()
-          })
-          .eq("user_id", existingUser.id);
-
-        if (updateError) throw updateError;
+        // Verificar que el usuario tenga rol de asistente
+        if (existingProfile.role !== 'assistant') {
+          throw new Error(`Este correo ya está en uso por una cuenta de tipo ${existingProfile.role}. No se puede asignar como asistente.`);
+        }
         message = "Usuario existente asignado como asistente exitosamente";
       } else {
         // Create profile for existing user
@@ -128,7 +121,6 @@ serve(async (req) => {
           .insert({
             user_id: existingUser.id,
             role: "assistant",
-            assigned_doctor_id: doctor_id,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           });
@@ -172,7 +164,6 @@ serve(async (req) => {
         .insert({
           user_id: newUser.user.id,
           role: "assistant",
-          assigned_doctor_id: doctor_id,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         });
@@ -183,6 +174,36 @@ serve(async (req) => {
       }
 
       message = `Nuevo asistente creado exitosamente. Email: ${email}, Contraseña temporal: ${tempPassword}`;
+    }
+
+    // Check if assignment already exists
+    const { data: existingAssignment, error: assignmentCheckError } = await adminClient
+      .from("doctor_assistants")
+      .select("id")
+      .eq("doctor_id", doctor_id)
+      .eq("assistant_id", assistantUserId)
+      .maybeSingle();
+
+    if (assignmentCheckError) {
+      console.error("Error checking assignment:", assignmentCheckError);
+      throw new Error("Error al verificar asignación existente");
+    }
+
+    if (existingAssignment) {
+      throw new Error("Este asistente ya está asignado a este doctor");
+    }
+
+    // Create the assignment in doctor_assistants
+    const { error: assignmentError } = await adminClient
+      .from("doctor_assistants")
+      .insert({
+        doctor_id: doctor_id,
+        assistant_id: assistantUserId
+      });
+
+    if (assignmentError) {
+      console.error("Error creating assignment:", assignmentError);
+      throw new Error("Error al asignar el asistente al doctor");
     }
 
     console.log(`Assistant ${assistantUserId} assigned to doctor ${doctor_id}`);

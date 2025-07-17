@@ -216,6 +216,30 @@ export type Database = {
         }
         Relationships: []
       }
+      doctor_assistants: {
+        Row: {
+          assigned_at: string
+          assistant_id: string
+          created_at: string
+          doctor_id: string
+          id: string
+        }
+        Insert: {
+          assigned_at?: string
+          assistant_id: string
+          created_at?: string
+          doctor_id: string
+          id?: string
+        }
+        Update: {
+          assigned_at?: string
+          assistant_id?: string
+          created_at?: string
+          doctor_id?: string
+          id?: string
+        }
+        Relationships: []
+      }
       doctor_availability: {
         Row: {
           created_at: string

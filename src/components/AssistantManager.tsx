@@ -51,25 +51,31 @@ export const AssistantManager = () => {
     try {
       setLoading(true);
       
-      // Obtener asistentes asignados a este doctor
-      const { data: assistantProfiles, error } = await supabase
-        .from('profiles')
+      // Obtener asistentes asignados a este doctor usando la tabla doctor_assistants
+      const { data: assistantAssignments, error } = await supabase
+        .from('doctor_assistants')
         .select(`
-          id,
-          user_id,
-          full_name,
-          phone,
-          profile_image_url,
-          created_at
+          assistant_id,
+          assigned_at,
+          profiles!doctor_assistants_assistant_id_fkey (
+            id,
+            user_id,
+            full_name,
+            phone,
+            profile_image_url,
+            created_at
+          )
         `)
-        .eq('role', 'assistant')
-        .eq('assigned_doctor_id', user.id);
+        .eq('doctor_id', user.id);
 
       if (error) throw error;
 
       // Obtener emails de auth.users para cada asistente
       const assistantsWithEmails = await Promise.all(
-        (assistantProfiles || []).map(async (assistant) => {
+        (assistantAssignments || []).map(async (assignment: any) => {
+          const assistant = assignment.profiles;
+          if (!assistant) return null;
+          
           try {
             // Usar edge function para obtener información del usuario
             const { data: userInfo, error: userError } = await supabase.functions.invoke(
@@ -91,7 +97,9 @@ export const AssistantManager = () => {
         })
       );
 
-      setAssistants(assistantsWithEmails);
+      // Filtrar valores nulos
+      const validAssistants = assistantsWithEmails.filter(Boolean);
+      setAssistants(validAssistants);
     } catch (error) {
       console.error('Error fetching assistants:', error);
       toast({
@@ -153,11 +161,12 @@ export const AssistantManager = () => {
     if (!user) return;
 
     try {
-      // Remover la asignación del asistente
+      // Remover la asignación del asistente desde doctor_assistants
       const { error } = await supabase
-        .from('profiles')
-        .update({ assigned_doctor_id: null })
-        .eq('user_id', assistantId);
+        .from('doctor_assistants')
+        .delete()
+        .eq('doctor_id', user.id)
+        .eq('assistant_id', assistantId);
 
       if (error) throw error;
 
