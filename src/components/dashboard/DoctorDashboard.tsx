@@ -32,6 +32,7 @@ import { DashboardLayout } from '@/components/ui/DashboardLayout';
 import { SubscriptionGuard } from '@/components/SubscriptionGuard';
 import { ConsultationFlowManager } from '@/components/ConsultationFlowManager';
 import { DoctorCalendarSchedule } from '@/components/DoctorCalendarSchedule';
+import { SubscriptionStatus } from '@/components/SubscriptionStatus';
 
 interface DoctorProfile {
   id: string;
@@ -720,10 +721,7 @@ const DoctorDashboardContent = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-8 text-muted-foreground">
-                  <CreditCard className="h-12 w-12 mx-auto mb-4" />
-                  <p>Gestión de suscripción próximamente</p>
-                </div>
+                <SubscriptionStatus />
               </CardContent>
             </Card>
           </TabsContent>
