@@ -61,7 +61,7 @@ export const AssistantDoctorsList = () => {
           id,
           doctor_id,
           assigned_at,
-          profiles!doctor_assistants_doctor_id_fkey (
+          profiles:doctor_id (
             user_id,
             full_name,
             phone,

@@ -21,10 +21,14 @@ serve(async (req) => {
   }
 
   try {
+    console.log('=== STARTING ASSIGN ASSISTANT REQUEST ===');
+    
     // Parse request body
     const { email, doctor_id } = await req.json();
+    console.log('Parsed request data:', { email, doctor_id });
 
     if (!email || !doctor_id) {
+      console.log('Missing required fields:', { email: !!email, doctor_id: !!doctor_id });
       return new Response(
         JSON.stringify({ error: "Email and doctor_id are required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -36,13 +40,23 @@ serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
 
+    console.log('Environment check:', { 
+      hasUrl: !!supabaseUrl, 
+      hasServiceKey: !!serviceRoleKey, 
+      hasAnonKey: !!anonKey 
+    });
+
     if (!supabaseUrl || !serviceRoleKey || !anonKey) {
+      console.error('Missing environment variables');
       throw new Error("Missing environment variables");
     }
 
     // Authenticate the requesting user (doctor)
     const authHeader = req.headers.get("Authorization");
+    console.log('Auth header present:', !!authHeader);
+    
     if (!authHeader) {
+      console.log('No authorization header found');
       return new Response(
         JSON.stringify({ error: "Authentication required" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -219,11 +233,15 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error("Error in assign-assistant-by-email:", error);
+    console.error("=== ERROR IN ASSIGN ASSISTANT ===");
+    console.error("Error details:", error);
+    console.error("Error message:", error.message);
+    console.error("Error stack:", error.stack);
+    
     return new Response(
       JSON.stringify({ 
         error: error.message || "Internal server error",
-        details: error
+        details: error.toString()
       }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
