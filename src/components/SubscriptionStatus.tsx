@@ -24,12 +24,33 @@ export function SubscriptionStatus() {
   const [loading, setLoading] = useState(false);
   const [creatingSubscription, setCreatingSubscription] = useState(false);
   const [openingPortal, setOpeningPortal] = useState(false);
+  const [prices, setPrices] = useState({ monthly: 799, annual: 7990 });
 
   useEffect(() => {
     if (user && profile?.role === "doctor") {
       checkSubscription();
+      fetchPrices();
     }
   }, [user, profile]);
+
+  const fetchPrices = async () => {
+    try {
+      // Obtener precios desde payment_settings para mostrar los correctos
+      const { data, error } = await supabase
+        .from('payment_settings')
+        .select('monthly_price, annual_price')
+        .single();
+      
+      if (!error && data) {
+        setPrices({
+          monthly: data.monthly_price,
+          annual: data.annual_price
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching prices:", error);
+    }
+  };
 
   const checkSubscription = async () => {
     try {
@@ -266,7 +287,7 @@ export function SubscriptionStatus() {
                 <div className="text-center">
                   <h3 className="font-semibold text-lg">Plan Mensual</h3>
                   <div className="mt-2">
-                    <span className="text-3xl font-bold">$799</span>
+                    <span className="text-3xl font-bold">${prices.monthly}</span>
                     <span className="text-muted-foreground"> MXN/mes</span>
                   </div>
                 </div>
@@ -303,11 +324,11 @@ export function SubscriptionStatus() {
                   </div>
                   <h3 className="font-semibold text-lg">Plan Anual</h3>
                   <div className="mt-2">
-                    <span className="text-3xl font-bold">$7,990</span>
+                    <span className="text-3xl font-bold">${prices.annual}</span>
                     <span className="text-muted-foreground"> MXN/año</span>
                   </div>
                   <p className="text-sm text-green-600 font-medium mt-1">
-                    Ahorra $1,598 MXN
+                    Ahorra ${(prices.monthly * 12) - prices.annual} MXN
                   </p>
                 </div>
                 
