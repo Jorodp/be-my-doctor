@@ -33,6 +33,7 @@ import { SubscriptionGuard } from '@/components/SubscriptionGuard';
 import { ConsultationFlowManager } from '@/components/ConsultationFlowManager';
 import { DoctorCalendarSchedule } from '@/components/DoctorCalendarSchedule';
 import { SubscriptionStatus } from '@/components/SubscriptionStatus';
+import { AssistantManager } from '@/components/AssistantManager';
 
 interface DoctorProfile {
   id: string;
@@ -763,10 +764,7 @@ const DoctorDashboardContent = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-8 text-muted-foreground">
-                  <UserCheck className="h-12 w-12 mx-auto mb-4" />
-                  <p>Gestión de asistentes próximamente</p>
-                </div>
+                <AssistantManager />
               </CardContent>
             </Card>
           </TabsContent>
