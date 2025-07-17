@@ -20,7 +20,9 @@ import {
   Users,
   Phone,
   MapPin,
-  Timer
+  Timer,
+  CreditCard,
+  UserCheck
 } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
@@ -477,7 +479,7 @@ const DoctorDashboardContent = () => {
 
         {/* Main Content Tabs */}
         <Tabs defaultValue="consultas" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="consultas" className="flex items-center gap-2">
               <Timer className="h-4 w-4" />
               Flujo de Consultas
@@ -497,6 +499,14 @@ const DoctorDashboardContent = () => {
             <TabsTrigger value="ratings" className="flex items-center gap-2">
               <Star className="h-4 w-4" />
               Calificaciones
+            </TabsTrigger>
+            <TabsTrigger value="subscription" className="flex items-center gap-2">
+              <CreditCard className="h-4 w-4" />
+              Suscripción
+            </TabsTrigger>
+            <TabsTrigger value="assistants" className="flex items-center gap-2">
+              <UserCheck className="h-4 w-4" />
+              Asistentes
             </TabsTrigger>
           </TabsList>
 
@@ -697,6 +707,40 @@ const DoctorDashboardContent = () => {
                     ))}
                   </div>
                 )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="subscription">
+            <Card>
+              <CardHeader>
+                <CardTitle>Gestión de Suscripción</CardTitle>
+                <CardDescription>
+                  Administra tu suscripción y pagos
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-8 text-muted-foreground">
+                  <CreditCard className="h-12 w-12 mx-auto mb-4" />
+                  <p>Gestión de suscripción próximamente</p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="assistants">
+            <Card>
+              <CardHeader>
+                <CardTitle>Gestión de Asistentes</CardTitle>
+                <CardDescription>
+                  Administra tus asistentes médicos
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-8 text-muted-foreground">
+                  <UserCheck className="h-12 w-12 mx-auto mb-4" />
+                  <p>Gestión de asistentes próximamente</p>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
