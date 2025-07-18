@@ -75,7 +75,7 @@ export const AdminDashboard = () => {
 
   const fetchData = async () => {
     try {
-      // Fetch pending doctors
+      // Fetch pending doctors and their profile data
       const { data: doctors, error: doctorsError } = await supabase
         .from('doctor_profiles')
         .select(`
@@ -87,20 +87,21 @@ export const AdminDashboard = () => {
         `)
         .eq('verification_status', 'pending');
 
-      // Fetch profile names separately
-      let doctorWithProfiles: DoctorProfile[] = [];
-      if (doctors && doctors.length > 0) {
-        const userIds = doctors.map(d => d.user_id);
-        const { data: profiles } = await supabase
-          .from('profiles')
-          .select('user_id, full_name')
-          .in('user_id', userIds);
-
-        doctorWithProfiles = doctors.map(doctor => ({
-          ...doctor,
-          profiles: profiles?.find(p => p.user_id === doctor.user_id) || { full_name: 'Sin nombre' }
-        }));
-      }
+      // Get profile data for pending doctors
+      const doctorWithProfiles: DoctorProfile[] = await Promise.all(
+        (doctors || []).map(async (doctor) => {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('user_id', doctor.user_id)
+            .maybeSingle();
+          
+          return {
+            ...doctor,
+            profiles: { full_name: profile?.full_name || 'Sin nombre' }
+          };
+        })
+      );
 
       if (doctorsError) throw doctorsError;
 

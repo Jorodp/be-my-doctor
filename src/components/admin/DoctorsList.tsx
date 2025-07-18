@@ -89,23 +89,30 @@ export const DoctorsList = () => {
 
       if (error) throw error;
 
-      // Fetch profile data for each doctor
+      // Get profile data and email for each doctor
       const doctorsWithProfiles = await Promise.all(
-        doctorProfiles.map(async (doctor) => {
+        (doctorProfiles || []).map(async (doctor) => {
+          // Get profile data
           const { data: profile } = await supabase
             .from('profiles')
             .select('full_name, phone, address')
             .eq('user_id', doctor.user_id)
             .maybeSingle();
-
+          
           // Get email from auth.users
-          const { data: authUser } = await supabase.auth.admin.getUserById(doctor.user_id);
+          let email = null;
+          try {
+            const { data: authUser } = await supabase.auth.admin.getUserById(doctor.user_id);
+            email = authUser.user?.email || null;
+          } catch (error) {
+            console.warn('Could not fetch email for user:', doctor.user_id);
+          }
           
           return {
             ...doctor,
             profile: {
-              full_name: profile?.full_name || null,
-              email: authUser.user?.email || null,
+              full_name: profile?.full_name || 'Sin nombre',
+              email: email,
               phone: profile?.phone || null,
               address: profile?.address || null
             }
