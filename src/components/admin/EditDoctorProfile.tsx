@@ -50,6 +50,7 @@ export const EditDoctorProfile = ({
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [currentProfileImage, setCurrentProfileImage] = useState<string | null>(null);
+  const [initialized, setInitialized] = useState(false);
   const [profileData, setProfileData] = useState({
     full_name: '',
     phone: '',
@@ -63,8 +64,9 @@ export const EditDoctorProfile = ({
     practice_locations: ['']
   });
 
+  // Only initialize data when the dialog opens or when we haven't initialized yet
   useEffect(() => {
-    if (doctorProfile && profile) {
+    if (isOpen && doctorProfile && profile && !initialized) {
       setProfileData({
         full_name: profile.full_name || '',
         phone: profile.phone || '',
@@ -78,8 +80,16 @@ export const EditDoctorProfile = ({
         practice_locations: doctorProfile.practice_locations || ['']
       });
       setCurrentProfileImage(doctorProfile.profile_image_url);
+      setInitialized(true);
     }
-  }, [doctorProfile, profile]);
+  }, [isOpen, doctorProfile, profile, initialized]);
+
+  // Reset initialization when dialog closes
+  useEffect(() => {
+    if (!isOpen) {
+      setInitialized(false);
+    }
+  }, [isOpen]);
 
   // Image upload is now handled by DoctorImageUpload component
 
