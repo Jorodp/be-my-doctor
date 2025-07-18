@@ -465,6 +465,14 @@ export const AdminDashboard = () => {
                           <Calendar className="h-6 w-6" />
                           Gestionar Citas
                         </Button>
+                        <Button 
+                          variant="outline" 
+                          className="h-20 flex flex-col gap-2" 
+                          onClick={() => window.location.href = '/complete-doctor-profile'}
+                        >
+                          <FileText className="h-6 w-6" />
+                          Perfil Doctor
+                        </Button>
                         <Button variant="outline" className="h-20 flex flex-col gap-2" onClick={() => setActiveTab('payments')}>
                           <CreditCard className="h-6 w-6" />
                           Pagos
