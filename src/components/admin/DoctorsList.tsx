@@ -22,9 +22,19 @@ interface Doctor {
   verification_status: 'pending' | 'verified' | 'rejected';
   years_experience: number | null;
   profile_image_url: string | null;
+  office_address: string | null;
+  office_phone: string | null;
+  practice_locations: string[] | null;
+  professional_license_document_url: string | null;
+  university_degree_document_url: string | null;
+  identification_document_url: string | null;
+  office_photos_urls: string[] | null;
+  professional_photos_urls: string[] | null;
   profile: {
     full_name: string | null;
     email: string | null;
+    phone: string | null;
+    address: string | null;
   } | null;
 }
 
@@ -66,7 +76,15 @@ export const DoctorsList = () => {
           consultation_fee,
           verification_status,
           years_experience,
-          profile_image_url
+          profile_image_url,
+          office_address,
+          office_phone,
+          practice_locations,
+          professional_license_document_url,
+          university_degree_document_url,
+          identification_document_url,
+          office_photos_urls,
+          professional_photos_urls
         `);
 
       if (error) throw error;
@@ -76,7 +94,7 @@ export const DoctorsList = () => {
         doctorProfiles.map(async (doctor) => {
           const { data: profile } = await supabase
             .from('profiles')
-            .select('full_name')
+            .select('full_name, phone, address')
             .eq('user_id', doctor.user_id)
             .single();
 
@@ -87,7 +105,9 @@ export const DoctorsList = () => {
             ...doctor,
             profile: {
               full_name: profile?.full_name || null,
-              email: authUser.user?.email || null
+              email: authUser.user?.email || null,
+              phone: profile?.phone || null,
+              address: profile?.address || null
             }
           };
         })
@@ -277,15 +297,19 @@ export const DoctorsList = () => {
                         doctorName={doctor.profile?.full_name}
                         size="sm"
                       />
-                      <h3 className="font-semibold">{doctor.profile?.full_name || 'Sin nombre'}</h3>
+                      <h3 className="font-semibold">
+                        Dr. {doctor.profile?.full_name || 'Nombre no disponible'}
+                      </h3>
                       {getStatusBadge(doctor.verification_status)}
                     </div>
                     <div className="text-sm text-muted-foreground space-y-1">
-                      <div>Email: {doctor.profile?.email || 'N/A'}</div>
+                      <div>Email: {doctor.profile?.email || 'No disponible'}</div>
+                      <div>Teléfono: {doctor.profile?.phone || 'No disponible'}</div>
                       <div>Especialidad: {doctor.specialty}</div>
                       <div>Licencia: {doctor.professional_license}</div>
+                      <div>Dirección consultorio: {doctor.office_address || 'No especificada'}</div>
                       {doctor.consultation_fee && (
-                        <div>Tarifa: ${doctor.consultation_fee}</div>
+                        <div>Tarifa: ${doctor.consultation_fee} MXN</div>
                       )}
                     </div>
                   </div>
@@ -307,19 +331,35 @@ export const DoctorsList = () => {
                             <div className="grid grid-cols-2 gap-4">
                               <div>
                                 <Label>Nombre Completo</Label>
-                                <div className="font-medium">{selectedDoctor.profile?.full_name}</div>
+                                <div className="font-medium">{selectedDoctor.profile?.full_name || 'No disponible'}</div>
                               </div>
                               <div>
                                 <Label>Email</Label>
-                                <div className="font-medium">{selectedDoctor.profile?.email}</div>
+                                <div className="font-medium">{selectedDoctor.profile?.email || 'No disponible'}</div>
+                              </div>
+                              <div>
+                                <Label>Teléfono</Label>
+                                <div className="font-medium">{selectedDoctor.profile?.phone || 'No disponible'}</div>
                               </div>
                               <div>
                                 <Label>Especialidad</Label>
                                 <div className="font-medium">{selectedDoctor.specialty}</div>
                               </div>
                               <div>
+                                <Label>Cédula Profesional</Label>
+                                <div className="font-medium">{selectedDoctor.professional_license}</div>
+                              </div>
+                              <div>
                                 <Label>Estado</Label>
                                 <div>{getStatusBadge(selectedDoctor.verification_status)}</div>
+                              </div>
+                              <div>
+                                <Label>Dirección Consultorio</Label>
+                                <div className="font-medium">{selectedDoctor.office_address || 'No especificada'}</div>
+                              </div>
+                              <div>
+                                <Label>Teléfono Consultorio</Label>
+                                <div className="font-medium">{selectedDoctor.office_phone || 'No especificado'}</div>
                               </div>
                             </div>
                             {selectedDoctor.biography && (
@@ -328,6 +368,25 @@ export const DoctorsList = () => {
                                 <div className="mt-1 text-sm">{selectedDoctor.biography}</div>
                               </div>
                             )}
+                            
+                            {/* Documentos */}
+                            <div className="space-y-2">
+                              <Label>Documentos Profesionales</Label>
+                              <div className="grid grid-cols-3 gap-2 text-sm">
+                                <div>Cédula: {selectedDoctor.professional_license_document_url ? '✅ Subida' : '❌ Faltante'}</div>
+                                <div>Título: {selectedDoctor.university_degree_document_url ? '✅ Subido' : '❌ Faltante'}</div>
+                                <div>Identificación: {selectedDoctor.identification_document_url ? '✅ Subida' : '❌ Faltante'}</div>
+                              </div>
+                            </div>
+                            
+                            {/* Fotos */}
+                            <div className="space-y-2">
+                              <Label>Fotos</Label>
+                              <div className="grid grid-cols-2 gap-2 text-sm">
+                                <div>Fotos consultorio: {selectedDoctor.office_photos_urls?.length ? `✅ ${selectedDoctor.office_photos_urls.length} fotos` : '❌ Sin fotos'}</div>
+                                <div>Fotos profesionales: {selectedDoctor.professional_photos_urls?.length ? `✅ ${selectedDoctor.professional_photos_urls.length} fotos` : '❌ Sin fotos'}</div>
+                              </div>
+                            </div>
                             
                             {/* Assign Assistant */}
                             <div>
@@ -350,76 +409,16 @@ export const DoctorsList = () => {
                       </DialogContent>
                     </Dialog>
 
-                    {/* Edit Profile */}
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button variant="outline" size="sm" onClick={() => setEditingDoctor(doctor)}>
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="max-w-2xl">
-                        <DialogHeader>
-                          <DialogTitle>Editar Doctor</DialogTitle>
-                        </DialogHeader>
-                        {editingDoctor && (
-                          <div className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                              <div>
-                                <Label htmlFor="specialty">Especialidad</Label>
-                                <Input
-                                  id="specialty"
-                                  value={editingDoctor.specialty}
-                                  onChange={(e) => setEditingDoctor({...editingDoctor, specialty: e.target.value})}
-                                />
-                              </div>
-                              <div>
-                                <Label htmlFor="license">Licencia Profesional</Label>
-                                <Input
-                                  id="license"
-                                  value={editingDoctor.professional_license}
-                                  onChange={(e) => setEditingDoctor({...editingDoctor, professional_license: e.target.value})}
-                                />
-                              </div>
-                              <div>
-                                <Label htmlFor="fee">Tarifa de Consulta</Label>
-                                <Input
-                                  id="fee"
-                                  type="number"
-                                  value={editingDoctor.consultation_fee || ''}
-                                  onChange={(e) => setEditingDoctor({...editingDoctor, consultation_fee: Number(e.target.value)})}
-                                />
-                              </div>
-                              <div>
-                                <Label htmlFor="experience">Años de Experiencia</Label>
-                                <Input
-                                  id="experience"
-                                  type="number"
-                                  value={editingDoctor.years_experience || ''}
-                                  onChange={(e) => setEditingDoctor({...editingDoctor, years_experience: Number(e.target.value)})}
-                                />
-                              </div>
-                            </div>
-                            <div>
-                              <Label htmlFor="biography">Biografía</Label>
-                              <Textarea
-                                id="biography"
-                                value={editingDoctor.biography || ''}
-                                onChange={(e) => setEditingDoctor({...editingDoctor, biography: e.target.value})}
-                                rows={3}
-                              />
-                            </div>
-                            <div className="flex justify-end gap-2">
-                              <Button variant="outline" onClick={() => setEditingDoctor(null)}>
-                                Cancelar
-                              </Button>
-                              <Button onClick={() => updateDoctorProfile(editingDoctor.id, editingDoctor)}>
-                                Guardar Cambios
-                              </Button>
-                            </div>
-                          </div>
-                        )}
-                      </DialogContent>
-                    </Dialog>
+                    {/* Edit Profile - Now opens advanced editor */}
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => {
+                        window.open(`/admin?doctorId=${doctor.user_id}&action=edit`, '_blank');
+                      }}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
 
                     {/* Verification Actions */}
                     {doctor.verification_status === 'pending' && (

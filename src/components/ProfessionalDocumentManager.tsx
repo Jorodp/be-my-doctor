@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
-import { AlertCircle, FileText, Upload, Check, X, Eye } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { Upload, FileText, Camera, Trash2, CheckCircle, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 
 interface DocumentManagerProps {
   doctorProfile: any;
@@ -25,80 +25,77 @@ const documentFields: DocumentField[] = [
   {
     key: 'professional_license_document_url',
     label: 'Cédula Profesional',
-    description: 'Imagen clara de tu cédula profesional',
+    description: 'Documento que acredita tu licencia profesional',
     required: true,
     accepts: 'image/*,.pdf'
   },
   {
-    key: 'university_degree_document_url',
+    key: 'university_degree_document_url', 
     label: 'Título Universitario',
-    description: 'Imagen o PDF de tu título de médico',
+    description: 'Diploma o título de la carrera de medicina',
     required: true,
     accepts: 'image/*,.pdf'
   },
   {
     key: 'identification_document_url',
     label: 'Identificación Oficial',
-    description: 'INE, pasaporte u otra identificación oficial',
+    description: 'INE, pasaporte o identificación oficial',
     required: true,
     accepts: 'image/*,.pdf'
   },
   {
     key: 'curp_document_url',
     label: 'CURP',
-    description: 'Documento CURP (opcional pero recomendado)',
+    description: 'Clave Única de Registro de Población',
     required: false,
     accepts: 'image/*,.pdf'
   }
 ];
 
-export const ProfessionalDocumentManager: React.FC<DocumentManagerProps> = ({
-  doctorProfile,
-  onProfileUpdate
+export const ProfessionalDocumentManager: React.FC<DocumentManagerProps> = ({ 
+  doctorProfile, 
+  onProfileUpdate 
 }) => {
-  const [uploading, setUploading] = useState<string | null>(null);
   const { toast } = useToast();
-  const { user } = useAuth();
+  const [uploading, setUploading] = useState<string | null>(null);
 
-  const uploadDocument = async (file: File, documentKey: string) => {
-    if (!user) return;
+  const uploadDocument = async (file: File, documentKey: string): Promise<void> => {
+    const user = (await supabase.auth.getUser()).data.user;
+    if (!user) throw new Error('No hay usuario autenticado');
 
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${user.id}/${documentKey}_${Date.now()}.${fileExt}`;
+
+    // Upload file to storage
+    const { error: uploadError } = await supabase.storage
+      .from('doctor-documents')
+      .upload(fileName, file);
+
+    if (uploadError) throw uploadError;
+
+    // Update doctor profile with document URL
+    const { error: updateError } = await supabase
+      .from('doctor_profiles')
+      .update({ [documentKey]: fileName })
+      .eq('user_id', user.id);
+
+    if (updateError) throw updateError;
+  };
+
+  const handleUpload = async (file: File, documentKey: string) => {
     setUploading(documentKey);
-
     try {
-      const fileExt = file.name.split('.').pop()?.toLowerCase();
-      const fileName = `${documentKey}.${fileExt}`;
-      const filePath = `${user.id}/${fileName}`;
-
-      // Upload to doctor-documents bucket
-      const { error: uploadError } = await supabase.storage
-        .from('doctor-documents')
-        .upload(filePath, file, { upsert: true });
-
-      if (uploadError) throw uploadError;
-
-      // Get public URL (though bucket is private, we store the path)
-      const documentUrl = filePath;
-
-      // Update doctor profile with document URL
-      const { error: updateError } = await supabase
-        .from('doctor_profiles')
-        .update({ [documentKey]: documentUrl })
-        .eq('user_id', user.id);
-
-      if (updateError) throw updateError;
-
+      await uploadDocument(file, documentKey);
       toast({
         title: "Documento subido",
-        description: "El documento se ha guardado correctamente",
+        description: "El documento se ha subido correctamente",
       });
-
       onProfileUpdate();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error uploading document:', error);
       toast({
         title: "Error",
-        description: "No se pudo subir el documento",
+        description: error.message || "No se pudo subir el documento",
         variant: "destructive"
       });
     } finally {
@@ -106,197 +103,196 @@ export const ProfessionalDocumentManager: React.FC<DocumentManagerProps> = ({
     }
   };
 
-  const handleFileSelect = (documentKey: string) => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = documentFields.find(f => f.key === documentKey)?.accepts || 'image/*,.pdf';
-    input.onchange = (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (file) {
-        uploadDocument(file, documentKey);
-      }
-    };
-    input.click();
+  const handleFileInputChange = (documentKey: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleUpload(file, documentKey);
+    }
   };
 
-  const getCompletionPercentage = () => {
-    const requiredFields = documentFields.filter(f => f.required);
-    const completedFields = requiredFields.filter(f => doctorProfile[f.key]);
-    return Math.round((completedFields.length / requiredFields.length) * 100);
+  const getCompletionPercentage = (): number => {
+    const totalRequired = documentFields.filter(field => field.required).length;
+    const completedRequired = documentFields
+      .filter(field => field.required)
+      .filter(field => hasDocument(field.key)).length;
+    return Math.round((completedRequired / totalRequired) * 100);
   };
 
-  const hasDocument = (documentKey: string) => {
-    return !!doctorProfile[documentKey];
+  const hasDocument = (documentKey: string): boolean => {
+    return Boolean(doctorProfile?.[documentKey]);
   };
 
-  const isProfileComplete = () => {
+  const isProfileComplete = (): boolean => {
     return documentFields
-      .filter(f => f.required)
-      .every(f => doctorProfile[f.key]);
+      .filter(field => field.required)
+      .every(field => hasDocument(field.key));
   };
+
+  const completionPercentage = getCompletionPercentage();
+  const profileComplete = isProfileComplete();
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              Documentación Profesional
-            </CardTitle>
-            <p className="text-sm text-muted-foreground mt-1">
-              Sube los documentos requeridos para verificar tu perfil profesional
-            </p>
-          </div>
-          <Badge variant={isProfileComplete() ? "default" : "secondary"}>
-            {getCompletionPercentage()}% Completo
-          </Badge>
-        </div>
-        <Progress value={getCompletionPercentage()} className="w-full" />
-      </CardHeader>
-      
-      <CardContent className="space-y-4">
-        {!isProfileComplete() && (
-          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="h-5 w-5 text-orange-600 mt-0.5" />
-              <div>
-                <h4 className="font-medium text-orange-800">Documentación pendiente</h4>
-                <p className="text-sm text-orange-700 mt-1">
-                  Tu perfil no será visible para los pacientes hasta completar todos los documentos requeridos.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
+    <div className="space-y-6">
+      {/* Progress Overview */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            Documentos Profesionales
+            <span className={`text-sm ${profileComplete ? 'text-green-600' : 'text-orange-600'}`}>
+              {completionPercentage}% Completado
+            </span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Progress value={completionPercentage} className="mb-4" />
+          <p className="text-sm text-muted-foreground">
+            {profileComplete 
+              ? "¡Perfil completo! Todos los documentos requeridos han sido subidos."
+              : "Sube todos los documentos requeridos para completar tu perfil profesional."
+            }
+          </p>
+        </CardContent>
+      </Card>
 
-        <div className="grid gap-4">
-          {documentFields.map((field) => (
-            <div
-              key={field.key}
-              className="border rounded-lg p-4 space-y-3"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <h4 className="font-medium">{field.label}</h4>
-                    {field.required && (
-                      <Badge variant="outline" className="text-xs">
-                        Requerido
-                      </Badge>
-                    )}
-                    {hasDocument(field.key) && (
-                      <Badge variant="default" className="text-xs">
-                        <Check className="h-3 w-3 mr-1" />
-                        Subido
-                      </Badge>
-                    )}
-                  </div>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {field.description}
-                  </p>
-                </div>
-                
-                <div className="flex items-center gap-2">
-                  {hasDocument(field.key) && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="gap-2"
-                      disabled
-                    >
-                      <Eye className="h-4 w-4" />
-                      Ver
-                    </Button>
-                  )}
-                  
+      {/* Document Upload Sections */}
+      <div className="grid gap-4 md:grid-cols-2">
+        {documentFields.map((field) => (
+          <Card key={field.key} className={hasDocument(field.key) ? 'border-green-200' : ''}>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center justify-between">
+                {field.label}
+                {field.required && <span className="text-red-500 text-sm">*</span>}
+                {hasDocument(field.key) && (
+                  <CheckCircle className="h-5 w-5 text-green-600" />
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground">{field.description}</p>
+              
+              <div className="flex gap-2">
+                <Label htmlFor={`upload-${field.key}`} className="cursor-pointer flex-1">
                   <Button
                     variant={hasDocument(field.key) ? "outline" : "default"}
-                    size="sm"
-                    onClick={() => handleFileSelect(field.key)}
+                    className="w-full"
                     disabled={uploading === field.key}
-                    className="gap-2"
+                    asChild
                   >
-                    {uploading === field.key ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
-                        Subiendo...
-                      </>
-                    ) : (
-                      <>
-                        <Upload className="h-4 w-4" />
-                        {hasDocument(field.key) ? 'Reemplazar' : 'Subir'}
-                      </>
-                    )}
+                    <span>
+                      {uploading === field.key ? (
+                        <>Subiendo...</>
+                      ) : hasDocument(field.key) ? (
+                        <>
+                          <Upload className="h-4 w-4 mr-2" />
+                          Reemplazar
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="h-4 w-4 mr-2" />
+                          Subir {field.label}
+                        </>
+                      )}
+                    </span>
                   </Button>
-                </div>
+                </Label>
+                <Input
+                  id={`upload-${field.key}`}
+                  type="file"
+                  accept={field.accepts}
+                  className="hidden"
+                  onChange={handleFileInputChange(field.key)}
+                />
+                
+                {hasDocument(field.key) && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      // Open document in new tab
+                      window.open(
+                        `https://rvsoeuwlgnovcmemlmqz.supabase.co/storage/v1/object/public/doctor-documents/${doctorProfile[field.key]}`,
+                        '_blank'
+                      );
+                    }}
+                  >
+                    <FileText className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
-            </div>
-          ))}
-        </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
 
-        {/* Certification Documents */}
-        <div className="border rounded-lg p-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <h4 className="font-medium">Certificaciones Adicionales</h4>
-              <p className="text-sm text-muted-foreground mt-1">
-                Especialidades, diplomados, certificaciones médicas adicionales (opcional)
-              </p>
-            </div>
-            
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleFileSelect('additional_certifications')}
-              disabled={uploading === 'additional_certifications'}
-              className="gap-2"
-            >
-              {uploading === 'additional_certifications' ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
-                  Subiendo...
-                </>
-              ) : (
-                <>
-                  <Upload className="h-4 w-4" />
-                  Agregar Certificación
-                </>
-              )}
-            </Button>
-          </div>
-          
-          {doctorProfile.additional_certifications_urls && 
-           doctorProfile.additional_certifications_urls.length > 0 && (
+      {/* Additional Documents Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Documentos y Contenido Adicional</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            {/* Additional Certifications */}
             <div className="space-y-2">
-              <p className="text-sm font-medium">Certificaciones subidas:</p>
-              <div className="flex flex-wrap gap-2">
-                {doctorProfile.additional_certifications_urls.map((cert: string, index: number) => (
-                  <Badge key={index} variant="outline" className="gap-1">
-                    <FileText className="h-3 w-3" />
-                    Certificación {index + 1}
-                  </Badge>
-                ))}
+              <Label>Certificaciones Adicionales</Label>
+              <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4 text-center">
+                <FileText className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
+                <p className="text-sm text-muted-foreground">
+                  Especialidades, diplomados, certificados
+                </p>
+                <Button variant="outline" size="sm" className="mt-2">
+                  <Upload className="h-4 w-4 mr-2" />
+                  Subir Certificaciones
+                </Button>
               </div>
             </div>
-          )}
-        </div>
 
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <div className="flex items-start gap-3">
-            <FileText className="h-5 w-5 text-blue-600 mt-0.5" />
-            <div>
-              <h4 className="font-medium text-blue-800">Importante</h4>
-              <p className="text-sm text-blue-700 mt-1">
-                • Todos los documentos deben ser legibles y en buena calidad<br />
-                • Formatos aceptados: JPG, PNG, PDF<br />
-                • Los documentos serán revisados por nuestro equipo de verificación<br />
-                • Una vez verificados, tu perfil será visible para los pacientes
-              </p>
+            {/* Office Photos */}
+            <div className="space-y-2">
+              <Label>Fotos del Consultorio</Label>
+              <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4 text-center">
+                <Camera className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
+                <p className="text-sm text-muted-foreground">
+                  Fotos de las instalaciones
+                </p>
+                <Button variant="outline" size="sm" className="mt-2">
+                  <Camera className="h-4 w-4 mr-2" />
+                  Subir Fotos
+                </Button>
+              </div>
+            </div>
+
+            {/* Professional Photos */}
+            <div className="space-y-2">
+              <Label>Fotos Profesionales</Label>
+              <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4 text-center">
+                <Camera className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
+                <p className="text-sm text-muted-foreground">
+                  Fotos profesionales para el perfil
+                </p>
+                <Button variant="outline" size="sm" className="mt-2">
+                  <Camera className="h-4 w-4 mr-2" />
+                  Subir Fotos
+                </Button>
+              </div>
+            </div>
+
+            {/* Patient Questionnaire */}
+            <div className="space-y-2">
+              <Label>Cuestionario para Pacientes</Label>
+              <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4 text-center">
+                <FileText className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
+                <p className="text-sm text-muted-foreground">
+                  Preguntas para pacientes antes de la consulta
+                </p>
+                <Button variant="outline" size="sm" className="mt-2">
+                  <FileText className="h-4 w-4 mr-2" />
+                  Crear Cuestionario
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </div>
   );
 };

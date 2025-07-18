@@ -11,7 +11,8 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
 import { useSignedUrl } from '@/hooks/useSignedUrl';
 import { supabase } from '@/integrations/supabase/client';
-import { Upload, Trash2, User, Building2, Save, Plus, X } from 'lucide-react';
+import { Upload, Trash2, User, Building2, Save, Plus, X, FileText, Camera } from 'lucide-react';
+import { ProfessionalDocumentManager } from '@/components/ProfessionalDocumentManager';
 
 interface Consultorio {
   nombre: string;
@@ -308,9 +309,10 @@ export const EditDoctorProfileAdvanced = ({
         </DialogHeader>
 
         <Tabs defaultValue="general" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="general">General</TabsTrigger>
             <TabsTrigger value="profile-image">Foto</TabsTrigger>
+            <TabsTrigger value="documents">Documentos</TabsTrigger>
             <TabsTrigger value="consultorios">Consultorios</TabsTrigger>
             <TabsTrigger value="practice">Práctica</TabsTrigger>
           </TabsList>
@@ -558,6 +560,13 @@ export const EditDoctorProfileAdvanced = ({
                 </Button>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="documents" className="space-y-4">
+            <ProfessionalDocumentManager 
+              doctorProfile={doctorProfile}
+              onProfileUpdate={onProfileUpdated}
+            />
           </TabsContent>
 
           <TabsContent value="practice" className="space-y-4">
