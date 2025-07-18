@@ -349,7 +349,7 @@ const AdminSubscriptionsPage = () => {
   const formatCurrency = (amount: number, currency: string) => {
     return new Intl.NumberFormat('es-MX', {
       style: 'currency',
-      currency: currency === 'MXN' ? 'MXN' : 'USD',
+      currency: 'MXN',
     }).format(amount / 100);
   };
 

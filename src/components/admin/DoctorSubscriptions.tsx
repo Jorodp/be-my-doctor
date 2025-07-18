@@ -119,7 +119,7 @@ const DoctorSubscriptions = () => {
   const formatCurrency = (amount: number, currency: string) => {
     return new Intl.NumberFormat('es-MX', {
       style: 'currency',
-      currency: currency === 'MXN' ? 'MXN' : 'USD',
+      currency: 'MXN',
     }).format(amount / 100);
   };
 
@@ -169,7 +169,7 @@ const DoctorSubscriptions = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatCurrency(getTotalRevenue(), 'USD')}
+              {formatCurrency(getTotalRevenue(), 'MXN')}
             </div>
             <p className="text-xs text-muted-foreground">
               Ingresos recurrentes activos

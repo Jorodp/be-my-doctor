@@ -362,7 +362,7 @@ export default function Auth() {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="fee">Consulta (USD)</Label>
+                        <Label htmlFor="fee">Consulta (MXN)</Label>
                         <Input
                           id="fee"
                           type="number"
