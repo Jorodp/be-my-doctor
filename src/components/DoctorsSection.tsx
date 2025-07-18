@@ -43,24 +43,19 @@ const DoctorsSection = () => {
             </div>
 
             {/* Key Stats for Doctors */}
-            <div className="grid grid-cols-2 gap-6">
-              <div className="bg-card p-6 rounded-xl border border-border">
-                <div className="text-2xl font-bold text-primary mb-1">+40%</div>
-                <div className="text-sm text-muted-foreground">Incremento promedio en consultas</div>
-              </div>
-              <div className="bg-card p-6 rounded-xl border border-border">
-                <div className="text-2xl font-bold text-primary mb-1">$0</div>
-                <div className="text-sm text-muted-foreground">Costo de registro y membresía</div>
-              </div>
+            <div className="bg-card p-6 rounded-xl border border-border">
+              <div className="text-2xl font-bold text-primary mb-1">+40%</div>
+              <div className="text-sm text-muted-foreground">Incremento promedio en consultas</div>
             </div>
 
             <div className="space-y-4">
-              <Button variant="hero" size="lg">
+              <Button 
+                variant="hero" 
+                size="lg"
+                onClick={() => window.location.href = '/auth?role=doctor'}
+              >
                 Soy médico, quiero registrarme
               </Button>
-              <p className="text-sm text-muted-foreground">
-                Proceso de verificación en 24-48 horas
-              </p>
             </div>
           </div>
 
