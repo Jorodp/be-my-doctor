@@ -52,7 +52,7 @@ const DoctorsSection = () => {
               <Button 
                 variant="hero" 
                 size="lg"
-                onClick={() => window.location.href = '/auth?role=doctor'}
+                onClick={() => window.location.href = '/complete-doctor-profile'}
               >
                 Soy médico, quiero registrarme
               </Button>
