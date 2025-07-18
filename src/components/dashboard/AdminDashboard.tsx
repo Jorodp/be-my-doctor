@@ -98,7 +98,7 @@ export const AdminDashboard = () => {
 
         doctorWithProfiles = doctors.map(doctor => ({
           ...doctor,
-          profiles: profiles?.find(p => p.user_id === doctor.user_id) || null
+          profiles: profiles?.find(p => p.user_id === doctor.user_id) || { full_name: 'Sin nombre' }
         }));
       }
 

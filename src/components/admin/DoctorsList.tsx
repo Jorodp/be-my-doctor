@@ -96,9 +96,9 @@ export const DoctorsList = () => {
             .from('profiles')
             .select('full_name, phone, address')
             .eq('user_id', doctor.user_id)
-            .single();
+            .maybeSingle();
 
-          // Get email from auth.users metadata
+          // Get email from auth.users
           const { data: authUser } = await supabase.auth.admin.getUserById(doctor.user_id);
           
           return {
