@@ -13,6 +13,7 @@ import { useSignedUrl } from '@/hooks/useSignedUrl';
 import { supabase } from '@/integrations/supabase/client';
 import { Upload, Trash2, User, Building2, Save, Plus, X, FileText, Camera } from 'lucide-react';
 import { ProfessionalDocumentManager } from '@/components/ProfessionalDocumentManager';
+import { DoctorDocumentManager } from '@/components/admin/DoctorDocumentManager';
 
 interface Consultorio {
   nombre: string;
@@ -563,9 +564,10 @@ export const EditDoctorProfileAdvanced = ({
           </TabsContent>
 
           <TabsContent value="documents" className="space-y-4">
-            <ProfessionalDocumentManager 
+            <DoctorDocumentManager 
               doctorProfile={doctorProfile}
               onProfileUpdate={onProfileUpdated}
+              isAdminView={true}
             />
           </TabsContent>
 

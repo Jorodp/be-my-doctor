@@ -709,6 +709,10 @@ export type Database = {
         Args: { user_uuid: string }
         Returns: string
       }
+      is_doctor_profile_complete: {
+        Args: { doctor_user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       appointment_status:

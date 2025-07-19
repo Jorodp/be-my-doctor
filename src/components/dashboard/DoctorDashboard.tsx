@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -95,6 +96,7 @@ const DoctorDashboardContent = () => {
   // State
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<DoctorProfile | null>(null);
+  const [profileComplete, setProfileComplete] = useState(false);
   const [todayAppointments, setTodayAppointments] = useState<Appointment[]>([]);
   const [weeklyAppointments, setWeeklyAppointments] = useState<Appointment[]>([]);
   const [ratings, setRatings] = useState<Rating[]>([]);
@@ -169,7 +171,8 @@ const DoctorDashboardContent = () => {
         fetchTodayAppointments(),
         fetchWeeklyAppointments(),
         fetchRatings(),
-        fetchStats()
+        fetchStats(),
+        checkProfileComplete()
       ]);
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -364,6 +367,21 @@ const DoctorDashboardContent = () => {
     }
   };
 
+  const checkProfileComplete = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .rpc('is_doctor_profile_complete', { doctor_user_id: user.id });
+      
+      if (!error) {
+        setProfileComplete(data || false);
+      }
+    } catch (error) {
+      console.error('Error checking profile completion:', error);
+    }
+  };
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'completed':
@@ -404,6 +422,17 @@ const DoctorDashboardContent = () => {
       subtitle="Gestiona tu consulta médica"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+        
+        {/* Document Completion Warning */}
+        {profile && !profileComplete && (
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              <strong>Perfil incompleto:</strong> Faltan documentos requeridos. Tu perfil no puede ser verificado y no recibirás citas hasta completar toda la documentación legal. 
+              Solo los administradores pueden gestionar estos documentos.
+            </AlertDescription>
+          </Alert>
+        )}
         
         {/* Profile Overview */}
         {profile && (

@@ -167,13 +167,30 @@ export const DoctorsList = () => {
 
   const updateVerificationStatus = async (doctorId: string, status: 'verified' | 'rejected') => {
     try {
+      // First check if the profile is complete when trying to verify
+      if (status === 'verified') {
+        const { data: profileComplete, error: checkError } = await supabase
+          .rpc('is_doctor_profile_complete', { doctor_user_id: doctorId });
+        
+        if (checkError) throw checkError;
+        
+        if (!profileComplete) {
+          toast({
+            title: "Perfil incompleto",
+            description: "No se puede verificar un doctor sin todos los documentos requeridos",
+            variant: "destructive"
+          });
+          return;
+        }
+      }
+
       const { error } = await supabase
         .from('doctor_profiles')
         .update({ 
           verification_status: status,
           verified_at: status === 'verified' ? new Date().toISOString() : null
         })
-        .eq('id', doctorId);
+        .eq('user_id', doctorId); // Use user_id instead of id
 
       if (error) throw error;
 
@@ -432,14 +449,14 @@ export const DoctorsList = () => {
                       <>
                         <Button 
                           size="sm" 
-                          onClick={() => updateVerificationStatus(doctor.id, 'verified')}
+                          onClick={() => updateVerificationStatus(doctor.user_id, 'verified')}
                         >
                           <CheckCircle className="h-4 w-4" />
                         </Button>
                         <Button 
                           size="sm" 
                           variant="destructive"
-                          onClick={() => updateVerificationStatus(doctor.id, 'rejected')}
+                          onClick={() => updateVerificationStatus(doctor.user_id, 'rejected')}
                         >
                           <XCircle className="h-4 w-4" />
                         </Button>
