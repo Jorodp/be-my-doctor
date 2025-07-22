@@ -1,12 +1,12 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { corsHeaders } from '../_shared/cors.ts'
+import { corsHeaders } from './_shared/cors.ts'
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
 Deno.serve(async (req) => {
   console.log('Admin profile management function called with method:', req.method)
-  
+
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -14,7 +14,7 @@ Deno.serve(async (req) => {
 
   try {
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
-    
+
     // Verify authentication
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
@@ -27,7 +27,7 @@ Deno.serve(async (req) => {
 
     const token = authHeader.replace('Bearer ', '')
     const { data: { user }, error: authError } = await supabase.auth.getUser(token)
-    
+
     if (authError || !user) {
       console.error('Authentication failed:', authError)
       return new Response(
@@ -59,7 +59,6 @@ Deno.serve(async (req) => {
 
     switch (action) {
       case 'get-profile': {
-        // Get complete profile data
         const { data: userProfile, error: profileError } = await supabase
           .from('profiles')
           .select('*')
@@ -90,17 +89,12 @@ Deno.serve(async (req) => {
         }
 
         return new Response(
-          JSON.stringify({ 
-            success: true, 
-            profile: userProfile, 
-            doctorProfile 
-          }),
+          JSON.stringify({ success: true, profile: userProfile, doctorProfile }),
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
 
       case 'update-profile': {
-        // Update basic profile
         const { error: profileError } = await supabase
           .from('profiles')
           .update({
@@ -127,9 +121,7 @@ Deno.serve(async (req) => {
       }
 
       case 'update-doctor-profile': {
-        // Update doctor profile including consultorios
         const consultorios = profileData.consultorios || []
-        
         const { error: doctorError } = await supabase
           .from('doctor_profiles')
           .update({
@@ -141,7 +133,7 @@ Deno.serve(async (req) => {
             office_address: profileData.office_address,
             office_phone: profileData.office_phone,
             practice_locations: profileData.practice_locations,
-            consultorios: consultorios,
+            consultorios,
             updated_at: new Date().toISOString()
           })
           .eq('user_id', userId)
@@ -161,18 +153,12 @@ Deno.serve(async (req) => {
       }
 
       case 'update-assistant-doctor': {
-        // Update assistant's assigned doctor
         const adminSupabase = createClient(supabaseUrl, supabaseServiceKey, {
           auth: { persistSession: false }
         })
-
         const { error: updateError } = await adminSupabase.auth.admin.updateUserById(
           userId,
-          {
-            user_metadata: {
-              assigned_doctor_id: profileData.assigned_doctor_id
-            }
-          }
+          { user_metadata: { assigned_doctor_id: profileData.assigned_doctor_id } }
         )
 
         if (updateError) {
@@ -190,20 +176,16 @@ Deno.serve(async (req) => {
       }
 
       case 'verify-documents': {
-        // Verify doctor documents via SQL RPC
         if (!doctorId || !adminId) {
           return new Response(
             JSON.stringify({ success: false, error: 'Missing doctorId or adminId' }),
             { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           )
         }
-
-        const { error: verifyError } = await supabase
-          .rpc('admin_verify_doctor_documents', {
-            p_doctor_id: doctorId,
-            p_admin_id: adminId,
-          })
-
+        const { error: verifyError } = await supabase.rpc(
+          'admin_verify_doctor_documents',
+          { p_doctor_id: doctorId, p_admin_id: adminId }
+        )
         if (verifyError) {
           console.error('Error in admin_verify_doctor_documents:', verifyError)
           return new Response(
@@ -211,7 +193,6 @@ Deno.serve(async (req) => {
             { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           )
         }
-
         return new Response(
           JSON.stringify({ success: true, message: 'Doctor documents verified' }),
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -219,23 +200,19 @@ Deno.serve(async (req) => {
       }
 
       case 'upload-image': {
-        if (!imageData || !imageData.file || !imageData.bucket || !imageData.path) {
+        if (!imageData?.file || !imageData?.bucket || !imageData?.path) {
           return new Response(
             JSON.stringify({ success: false, error: 'Missing image data' }),
             { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           )
         }
-
-        // Convert base64 to file
         const fileData = Uint8Array.from(atob(imageData.file), c => c.charCodeAt(0))
-        
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from(imageData.bucket)
           .upload(imageData.path, fileData, {
             contentType: imageData.contentType || 'image/jpeg',
             upsert: true
           })
-
         if (uploadError) {
           console.error('Error uploading image:', uploadError)
           return new Response(
@@ -243,24 +220,17 @@ Deno.serve(async (req) => {
             { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           )
         }
-
-        // Update profile with image URL
         const updateData: any = {}
-        if (imageData.field === 'profile_image_url') {
-          updateData.profile_image_url = uploadData.path
-        } else if (imageData.field === 'id_document_url') {
-          updateData.id_document_url = uploadData.path
-        }
-
-        const table = imageData.field === 'profile_image_url' && imageData.isDoctorProfile 
-          ? 'doctor_profiles' 
-          : 'profiles'
-
+        if (imageData.field === 'profile_image_url') updateData.profile_image_url = uploadData.path
+        else if (imageData.field === 'id_document_url') updateData.id_document_url = uploadData.path
+        const table =
+          imageData.field === 'profile_image_url' && imageData.isDoctorProfile
+            ? 'doctor_profiles'
+            : 'profiles'
         const { error: updateError } = await supabase
           .from(table)
           .update(updateData)
           .eq('user_id', userId)
-
         if (updateError) {
           console.error('Error updating profile with image URL:', updateError)
           return new Response(
@@ -268,59 +238,38 @@ Deno.serve(async (req) => {
             { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           )
         }
-
         return new Response(
-          JSON.stringify({ 
-            success: true, 
-            message: 'Image uploaded successfully',
-            url: uploadData.path 
-          }),
+          JSON.stringify({ success: true, message: 'Image uploaded successfully', url: uploadData.path }),
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
 
       case 'delete-image': {
-        if (!imageData || !imageData.bucket || !imageData.path) {
+        if (!imageData?.bucket || !imageData?.path) {
           return new Response(
             JSON.stringify({ success: false, error: 'Missing image data' }),
             { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           )
         }
-
-        // Delete from storage
-        const { error: deleteError } = await supabase.storage
-          .from(imageData.bucket)
-          .remove([imageData.path])
-
-        if (deleteError) {
-          console.error('Error deleting image:', deleteError)
-        }
-
-        // Update profile to remove image URL
+        await supabase.storage.from(imageData.bucket).remove([imageData.path])
         const updateData: any = {}
-        if (imageData.field === 'profile_image_url') {
-          updateData.profile_image_url = null
-        } else if (imageData.field === 'id_document_url') {
-          updateData.id_document_url = null
-        }
-
-        const table = imageData.field === 'profile_image_url' && imageData.isDoctorProfile 
-          ? 'doctor_profiles' 
-          : 'profiles'
-
-        const { error: updateError } = await supabase
+        if (imageData.field === 'profile_image_url') updateData.profile_image_url = null
+        else if (imageData.field === 'id_document_url') updateData.id_document_url = null
+        const table =
+          imageData.field === 'profile_image_url' && imageData.isDoctorProfile
+            ? 'doctor_profiles'
+            : 'profiles'
+        const { error: finalDeleteError } = await supabase
           .from(table)
           .update(updateData)
           .eq('user_id', userId)
-
-        if (updateError) {
-          console.error('Error updating profile after image deletion:', updateError)
+        if (finalDeleteError) {
+          console.error('Error updating profile after image deletion:', finalDeleteError)
           return new Response(
-            JSON.stringify({ success: false, error: updateError.message }),
+            JSON.stringify({ success: false, error: finalDeleteError.message }),
             { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           )
         }
-
         return new Response(
           JSON.stringify({ success: true, message: 'Image deleted successfully' }),
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -334,14 +283,10 @@ Deno.serve(async (req) => {
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
     }
-
   } catch (error: any) {
     console.error('Error in admin profile management function:', error)
     return new Response(
-      JSON.stringify({ 
-        success: false, 
-        error: error.message || 'Internal server error' 
-      }),
+      JSON.stringify({ success: false, error: error.message || 'Internal server error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
