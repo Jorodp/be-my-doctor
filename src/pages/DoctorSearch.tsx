@@ -1,149 +1,97 @@
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-import { BackToHomeButton } from "@/components/ui/BackToHomeButton";
-import { Star } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { supabase } from "@/lib/supabaseClient";
 
-interface Doctor {
-  doctor_profile_id: string;
-  doctor_user_id: string;
-  full_name: string;
-  profile_image_url: string | null;
-  specialty: string;
-  rating_avg: number;
-}
+export default function DoctorSearch() {
+  const [filters, setFilters] = useState({
+    name: "",
+    specialty: "",
+    location: "",
+  });
+  const [doctors, setDoctors] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
 
-const DoctorSearch = () => {
-  const [doctors, setDoctors] = useState<Doctor[]>([]);
-  const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
+  const fetchDoctors = async () => {
+    setLoading(true);
+    const { data, error } = await supabase.rpc("public_search_doctors", {
+      p_name: filters.name || null,
+      p_specialty: filters.specialty || null,
+      p_location: filters.location || null,
+      p_limit: 50,
+    });
+
+    if (error) {
+      console.error("Error al buscar doctores:", error);
+    } else {
+      setDoctors(data);
+    }
+
+    setLoading(false);
+  };
 
   useEffect(() => {
     fetchDoctors();
   }, []);
 
-  const fetchDoctors = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("public_doctors_directory")
-        .select("*");
-
-      if (error) throw error;
-
-      setDoctors(data as Doctor[]);
-    } catch (error) {
-      console.error("Error fetching doctors:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const renderStars = (rating: number) => {
-    const stars = [];
-    const fullStars = Math.floor(rating);
-    const hasHalfStar = rating % 1 !== 0;
-
-    for (let i = 0; i < fullStars; i++) {
-      stars.push(
-        <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-      );
-    }
-
-    if (hasHalfStar) {
-      stars.push(
-        <Star key="half" className="h-4 w-4 fill-yellow-400/50 text-yellow-400" />
-      );
-    }
-
-    const emptyStars = 5 - Math.ceil(rating);
-    for (let i = 0; i < emptyStars; i++) {
-      stars.push(
-        <Star key={`empty-${i}`} className="h-4 w-4 text-muted-foreground" />
-      );
-    }
-
-    return stars;
-  };
-
-  const handleDoctorClick = (doctorId: string) => {
-    navigate(`/doctor/${doctorId}`);
-  };
-
-  if (loading) {
-    return <LoadingSpinner />;
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted/30">
-      <div className="container mx-auto p-6">
-        <BackToHomeButton />
-        
-        <div className="mb-12 text-center">
-          <h1 className="text-4xl font-bold text-foreground mb-4 bg-gradient-to-r from-primary to-primary-dark bg-clip-text text-transparent">
-            Buscar Doctores
-          </h1>
-          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            Encuentra doctores verificados y disponibles para tu consulta médica
-          </p>
-        </div>
+    <div className="max-w-5xl mx-auto p-6">
+      <h1 className="text-2xl font-bold text-center mb-6 text-[#00a0df]">
+        Buscar Doctores
+      </h1>
 
-        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {doctors.map((doctor) => (
-            <Card
-              key={doctor.doctor_profile_id}
-              className="group overflow-hidden hover:shadow-xl transition-all duration-300 hover:scale-105 cursor-pointer bg-card/50 backdrop-blur-sm border-2 hover:border-primary/20"
-              onClick={() => handleDoctorClick(doctor.doctor_profile_id)}
-            >
-              <div className="relative">
-                {doctor.profile_image_url ? (
-                  <img
-                    src={doctor.profile_image_url}
-                    alt={doctor.full_name}
-                    className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-300"
-                  />
-                ) : (
-                  <div className="w-full h-48 bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
-                    <div className="w-24 h-24 rounded-full bg-primary/30 flex items-center justify-center">
-                      <span className="text-2xl font-semibold text-primary">
-                        {doctor.full_name.charAt(0)}
-                      </span>
-                    </div>
-                  </div>
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              </div>
-              
-              <CardContent className="p-6">
-                <div className="text-center space-y-3">
-                  <CardTitle className="text-xl font-bold text-foreground group-hover:text-primary transition-colors">
-                    {doctor.full_name}
-                  </CardTitle>
-                  <p className="text-primary font-medium bg-primary/10 px-3 py-1 rounded-full text-sm">
-                    {doctor.specialty}
-                  </p>
-                  
-                  <div className="flex items-center justify-center gap-2 pt-2">
-                    <div className="flex">{renderStars(doctor.rating_avg || 0)}</div>
-                    <span className="text-sm font-semibold text-foreground">
-                      {doctor.rating_avg?.toFixed(1) || "0.0"}
-                    </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-        
-        {doctors.length === 0 && !loading && (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground text-lg">No se encontraron doctores disponibles</p>
+      <div className="flex flex-wrap gap-4 mb-6">
+        <input
+          placeholder="Nombre"
+          className="border p-2 rounded w-full sm:w-auto"
+          value={filters.name}
+          onChange={(e) => setFilters({ ...filters, name: e.target.value })}
+        />
+        <input
+          placeholder="Especialidad"
+          className="border p-2 rounded w-full sm:w-auto"
+          value={filters.specialty}
+          onChange={(e) => setFilters({ ...filters, specialty: e.target.value })}
+        />
+        <input
+          placeholder="Ubicación"
+          className="border p-2 rounded w-full sm:w-auto"
+          value={filters.location}
+          onChange={(e) => setFilters({ ...filters, location: e.target.value })}
+        />
+        <button
+          onClick={fetchDoctors}
+          className="bg-[#00a0df] text-white px-4 py-2 rounded"
+        >
+          Buscar
+        </button>
+      </div>
+
+      {loading && <p className="text-center">Cargando doctores...</p>}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {doctors.map((doc) => (
+          <div
+            key={doc.doctor_id}
+            className="border rounded-lg p-4 shadow-sm bg-white"
+          >
+            <img
+              src={doc.profile_image_url || "https://via.placeholder.com/80"}
+              alt="Foto de perfil"
+              className="w-20 h-20 rounded-full mb-2"
+            />
+            <h2 className="font-bold text-lg">{doc.full_name}</h2>
+            <p className="text-sm text-gray-700">{doc.specialty}</p>
+            <p className="text-sm text-gray-500">
+              {doc.practice_locations?.join(", ")}
+            </p>
+            <p className="text-sm">⭐ {doc.rating_avg || "Sin calificación"}</p>
+            <p className="text-sm">
+              {doc.consultation_fee
+                ? `$${doc.consultation_fee}`
+                : "Sin costo definido"}
+            </p>
           </div>
-        )}
+        ))}
       </div>
     </div>
   );
-};
-
-export default DoctorSearch;
+}
