@@ -53,9 +53,9 @@ Deno.serve(async (req) => {
 
     // Parse request body
     const body = await req.json()
-    const { action, userId, profileData, imageData } = body
+    const { action, userId, profileData, imageData, doctorId, adminId } = body
 
-    console.log('Processing action:', action, 'for user:', userId)
+    console.log('Processing action:', action, 'for user/doctor:', userId || doctorId)
 
     switch (action) {
       case 'get-profile': {
@@ -185,6 +185,35 @@ Deno.serve(async (req) => {
 
         return new Response(
           JSON.stringify({ success: true, message: 'Assistant doctor assignment updated' }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      case 'verify-documents': {
+        // Verify doctor documents via SQL RPC
+        if (!doctorId || !adminId) {
+          return new Response(
+            JSON.stringify({ success: false, error: 'Missing doctorId or adminId' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+
+        const { error: verifyError } = await supabase
+          .rpc('admin_verify_doctor_documents', {
+            p_doctor_id: doctorId,
+            p_admin_id: adminId,
+          })
+
+        if (verifyError) {
+          console.error('Error in admin_verify_doctor_documents:', verifyError)
+          return new Response(
+            JSON.stringify({ success: false, error: verifyError.message }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+
+        return new Response(
+          JSON.stringify({ success: true, message: 'Doctor documents verified' }),
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
