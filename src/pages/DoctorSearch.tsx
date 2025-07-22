@@ -9,49 +9,35 @@ interface Doctor {
   full_name: string;
   specialty: string;
   rating_avg: number;
+  profile_image_url: string | null;
 }
 
 const DoctorSearch = () => {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     fetchDoctors();
-  }, []);
+  }, [searchTerm]);
 
   const fetchDoctors = async () => {
+    setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('doctor_profiles')
-        .select('*');
+      let query = supabase
+        .from('public_doctors_directory')
+        .select('doctor_profile_id,full_name,profile_image_url,specialty,rating_avg');
 
+      if (searchTerm) {
+        query = query.ilike('full_name', `%${searchTerm}%`);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
-
-      // Mock data for demonstration since the types are causing issues
-      const mockDoctors: Doctor[] = [
-        {
-          doctor_profile_id: '1',
-          full_name: 'Dr. Juan Pérez',
-          specialty: 'Cardiología',
-          rating_avg: 4.5
-        },
-        {
-          doctor_profile_id: '2',
-          full_name: 'Dra. María González',
-          specialty: 'Pediatría',
-          rating_avg: 4.8
-        },
-        {
-          doctor_profile_id: '3',
-          full_name: 'Dr. Carlos Rodríguez',
-          specialty: 'Medicina General',
-          rating_avg: 4.2
-        }
-      ];
-
-      setDoctors(mockDoctors);
+      setDoctors(data || []);
     } catch (error) {
       console.error('Error fetching doctors:', error);
+      setDoctors([]);
     } finally {
       setLoading(false);
     }
@@ -64,23 +50,20 @@ const DoctorSearch = () => {
 
     for (let i = 0; i < fullStars; i++) {
       stars.push(
-        <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+        <Star key={i} className="h-4 w-4 fill-current text-yellow-400" />
       );
     }
-
     if (hasHalfStar) {
       stars.push(
-        <Star key="half" className="h-4 w-4 fill-yellow-400/50 text-yellow-400" />
+        <Star key="half" className="h-4 w-4 fill-current text-yellow-400/50" />
       );
     }
-
     const emptyStars = 5 - Math.ceil(rating);
     for (let i = 0; i < emptyStars; i++) {
       stars.push(
         <Star key={`empty-${i}`} className="h-4 w-4 text-muted-foreground" />
       );
     }
-
     return stars;
   };
 
@@ -97,30 +80,48 @@ const DoctorSearch = () => {
         </p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {doctors.map((doctor) => (
-          <Card key={doctor.doctor_profile_id} className="hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <CardTitle className="text-lg">{doctor.full_name}</CardTitle>
-              <p className="text-sm text-muted-foreground">{doctor.specialty}</p>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-2">
-                <div className="flex">
-                  {renderStars(doctor.rating_avg)}
-                </div>
-                <span className="text-sm text-muted-foreground">
-                  {doctor.rating_avg ? doctor.rating_avg.toFixed(1) : 'Sin calificaciones'}
-                </span>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+      {/* Buscador */}
+      <div className="mb-6">
+        <input
+          type="text"
+          placeholder="Buscar por nombre..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full p-2 border rounded"
+        />
       </div>
 
-      {doctors.length === 0 && (
-        <div className="text-center py-12">
-          <p className="text-muted-foreground">No se encontraron doctores.</p>
+      {doctors.length === 0 ? (
+        <p>No se encontraron doctores.</p>
+      ) : (
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {doctors.map((doctor) => (
+            <Card key={doctor.doctor_profile_id} className="hover:shadow-lg transition-shadow">
+              <CardHeader>
+                <div className="flex items-center space-x-4">
+                  <img
+                    src={doctor.profile_image_url || '/default-avatar.png'}
+                    alt={doctor.full_name}
+                    className="w-12 h-12 rounded-full object-cover"
+                  />
+                  <div>
+                    <CardTitle className="text-lg">{doctor.full_name}</CardTitle>
+                    <p className="text-sm text-muted-foreground">{doctor.specialty}</p>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-2">
+                  <div className="flex">
+                    {renderStars(doctor.rating_avg)}
+                  </div>
+                  <span className="text-sm text-muted-foreground">
+                    {doctor.rating_avg.toFixed(1)}
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       )}
     </div>
