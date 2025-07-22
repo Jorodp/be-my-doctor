@@ -1,10 +1,9 @@
-import { useRouter } from "next/router";
+import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 const DoctorProfile = () => {
-  const router = useRouter();
-  const { doctorId } = router.query;
+  const { doctorId } = useParams();
 
   const [doctor, setDoctor] = useState<any>(null);
 

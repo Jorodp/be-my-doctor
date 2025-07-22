@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { Star } from "lucide-react";
-import { useRouter } from "next/router";
+import { useNavigate } from "react-router-dom";
 
 interface Doctor {
   doctor_profile_id: string;
@@ -17,7 +17,7 @@ interface Doctor {
 const DoctorSearch = () => {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [loading, setLoading] = useState(true);
-  const router = useRouter();
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchDoctors();
@@ -26,7 +26,7 @@ const DoctorSearch = () => {
   const fetchDoctors = async () => {
     try {
       const { data, error } = await supabase
-        .from("public_doctors_public")
+        .from("public_doctors_directory")
         .select("*");
 
       if (error) throw error;
@@ -67,7 +67,7 @@ const DoctorSearch = () => {
   };
 
   const handleDoctorClick = (doctorId: string) => {
-    router.push(`/doctor/${doctorId}`);
+    navigate(`/doctor/${doctorId}`);
   };
 
   if (loading) {
@@ -102,4 +102,22 @@ const DoctorSearch = () => {
               )}
               <div>
                 <CardTitle className="text-lg">{doctor.full_name}</CardTitle>
-                <p cla
+                <p className="text-muted-foreground">{doctor.specialty}</p>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-2">
+                <div className="flex">{renderStars(doctor.rating_avg || 0)}</div>
+                <span className="text-sm text-muted-foreground">
+                  ({doctor.rating_avg?.toFixed(1) || "0.0"})
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+export default DoctorSearch;
