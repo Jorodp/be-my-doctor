@@ -17,6 +17,7 @@ import NotFound from "./pages/NotFound";
 import EmergencyLogout from "./pages/EmergencyLogout";
 import DoctorSearch from "./pages/DoctorSearch";
 import DoctorProfile from "./pages/DoctorProfile";
+import DoctorDetail from "./pages/DoctorDetail";
 import BookAppointment from "./pages/BookAppointment";
 import { CompleteDoctorProfile } from "./pages/CompleteDoctorProfile";
 import { CompletePatientProfile } from "./pages/CompletePatientProfile";
@@ -78,8 +79,9 @@ const App = () => (
                  </ProtectedRoute>
                } 
              />
-            <Route path="/search" element={<DoctorSearch />} />
-            <Route path="/doctor/:doctorId" element={<DoctorProfile />} />
+             <Route path="/search" element={<DoctorSearch />} />
+             <Route path="/doctors/:id" element={<DoctorDetail />} />
+             <Route path="/doctor/:doctorId" element={<DoctorProfile />} />
             <Route 
               path="/book/:doctorId" 
               element={
