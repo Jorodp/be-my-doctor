@@ -1,10 +1,12 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Star, MapPin } from "lucide-react";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Doctor {
   doctor_id: string;
@@ -24,6 +26,16 @@ const DoctorSearch = () => {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const handleDoctorClick = (doctorId: string) => {
+    if (user) {
+      navigate(`/doctor/${doctorId}`);
+    } else {
+      navigate('/auth');
+    }
+  };
 
   const handleSearch = async () => {
     setLoading(true);
@@ -161,6 +173,7 @@ const DoctorSearch = () => {
                 <Card
                   key={doctor.doctor_id}
                   className="group overflow-hidden hover:shadow-xl transition-all duration-300 hover:scale-105 cursor-pointer bg-card/50 backdrop-blur-sm border-2 hover:border-primary/20"
+                  onClick={() => handleDoctorClick(doctor.doctor_id)}
                 >
                   <div className="relative">
                     {doctor.profile_image_url ? (
