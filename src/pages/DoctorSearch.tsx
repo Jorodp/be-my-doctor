@@ -3,9 +3,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { Star } from "lucide-react";
+import { useRouter } from "next/router";
 
 interface Doctor {
   doctor_profile_id: string;
+  doctor_user_id: string;
   full_name: string;
   profile_image_url: string | null;
   specialty: string;
@@ -15,28 +17,26 @@ interface Doctor {
 const DoctorSearch = () => {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
     fetchDoctors();
   }, []);
 
   const fetchDoctors = async () => {
-    console.log('🔎 Buscando doctores...');
+    try {
+      const { data, error } = await supabase
+        .from("public_doctors_public")
+        .select("*");
 
-    const { data, error } = await supabase
-      .from('public_doctors_directory')
-      .select('doctor_profile_id, doctor_user_id, full_name, profile_image_url, specialty, rating_avg');
+      if (error) throw error;
 
-    console.log('✅ Resultado de Supabase:', data);
-    console.error('❌ Error en Supabase:', error);
-
-    if (error) {
-      setDoctors([]);
-    } else {
-      setDoctors(data || []);
+      setDoctors(data as Doctor[]);
+    } catch (error) {
+      console.error("Error fetching doctors:", error);
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   const renderStars = (rating: number) => {
@@ -66,6 +66,10 @@ const DoctorSearch = () => {
     return stars;
   };
 
+  const handleDoctorClick = (doctorId: string) => {
+    router.push(`/doctor/${doctorId}`);
+  };
+
   if (loading) {
     return <LoadingSpinner />;
   }
@@ -81,39 +85,21 @@ const DoctorSearch = () => {
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {doctors.map((doctor) => (
-          <Card key={doctor.doctor_profile_id} className="hover:shadow-lg transition-shadow cursor-pointer">
-            <CardHeader>
-              <CardTitle className="text-lg">{doctor.full_name}</CardTitle>
-              <p className="text-sm text-muted-foreground">{doctor.specialty}</p>
-            </CardHeader>
-            <CardContent>
-              {doctor.profile_image_url && (
+          <Card
+            key={doctor.doctor_profile_id}
+            className="hover:shadow-lg transition-shadow cursor-pointer"
+            onClick={() => handleDoctorClick(doctor.doctor_profile_id)}
+          >
+            <CardHeader className="flex items-center gap-4">
+              {doctor.profile_image_url ? (
                 <img
                   src={doctor.profile_image_url}
                   alt={doctor.full_name}
-                  className="rounded-full h-24 w-24 object-cover mb-4"
+                  className="w-16 h-16 rounded-full object-cover"
                 />
+              ) : (
+                <div className="w-16 h-16 rounded-full bg-gray-200" />
               )}
-              <div className="flex items-center gap-2">
-                <div className="flex">
-                  {renderStars(doctor.rating_avg)}
-                </div>
-                <span className="text-sm text-muted-foreground">
-                  {doctor.rating_avg ? doctor.rating_avg.toFixed(1) : 'Sin calificaciones'}
-                </span>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {doctors.length === 0 && (
-        <div className="text-center py-12">
-          <p className="text-muted-foreground">No se encontraron doctores.</p>
-        </div>
-      )}
-    </div>
-  );
-};
-
-export default DoctorSearch;
+              <div>
+                <CardTitle className="text-lg">{doctor.full_name}</CardTitle>
+                <p cla
