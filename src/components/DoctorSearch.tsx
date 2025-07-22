@@ -7,12 +7,13 @@ import { Star, MapPin } from "lucide-react";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 
 interface Doctor {
-  doctor_user_id: string;
+  doctor_id: string;
   full_name: string;
   specialty: string;
+  biography: string | null;
   rating_avg: number;
   consultation_fee: number;
-  practice_locations: string;
+  practice_locations: string[];
   profile_image_url: string | null;
 }
 
@@ -158,7 +159,7 @@ const DoctorSearch = () => {
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {doctors.map((doctor) => (
                 <Card
-                  key={doctor.doctor_user_id}
+                  key={doctor.doctor_id}
                   className="group overflow-hidden hover:shadow-xl transition-all duration-300 hover:scale-105 cursor-pointer bg-card/50 backdrop-blur-sm border-2 hover:border-primary/20"
                 >
                   <div className="relative">
@@ -206,10 +207,10 @@ const DoctorSearch = () => {
                       </div>
                     )}
 
-                    {doctor.practice_locations && (
+                    {doctor.practice_locations && doctor.practice_locations.length > 0 && (
                       <div className="flex items-center justify-center gap-1 text-sm text-muted-foreground">
                         <MapPin className="h-4 w-4" />
-                        <span className="truncate">{doctor.practice_locations}</span>
+                        <span className="truncate">{doctor.practice_locations.join(", ")}</span>
                       </div>
                     )}
                   </CardContent>
