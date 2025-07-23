@@ -58,6 +58,26 @@ Deno.serve(async (req) => {
     console.log('Processing action:', action, 'for user/doctor:', userId || doctorId)
 
     switch (action) {
+      case 'list-doctors': {
+        const { data: doctors, error: doctorsError } = await supabase
+          .from('admin_doctors_overview')
+          .select('*')
+          .order('full_name')
+
+        if (doctorsError) {
+          console.error('Error fetching doctors:', doctorsError)
+          return new Response(
+            JSON.stringify({ success: false, error: doctorsError.message }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+
+        return new Response(
+          JSON.stringify({ success: true, doctors }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
       case 'get-profile': {
         const { data: userProfile, error: profileError } = await supabase
           .from('profiles')
