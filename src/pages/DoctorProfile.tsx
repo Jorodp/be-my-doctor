@@ -27,8 +27,18 @@ const DoctorProfile = () => {
     if (!doctorId) return;
     const fetchDoctor = async () => {
       setLoading(true);
+      console.log('Buscando doctor con ID:', doctorId);
+      
       try {
-        // Obtener perfil del doctor desde doctor_profiles y profiles
+        // Primero, verificar si existe el doctor sin filtros
+        const { data: allDoctorData, error: allError } = await supabase
+          .from('doctor_profiles')
+          .select('user_id, verification_status, profile_complete, specialty')
+          .eq('user_id', doctorId);
+        
+        console.log('Doctor encontrado (sin filtros):', allDoctorData, 'error:', allError);
+
+        // Luego buscar con todos los filtros
         const { data: doctorData, error: doctorError } = await supabase
           .from('doctor_profiles')
           .select(`
@@ -40,9 +50,13 @@ const DoctorProfile = () => {
           .eq('profile_complete', true)
           .maybeSingle();
 
-        console.log('Doctor data:', doctorData, 'error:', doctorError);
+        console.log('Doctor data (con filtros):', doctorData, 'error:', doctorError);
+        
         if (doctorError) throw doctorError;
-        if (!doctorData) throw new Error('Doctor no encontrado');
+        if (!doctorData) {
+          console.log('No se encontró doctor con los filtros aplicados');
+          throw new Error('Doctor no encontrado o no está verificado/completo');
+        }
 
         // Formatear datos para el componente
         const formattedDoctor = {
@@ -58,6 +72,7 @@ const DoctorProfile = () => {
           phone: doctorData.profiles.phone,
         };
 
+        console.log('Doctor formateado:', formattedDoctor);
         setDoctor(formattedDoctor);
       } catch (err: any) {
         console.error('Error fetching doctor', err);
