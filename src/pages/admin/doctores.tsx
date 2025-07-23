@@ -19,14 +19,13 @@ import { DoctorAppointmentsDrawer } from '@/components/admin/DoctorAppointmentsD
 import { Eye, Calendar, CreditCard } from 'lucide-react';
 
 interface DoctorListItem {
-  id: string;
-  user_id: string;
+  doctor_user_id: string;
   full_name: string;
   specialty: string;
   verification_status: string;
   subscription_status: string;
-  upcoming_appointments: number;
-  past_appointments: number;
+  profile_complete: boolean;
+  cita_count: number;
 }
 
 export default function AdminDoctorsPage() {
@@ -63,7 +62,7 @@ export default function AdminDoctorsPage() {
 
   const handleViewProfile = async (doctor: DoctorListItem) => {
     try {
-      const { profile, doctorProfile } = await getDoctorProfile(doctor.user_id);
+      const { profile, doctorProfile } = await getDoctorProfile(doctor.doctor_user_id);
       setSelectedDoctor(doctorProfile);
       setSelectedProfile(profile);
       setShowEditProfile(true);
@@ -144,14 +143,13 @@ export default function AdminDoctorsPage() {
                 <TableHead>Verificado</TableHead>
                 <TableHead>Suscripción</TableHead>
                 <TableHead>Perfil completo</TableHead>
-                <TableHead># Citas próximas</TableHead>
-                <TableHead># Citas pasadas</TableHead>
+                <TableHead># Citas</TableHead>
                 <TableHead>Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {doctors.map((doctor) => (
-                <TableRow key={doctor.user_id}>
+                <TableRow key={doctor.doctor_user_id}>
                   <TableCell className="font-medium">
                     {doctor.full_name || 'Sin nombre'}
                   </TableCell>
@@ -163,15 +161,12 @@ export default function AdminDoctorsPage() {
                     {getSubscriptionBadge(doctor.subscription_status)}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={doctor.id ? "default" : "outline"}>
-                      {doctor.id ? "Completo" : "Incompleto"}
+                    <Badge variant={doctor.profile_complete ? "default" : "outline"}>
+                      {doctor.profile_complete ? "Completo" : "Incompleto"}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-center">
-                    {doctor.upcoming_appointments || 0}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {doctor.past_appointments || 0}
+                    {doctor.cita_count || 0}
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-2">
@@ -253,7 +248,7 @@ export default function AdminDoctorsPage() {
           setShowAppointments(false);
           setSelectedDoctor(null);
         }}
-        doctorUserId={selectedDoctor?.user_id}
+        doctorUserId={selectedDoctor?.doctor_user_id}
         doctorName={selectedDoctor?.full_name}
       />
     </div>

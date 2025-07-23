@@ -3,14 +3,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 interface DoctorListItem {
-  id: string;
-  user_id: string;
+  doctor_user_id: string;
   full_name: string;
   specialty: string;
   verification_status: string;
   subscription_status: string;
-  upcoming_appointments: number;
-  past_appointments: number;
+  profile_complete: boolean;
+  cita_count: number;
 }
 
 interface DoctorProfile {

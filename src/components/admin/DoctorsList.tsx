@@ -13,14 +13,13 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { EditDoctorProfile } from './EditDoctorProfile';
 
 interface Doctor {
-  id: string;
-  user_id: string;
+  doctor_user_id: string;
   full_name: string;
   specialty: string;
   verification_status: string;
   subscription_status: string;
-  upcoming_appointments: number;
-  past_appointments: number;
+  profile_complete: boolean;
+  cita_count: number;
 }
 
 interface DoctorProfile {
@@ -117,7 +116,7 @@ export const DoctorsList = () => {
   const handleViewProfile = async (doctor: Doctor) => {
     try {
       setSelectedDoctor(doctor);
-      const { profile, doctorProfile } = await getDoctorProfile(doctor.user_id);
+      const { profile, doctorProfile } = await getDoctorProfile(doctor.doctor_user_id);
       
       // Asegurar que tenemos todos los campos requeridos con casting seguro
       const completeProfile: UserProfile = {
@@ -142,7 +141,7 @@ export const DoctorsList = () => {
   const handleViewAppointments = async (doctor: Doctor) => {
     try {
       setSelectedDoctor(doctor);
-      const appointmentsData = await getDoctorAppointments(doctor.user_id);
+      const appointmentsData = await getDoctorAppointments(doctor.doctor_user_id);
       setAppointments(appointmentsData);
       setShowAppointments(true);
     } catch (error) {
@@ -154,8 +153,8 @@ export const DoctorsList = () => {
     if (!selectedDoctor) return;
     
     try {
-      await updateUserProfile(selectedDoctor.user_id, userData);
-      await updateDoctorProfile(selectedDoctor.user_id, doctorData);
+      await updateUserProfile(selectedDoctor.doctor_user_id, userData);
+      await updateDoctorProfile(selectedDoctor.doctor_user_id, doctorData);
       setEditProfileOpen(false);
       fetchDoctors();
     } catch (error) {
@@ -239,14 +238,14 @@ export const DoctorsList = () => {
                   <TableHead>Especialidad</TableHead>
                   <TableHead>Verificación</TableHead>
                   <TableHead>Suscripción</TableHead>
-                  <TableHead>Citas Próximas</TableHead>
-                  <TableHead>Citas Pasadas</TableHead>
+                  <TableHead>Perfil Completo</TableHead>
+                  <TableHead># Citas</TableHead>
                   <TableHead>Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredDoctors.map((doctor) => (
-                  <TableRow key={doctor.id}>
+                  <TableRow key={doctor.doctor_user_id}>
                     <TableCell className="font-medium">
                       Dr. {doctor.full_name || 'Sin nombre'}
                     </TableCell>
@@ -257,8 +256,12 @@ export const DoctorsList = () => {
                     <TableCell>
                       {getSubscriptionBadge(doctor.subscription_status)}
                     </TableCell>
-                    <TableCell>{doctor.upcoming_appointments}</TableCell>
-                    <TableCell>{doctor.past_appointments}</TableCell>
+                    <TableCell>
+                      <Badge variant={doctor.profile_complete ? "default" : "outline"}>
+                        {doctor.profile_complete ? "Completo" : "Incompleto"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{doctor.cita_count}</TableCell>
                     <TableCell>
                       <div className="flex gap-2">
                         <Button 
