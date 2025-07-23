@@ -2676,6 +2676,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_current_user_role: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_doctor_profile_private: {
         Args: { p_requester_user_id: string; p_doctor_user_id: string }
         Returns: Json
