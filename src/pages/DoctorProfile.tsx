@@ -38,7 +38,7 @@ const DoctorProfile = () => {
           .eq('user_id', doctorId)
           .eq('verification_status', 'verified')
           .eq('profile_complete', true)
-          .single();
+          .maybeSingle();
 
         console.log('Doctor data:', doctorData, 'error:', doctorError);
         if (doctorError) throw doctorError;
