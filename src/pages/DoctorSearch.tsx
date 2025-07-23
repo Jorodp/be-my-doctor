@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function DoctorSearch() {
   const [filters, setFilters] = useState({
@@ -9,6 +11,8 @@ export default function DoctorSearch() {
   });
   const [doctors, setDoctors] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  const { user } = useAuth();
 
   const fetchDoctors = async () => {
     setLoading(true);
@@ -26,6 +30,14 @@ export default function DoctorSearch() {
     }
 
     setLoading(false);
+  };
+
+  const handleDoctorClick = (doctorId: string) => {
+    if (user) {
+      navigate(`/doctor/${doctorId}`);
+    } else {
+      navigate('/auth');
+    }
   };
 
   useEffect(() => {
@@ -71,7 +83,8 @@ export default function DoctorSearch() {
         {doctors.map((doc) => (
           <div
             key={doc.doctor_id}
-            className="border rounded-lg p-4 shadow-sm bg-white"
+            className="border rounded-lg p-4 shadow-sm bg-white cursor-pointer hover:shadow-md transition-shadow"
+            onClick={() => handleDoctorClick(doc.doctor_profile_id)}
           >
             <img
               src={doc.profile_image_url || "https://via.placeholder.com/80"}
