@@ -121,18 +121,18 @@ export default function DoctorProfile() {
     <div className="min-h-screen bg-gradient-to-br from-primary-light/20 to-background">
       <div className="container mx-auto px-4 py-8">
         {/* Header Section - Hero Style */}
-        <Card className="mb-8 overflow-hidden shadow-medium border-0 bg-gradient-hero animate-fade-in">
+        <Card className="mb-8 overflow-hidden shadow-medium border-0" style={{ backgroundColor: '#00a0df' }}>
           <CardContent className="p-0">
-            <div className="relative bg-gradient-hero h-48">
-              <div className="absolute inset-0 bg-black/10"></div>
+            <div className="relative h-48" style={{ backgroundColor: '#00a0df' }}>
+              <div className="absolute inset-0"></div>
             </div>
             
             {/* Profile Section */}
             <div className="relative px-6 pb-6">
               <div className="flex flex-col md:flex-row items-center md:items-end gap-6 -mt-16">
                 {/* Profile Image - Centro de atención */}
-                <div className="relative">
-                  <Avatar className="w-32 h-32 border-4 border-white shadow-medium">
+                <div className="relative z-10">
+                  <Avatar className="w-32 h-32 border-4 border-white shadow-xl ring-4 ring-white/20">
                     {doctor.profile_image_url ? (
                       <AvatarImage src={doctor.profile_image_url} alt={doctor.full_name} />
                     ) : (
