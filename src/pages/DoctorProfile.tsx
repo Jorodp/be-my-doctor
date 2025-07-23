@@ -118,13 +118,13 @@ export default function DoctorProfile() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-gradient-to-br from-primary-light/20 to-background">
       <div className="container mx-auto px-4 py-8">
         {/* Header Section - Hero Style */}
-        <Card className="mb-8 overflow-hidden shadow-xl border-0 bg-gradient-to-r from-blue-600 to-indigo-600">
+        <Card className="mb-8 overflow-hidden shadow-medium border-0 bg-gradient-hero animate-fade-in">
           <CardContent className="p-0">
-            <div className="relative bg-gradient-to-r from-blue-600 to-indigo-600 h-48">
-              <div className="absolute inset-0 bg-black/20"></div>
+            <div className="relative bg-gradient-hero h-48">
+              <div className="absolute inset-0 bg-black/10"></div>
             </div>
             
             {/* Profile Section */}
@@ -132,42 +132,42 @@ export default function DoctorProfile() {
               <div className="flex flex-col md:flex-row items-center md:items-end gap-6 -mt-16">
                 {/* Profile Image - Centro de atención */}
                 <div className="relative">
-                  <Avatar className="w-32 h-32 border-4 border-white shadow-xl">
+                  <Avatar className="w-32 h-32 border-4 border-white shadow-medium">
                     {doctor.profile_image_url ? (
                       <AvatarImage src={doctor.profile_image_url} alt={doctor.full_name} />
                     ) : (
-                      <AvatarFallback className="bg-blue-500 text-white text-2xl">
+                      <AvatarFallback className="bg-primary text-primary-foreground text-2xl">
                         <User className="w-16 h-16" />
                       </AvatarFallback>
                     )}
                   </Avatar>
-                  <div className="absolute -bottom-2 -right-2 bg-green-500 w-8 h-8 rounded-full border-4 border-white flex items-center justify-center">
+                  <div className="absolute -bottom-2 -right-2 bg-accent w-8 h-8 rounded-full border-4 border-white flex items-center justify-center">
                     <div className="w-3 h-3 bg-white rounded-full"></div>
                   </div>
                 </div>
 
                 {/* Doctor Info */}
-                <div className="flex-1 text-center md:text-left text-white">
+                <div className="flex-1 text-center md:text-left text-primary-foreground">
                   <h1 className="text-3xl md:text-4xl font-bold mb-2">{doctor.full_name}</h1>
-                  <p className="text-xl text-blue-100 mb-3">{doctor.specialty}</p>
+                  <p className="text-xl text-primary-foreground/80 mb-3">{doctor.specialty}</p>
                   
                   {/* Rating */}
                   <div className="flex items-center justify-center md:justify-start gap-2 mb-4">
                     <div className="flex">
                       {renderStars(doctor.rating_avg || 0)}
                     </div>
-                    <span className="text-blue-100">
+                    <span className="text-primary-foreground/80">
                       {doctor.rating_avg?.toFixed(1) || '0.0'} ({doctor.rating_count || 0} reseñas)
                     </span>
                   </div>
 
                   {/* Stats */}
                   <div className="flex flex-wrap justify-center md:justify-start gap-4 text-sm">
-                    <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
+                    <Badge variant="secondary" className="bg-primary-foreground/20 text-primary-foreground border-primary-foreground/30">
                       <Award className="w-4 h-4 mr-1" />
                       {doctor.experience_years || 0} años de experiencia
                     </Badge>
-                    <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
+                    <Badge variant="secondary" className="bg-primary-foreground/20 text-primary-foreground border-primary-foreground/30">
                       <MapPin className="w-4 h-4 mr-1" />
                       {doctor.practice_locations?.length || 0} consultorios
                     </Badge>
@@ -176,13 +176,13 @@ export default function DoctorProfile() {
 
                 {/* Price and Action */}
                 <div className="text-center">
-                  <div className="bg-white/20 backdrop-blur-sm rounded-lg p-4 mb-4">
-                    <div className="text-3xl font-bold text-white mb-1">
+                  <div className="bg-primary-foreground/20 backdrop-blur-sm rounded-lg p-4 mb-4">
+                    <div className="text-3xl font-bold text-primary-foreground mb-1">
                       ${doctor.consultation_fee || 0}
                     </div>
-                    <div className="text-blue-100 text-sm">por consulta</div>
+                    <div className="text-primary-foreground/80 text-sm">por consulta</div>
                   </div>
-                  <Button size="lg" className="bg-white text-blue-600 hover:bg-blue-50 font-semibold px-8">
+                  <Button size="lg" className="bg-primary-foreground text-primary hover:bg-primary-foreground/90 font-semibold px-8">
                     <Calendar className="w-5 h-5 mr-2" />
                     Agendar Cita
                   </Button>
@@ -196,10 +196,10 @@ export default function DoctorProfile() {
           {/* Left Column - Doctor Details */}
           <div className="lg:col-span-1 space-y-6">
             {/* About */}
-            <Card className="shadow-lg">
+            <Card className="shadow-soft animate-scale-in">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <User className="w-5 h-5 text-blue-600" />
+                  <User className="w-5 h-5 text-primary" />
                   Sobre el Doctor
                 </CardTitle>
               </CardHeader>
@@ -211,13 +211,13 @@ export default function DoctorProfile() {
                 <div className="space-y-3">
                   {doctor.phone && (
                     <div className="flex items-center gap-3">
-                      <Phone className="w-4 h-4 text-blue-600" />
+                      <Phone className="w-4 h-4 text-primary" />
                       <span className="text-sm">{doctor.phone}</span>
                     </div>
                   )}
                   
                   <div className="flex items-center gap-3">
-                    <Clock className="w-4 h-4 text-blue-600" />
+                    <Clock className="w-4 h-4 text-primary" />
                     <span className="text-sm">Disponible para consultas</span>
                   </div>
                 </div>
@@ -225,17 +225,17 @@ export default function DoctorProfile() {
             </Card>
 
             {/* Locations */}
-            <Card className="shadow-lg">
+            <Card className="shadow-soft">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <MapPin className="w-5 h-5 text-blue-600" />
+                  <MapPin className="w-5 h-5 text-primary" />
                   Consultorios
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
                   {doctor.practice_locations?.map((location, index) => (
-                    <div key={index} className="p-3 bg-blue-50 rounded-lg">
+                    <div key={index} className="p-3 bg-primary/5 rounded-lg border border-primary/10">
                       <div className="font-medium text-sm">{location}</div>
                     </div>
                   ))}
@@ -244,10 +244,10 @@ export default function DoctorProfile() {
             </Card>
 
             {/* Documents */}
-            <Card className="shadow-lg">
+            <Card className="shadow-soft">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <FileText className="w-5 h-5 text-blue-600" />
+                  <FileText className="w-5 h-5 text-primary" />
                   Documentos
                 </CardTitle>
               </CardHeader>
@@ -259,9 +259,9 @@ export default function DoctorProfile() {
                       href={doc.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                      className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors"
                     >
-                      <FileText className="w-4 h-4 text-blue-600" />
+                      <FileText className="w-4 h-4 text-primary" />
                       <span className="text-sm font-medium">{doc.label}</span>
                     </a>
                   ))}
@@ -275,21 +275,21 @@ export default function DoctorProfile() {
 
           {/* Right Column - Calendar */}
           <div className="lg:col-span-2">
-            <Card className="shadow-lg h-fit">
+            <Card className="shadow-soft h-fit">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Calendar className="w-5 h-5 text-blue-600" />
+                  <Calendar className="w-5 h-5 text-primary" />
                   Agendar Cita
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="bg-gray-50 rounded-lg p-8 text-center">
-                  <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                <div className="bg-gradient-section rounded-lg p-8 text-center">
+                  <Calendar className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
                   <h3 className="text-lg font-semibold mb-2">Calendario Próximamente</h3>
                   <p className="text-muted-foreground mb-4">
                     Pronto podrás ver los horarios disponibles y agendar tu cita directamente desde aquí.
                   </p>
-                  <Button variant="outline" className="gap-2">
+                  <Button variant="outline" className="gap-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground">
                     <Phone className="w-4 h-4" />
                     Contactar por teléfono
                   </Button>
