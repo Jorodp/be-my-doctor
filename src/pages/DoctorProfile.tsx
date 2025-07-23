@@ -14,7 +14,6 @@ interface DoctorProfileData {
   practice_locations: string[];
   consultation_fee: number | null;
   profile_image_url: string | null;
-  email: string;
   phone: string;
 }
 
@@ -34,7 +33,7 @@ const DoctorProfile = () => {
           .from('doctor_profiles')
           .select(`
             *,
-            profiles!inner(full_name, email, phone, profile_image_url)
+            profiles!inner(full_name, phone, profile_image_url)
           `)
           .eq('user_id', doctorId)
           .eq('verification_status', 'verified')
@@ -56,7 +55,6 @@ const DoctorProfile = () => {
           practice_locations: doctorData.practice_locations || [],
           consultation_fee: doctorData.consultation_fee,
           profile_image_url: doctorData.profiles.profile_image_url,
-          email: doctorData.profiles.email,
           phone: doctorData.profiles.phone,
         };
 
@@ -125,7 +123,6 @@ const DoctorProfile = () => {
             <p><strong>Honorarios:</strong> ${doctor.consultation_fee}</p>
           )}
           <div className="mt-4 space-y-1">
-            <p><strong>Email:</strong> {doctor.email}</p>
             <p><strong>Teléfono:</strong> {doctor.phone}</p>
           </div>
         </CardContent>
