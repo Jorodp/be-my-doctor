@@ -11,7 +11,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useAdminProfileAPI } from '@/hooks/useAdminProfileAPI';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { EditDoctorProfile } from './EditDoctorProfile';
-import { UnifiedDoctorProfile } from './UnifiedDoctorProfile';
+// Temporarily commenting out to debug React error
+// import { UnifiedDoctorProfile } from './UnifiedDoctorProfile';
 
 interface Doctor {
   doctor_user_id: string;
@@ -303,13 +304,14 @@ export const DoctorsList = () => {
         </CardContent>
       </Card>
 
-      {/* Unified Doctor Profile Dialog */}
+      {/* Temporarily commenting out UnifiedDoctorProfile to debug React error
       <UnifiedDoctorProfile
         isOpen={unifiedProfileOpen}
         onClose={() => setUnifiedProfileOpen(false)}
         doctor={selectedDoctor}
         onDoctorUpdated={fetchDoctors}
       />
+      */}
 
       {/* Edit Doctor Profile Dialog */}
       {editProfileOpen && selectedDoctorProfile && selectedUserProfile && (
