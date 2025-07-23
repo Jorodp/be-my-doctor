@@ -2,15 +2,14 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { DashboardLayout } from "@/components/ui/DashboardLayout";
-import { AssignedDoctorInfo } from "@/components/AssignedDoctorInfo";
-import { PatientDocumentManager } from "@/components/PatientDocumentManager";
 import { PendingRatingValidator } from "@/components/PendingRatingValidator";
-import { ChatInterface } from "@/components/ChatInterface";
-import { AppointmentCard } from "@/components/AppointmentCard";
+import { PatientProfileEditor } from "@/components/patient/PatientProfileEditor";
+import { PatientDocuments } from "@/components/patient/PatientDocuments";
+import { AppointmentChatButton } from "@/components/patient/AppointmentChatButton";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-import { Calendar, FileText, MessageSquare, User, Clock, CheckCircle } from "lucide-react";
+import { Calendar, FileText, User, Clock, CheckCircle } from "lucide-react";
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -163,7 +162,7 @@ export const PatientDashboard = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         <Tabs defaultValue="citas" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="citas" className="flex items-center gap-2">
               <Calendar className="h-4 w-4" />
               Citas
@@ -175,10 +174,6 @@ export const PatientDashboard = () => {
             <TabsTrigger value="documentos" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
               Documentos
-            </TabsTrigger>
-            <TabsTrigger value="chat" className="flex items-center gap-2">
-              <MessageSquare className="h-4 w-4" />
-              Chat
             </TabsTrigger>
           </TabsList>
 
@@ -270,12 +265,19 @@ export const PatientDashboard = () => {
                               </span>
                             </div>
                           </div>
-                          {appointment.notes && (
-                            <div className="mt-3 p-3 bg-muted rounded-md">
-                              <p className="text-sm">{appointment.notes}</p>
-                            </div>
-                          )}
-                        </div>
+                           {appointment.notes && (
+                             <div className="mt-3 p-3 bg-muted rounded-md">
+                               <p className="text-sm">{appointment.notes}</p>
+                             </div>
+                           )}
+                           
+                           {/* Chat button for each appointment */}
+                           <AppointmentChatButton
+                             appointmentId={appointment.id}
+                             doctorName={doctor?.full_name || 'Doctor'}
+                             isCompleted={appointment.status === 'completed'}
+                           />
+                         </div>
                       );
                     })}
                   </div>
@@ -299,10 +301,7 @@ export const PatientDashboard = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-8 text-muted-foreground">
-                  <User className="h-12 w-12 mx-auto mb-4" />
-                  <p>Gestión de perfil disponible próximamente</p>
-                </div>
+                <PatientProfileEditor />
               </CardContent>
             </Card>
           </TabsContent>
@@ -316,16 +315,9 @@ export const PatientDashboard = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-8 text-muted-foreground">
-                  <FileText className="h-12 w-12 mx-auto mb-4" />
-                  <p>Gestión de documentos disponible próximamente</p>
-                </div>
+                <PatientDocuments />
               </CardContent>
             </Card>
-          </TabsContent>
-
-          <TabsContent value="chat">
-            <ChatInterface />
           </TabsContent>
         </Tabs>
       </div>
