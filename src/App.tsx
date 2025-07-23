@@ -1,3 +1,5 @@
+// src/App.tsx
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -38,88 +40,99 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/dashboard" element={<Dashboard />} />
-            <Route 
-              path="/dashboard/patient" 
+            <Route
+              path="/dashboard/patient"
               element={
                 <ProtectedRoute role="patient">
                   <PatientDashboard />
                 </ProtectedRoute>
-              } 
+              }
             />
-            <Route 
-              path="/dashboard/doctor" 
+            <Route
+              path="/dashboard/doctor"
               element={
                 <ProtectedRoute role="doctor">
                   <DoctorDashboard />
                 </ProtectedRoute>
-              } 
+              }
             />
-            <Route 
-              path="/dashboard/assistant" 
+            <Route
+              path="/dashboard/assistant"
               element={
                 <ProtectedRoute role="assistant">
                   <AssistantDashboard />
                 </ProtectedRoute>
-              } 
+              }
             />
-            <Route 
-              path="/admin" 
+            <Route
+              path="/admin"
               element={
                 <ProtectedRoute role="admin">
                   <AdminDashboard />
                 </ProtectedRoute>
-               } 
-             />
-             <Route 
-               path="/admin/subscriptions" 
-               element={
-                 <ProtectedRoute role="admin">
-                   <AdminSubscriptions />
-                 </ProtectedRoute>
-               } 
-             />
+              }
+            />
+            <Route
+              path="/admin/subscriptions"
+              element={
+                <ProtectedRoute role="admin">
+                  <AdminSubscriptions />
+                </ProtectedRoute>
+              }
+            />
             <Route path="/search" element={<DoctorSearch />} />
-            <Route path="/doctor/:id" element={<DoctorProfile />} />
-            <Route 
-              path="/book/:doctorId" 
+
+            {/* Ahora el perfil del doctor está protegido para pacientes */}
+            <Route
+              path="/doctor/:id"
+              element={
+                <ProtectedRoute role="patient">
+                  <DoctorProfile />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/book/:doctorId"
               element={
                 <ProtectedRoute role="patient">
                   <BookAppointment />
                 </ProtectedRoute>
-              } 
+              }
             />
-            {/* Legacy routes - kept for backward compatibility only */}
-            <Route 
-              path="/profile/doctor" 
+
+            {/* Legacy routes */}
+            <Route
+              path="/profile/doctor"
               element={
                 <ProtectedRoute role="doctor">
                   <CompleteDoctorProfile />
                 </ProtectedRoute>
-              } 
+              }
             />
-            <Route 
-              path="/profile/patient" 
+            <Route
+              path="/profile/patient"
               element={
                 <ProtectedRoute role="patient">
                   <CompletePatientProfile />
                 </ProtectedRoute>
-              } 
+              }
             />
-            <Route 
-              path="/complete-doctor-profile" 
+            <Route
+              path="/complete-doctor-profile"
               element={
                 <ProtectedRoute role="doctor">
                   <CompleteDoctorProfile />
                 </ProtectedRoute>
-              } 
+              }
             />
-            <Route 
-              path="/pending-verification" 
+            <Route
+              path="/pending-verification"
               element={
                 <ProtectedRoute role="doctor">
                   <PendingVerification />
                 </ProtectedRoute>
-              } 
+              }
             />
             <Route path="/emergency-logout" element={<EmergencyLogout />} />
             <Route path="/unauthorized" element={<Unauthorized />} />
