@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,9 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 import { Save, X } from 'lucide-react';
-import { DoctorImageUpload } from './DoctorImageUpload';
+import { useAdminProfileAPI } from '@/hooks/useAdminProfileAPI';
 
 interface DoctorProfile {
   id: string;
@@ -93,6 +92,8 @@ export const EditDoctorProfile = ({
 
   // Image upload is now handled by DoctorImageUpload component
 
+  const { updateUserProfile, updateDoctorProfile: updateDoctorProfileAPI } = useAdminProfileAPI();
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!doctorProfile || !profile) return;
@@ -102,57 +103,36 @@ export const EditDoctorProfile = ({
     try {
       console.log('EditDoctorProfile: Starting update process');
       
-      // Update profiles table
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({
-          full_name: profileData.full_name.trim(),
-          phone: profileData.phone.trim() || null
-        })
-        .eq('user_id', profile.user_id);
+      // Prepare user profile data
+      const userProfileData = {
+        full_name: profileData.full_name.trim(),
+        phone: profileData.phone.trim() || null
+      };
 
-      if (profileError) {
-        console.error('EditDoctorProfile: Profile update error:', profileError);
-        throw profileError;
-      }
+      // Prepare doctor profile data
+      const doctorProfileData = {
+        professional_license: profileData.professional_license.trim(),
+        specialty: profileData.specialty.trim(),
+        biography: profileData.biography.trim() || null,
+        years_experience: profileData.years_experience ? parseInt(profileData.years_experience) : null,
+        consultation_fee: profileData.consultation_fee ? parseFloat(profileData.consultation_fee) : null,
+        office_address: profileData.office_address.trim() || null,
+        office_phone: profileData.office_phone.trim() || null,
+        practice_locations: profileData.practice_locations.filter(loc => loc.trim() !== ''),
+        consultorios: profileData.practice_locations.filter(loc => loc.trim() !== '').map(loc => ({ name: loc }))
+      };
 
-      // Update doctor_profiles table
-      const { error: doctorError } = await supabase
-        .from('doctor_profiles')
-        .update({
-          professional_license: profileData.professional_license.trim(),
-          specialty: profileData.specialty.trim(),
-          biography: profileData.biography.trim() || null,
-          years_experience: profileData.years_experience ? parseInt(profileData.years_experience) : null,
-          consultation_fee: profileData.consultation_fee ? parseFloat(profileData.consultation_fee) : null,
-          office_address: profileData.office_address.trim() || null,
-          office_phone: profileData.office_phone.trim() || null,
-          practice_locations: profileData.practice_locations.filter(loc => loc.trim() !== '')
-        })
-        .eq('user_id', profile.user_id);
-
-      if (doctorError) {
-        console.error('EditDoctorProfile: Doctor profile update error:', doctorError);
-        throw doctorError;
-      }
+      // Update both profiles using the admin API
+      await updateUserProfile(profile.user_id, userProfileData);
+      await updateDoctorProfileAPI(profile.user_id, doctorProfileData);
 
       console.log('EditDoctorProfile: Updates completed successfully');
-
-      toast({
-        title: "Perfil actualizado",
-        description: "Los datos del doctor han sido actualizados correctamente",
-      });
 
       // Call onProfileUpdated to refresh the parent component data
       onProfileUpdated();
       onClose();
     } catch (error: any) {
       console.error('EditDoctorProfile: Error updating doctor profile:', error);
-      toast({
-        title: "Error",
-        description: error.message || "No se pudo actualizar el perfil",
-        variant: "destructive"
-      });
     } finally {
       setLoading(false);
     }
@@ -214,18 +194,12 @@ export const EditDoctorProfile = ({
             </div>
           </div>
 
-          {/* Profile Photo */}
+          {/* Profile Photo - Placeholder for now */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Foto de Perfil</h3>
-            <DoctorImageUpload
-              doctorId={doctorProfile?.user_id}
-              currentImageUrl={currentProfileImage}
-              onImageUpdated={() => {
-                console.log('EditDoctorProfile: Image updated, refreshing data');
-                onProfileUpdated();
-              }}
-              disabled={loading}
-            />
+            <p className="text-sm text-muted-foreground">
+              Gestión de imágenes disponible próximamente
+            </p>
           </div>
 
           {/* Professional Information */}
