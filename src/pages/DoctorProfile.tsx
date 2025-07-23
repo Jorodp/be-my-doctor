@@ -1,6 +1,6 @@
 // src/pages/DoctorProfile.tsx
 
-import { useParams, Navigate } from "react-router-dom";
+import { useParams, Navigate, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,7 +14,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-import { MapPin, DollarSign, Star, Calendar, User, Phone, FileText, Clock, Award } from "lucide-react";
+import { MapPin, DollarSign, Star, Calendar, User, Phone, FileText, Clock, Award, ArrowLeft } from "lucide-react";
 
 interface DoctorProfileData {
   user_id: string;
@@ -38,6 +38,7 @@ interface DoctorProfileData {
 export default function DoctorProfile() {
   const { user, loading: authLoading } = useAuth();
   const { id: doctorId } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [doctor, setDoctor] = useState<DoctorProfileData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -120,6 +121,16 @@ export default function DoctorProfile() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-light/20 to-background">
       <div className="container mx-auto px-4 py-8">
+        {/* Back Button */}
+        <Button 
+          variant="ghost" 
+          onClick={() => navigate('/search')}
+          className="mb-6 gap-2 hover:bg-primary/10"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Volver a la búsqueda
+        </Button>
+
         {/* Header Section - Hero Style */}
         <Card className="mb-8 overflow-hidden shadow-medium border-0" style={{ backgroundColor: '#00a0df' }}>
           <CardContent className="p-0">
@@ -133,18 +144,21 @@ export default function DoctorProfile() {
                 {/* Profile Image - Centro de atención */}
                 <div className="relative z-10">
                   <Avatar className="w-32 h-32 border-4 border-white shadow-xl ring-4 ring-white/20">
-                    {doctor.profile_image_url ? (
+                    {doctor.profile_image_url && (
                       <AvatarImage 
                         src={doctor.profile_image_url} 
                         alt={doctor.full_name}
-                        className="object-cover"
+                        className="object-cover w-full h-full"
+                        onLoad={() => console.log('✅ Image loaded successfully:', doctor.profile_image_url)}
                         onError={(e) => {
-                          console.log('Error loading image:', doctor.profile_image_url);
-                          e.currentTarget.style.display = 'none';
+                          console.log('❌ Error loading image:', doctor.profile_image_url);
+                          console.log('Error event:', e);
+                          const target = e.currentTarget as HTMLImageElement;
+                          target.style.display = 'none';
                         }}
                       />
-                    ) : null}
-                    <AvatarFallback className="bg-primary text-primary-foreground text-2xl">
+                    )}
+                    <AvatarFallback className="bg-primary text-primary-foreground text-2xl w-full h-full flex items-center justify-center">
                       <User className="w-16 h-16" />
                     </AvatarFallback>
                   </Avatar>
