@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAdminProfileAPI } from '@/hooks/useAdminProfileAPI';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { EditDoctorProfile } from './EditDoctorProfile';
+import { UnifiedDoctorProfile } from './UnifiedDoctorProfile';
 
 interface Doctor {
   doctor_user_id: string;
@@ -68,6 +69,7 @@ export const DoctorsList = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [showAppointments, setShowAppointments] = useState(false);
   const [editProfileOpen, setEditProfileOpen] = useState(false);
+  const [unifiedProfileOpen, setUnifiedProfileOpen] = useState(false);
   
   const { toast } = useToast();
   const { 
@@ -114,6 +116,11 @@ export const DoctorsList = () => {
   };
 
   const handleViewProfile = async (doctor: Doctor) => {
+    setSelectedDoctor(doctor);
+    setUnifiedProfileOpen(true);
+  };
+
+  const handleViewProfileOld = async (doctor: Doctor) => {
     try {
       setSelectedDoctor(doctor);
       const { profile, doctorProfile } = await getDoctorProfile(doctor.doctor_user_id);
@@ -270,7 +277,7 @@ export const DoctorsList = () => {
                           onClick={() => handleViewProfile(doctor)}
                         >
                           <Eye className="h-4 w-4 mr-1" />
-                          Ver Perfil
+                          Ver Perfil Completo
                         </Button>
                         <Button 
                           variant="outline" 
@@ -295,6 +302,14 @@ export const DoctorsList = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Unified Doctor Profile Dialog */}
+      <UnifiedDoctorProfile
+        isOpen={unifiedProfileOpen}
+        onClose={() => setUnifiedProfileOpen(false)}
+        doctor={selectedDoctor}
+        onDoctorUpdated={fetchDoctors}
+      />
 
       {/* Edit Doctor Profile Dialog */}
       {editProfileOpen && selectedDoctorProfile && selectedUserProfile && (
