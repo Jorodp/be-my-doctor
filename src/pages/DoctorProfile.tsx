@@ -1,7 +1,8 @@
 // src/pages/DoctorProfile.tsx
 
-import { useParams } from "react-router-dom";
+import { useParams, Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,25 +19,38 @@ interface DoctorProfileData {
   practice_locations: string[];
   consultation_fee: number | null;
   profile_image_url: string | null;
-  // eliminamos profile_complete porque ya no lo usamos para ocultar el perfil
 }
 
 const DoctorProfile = () => {
+  const { user, loading: authLoading } = useAuth();
   const { id: doctorId } = useParams<{ id: string }>();
   const [doctor, setDoctor] = useState<DoctorProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!doctorId) return;
+  // Si la sesión aún carga, mostramos spinner
+  if (authLoading) {
+    return (
+      <div className="flex justify-center py-12">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
 
-    (async () => {
+  // Si no hay usuario, redirigimos a login
+  if (!user) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  useEffect(() => {
+    const fetchDoctor = async () => {
       setLoading(true);
       try {
-        // 1) Traer doctor_profiles
+        // 1) doctor_profiles
         const { data: dp, error: dpErr } = await supabase
           .from("doctor_profiles")
-          .select(`
+          .select(
+            `
             user_id,
             specialty,
             biography,
@@ -45,14 +59,15 @@ const DoctorProfile = () => {
             practice_locations,
             consultation_fee,
             profile_image_url
-          `)
+          `
+          )
           .eq("user_id", doctorId)
           .limit(1)
           .maybeSingle();
         if (dpErr) throw dpErr;
         if (!dp) throw new Error("Doctor no encontrado");
 
-        // 2) Traer profiles (nombre y contacto)
+        // 2) profiles
         const { data: pr, error: prErr } = await supabase
           .from("profiles")
           .select("full_name, email, phone")
@@ -69,7 +84,11 @@ const DoctorProfile = () => {
       } finally {
         setLoading(false);
       }
-    })();
+    };
+
+    if (doctorId) {
+      fetchDoctor();
+    }
   }, [doctorId]);
 
   if (loading) {
@@ -88,7 +107,6 @@ const DoctorProfile = () => {
     return <p className="text-center p-4">Doctor no encontrado</p>;
   }
 
-  // Renderizamos siempre el perfil, incluso si está incompleto
   return (
     <div className="container mx-auto py-8">
       <Card className="mb-8">
@@ -145,4 +163,3 @@ const DoctorProfile = () => {
 };
 
 export default DoctorProfile;
-
