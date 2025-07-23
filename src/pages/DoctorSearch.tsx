@@ -58,7 +58,7 @@ export default function DoctorSearch() {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <BackToHomeButton />
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+            <h1 className="text-3xl font-bold text-primary">
               Buscar Doctores
             </h1>
             <div className="w-[120px]" /> {/* Spacer para centrar el título */}
