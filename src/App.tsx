@@ -25,7 +25,7 @@ import { CompletePatientProfile } from "./pages/CompletePatientProfile";
 import PendingVerification from "./pages/PendingVerification";
 import AdminSubscriptions from "./pages/AdminSubscriptions";
 import AdminDoctorsPage from "./pages/admin/doctores/index";
-import AdminDoctorDetailPage from "./pages/admin/doctores/[id]";
+import AdminDoctorDetailPage from "./pages/admin/doctores/detail";
 import ResetPassword from "./pages/ResetPassword";
 
 const queryClient = new QueryClient();
