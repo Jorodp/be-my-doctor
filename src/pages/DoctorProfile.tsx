@@ -1,10 +1,11 @@
+// src/pages/DoctorProfile.tsx
+
 import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 const DoctorProfile = () => {
-  const { doctorId } = useParams();
-
+  const { doctorId } = useParams<{ doctorId: string }>();
   const [doctor, setDoctor] = useState<any>(null);
 
   useEffect(() => {
@@ -17,8 +18,10 @@ const DoctorProfile = () => {
     const { data, error } = await supabase
       .from("public_doctors_public")
       .select("*")
-      .eq("doctor_profile_id", doctorId)
+      .eq("doctor_user_id", doctorId)   // ← aquí usa el campo correcto
       .single();
+
+    console.log("Doctor raw data:", data, "error:", error);
 
     if (error) {
       console.error("Error fetching doctor", error);
@@ -43,6 +46,7 @@ const DoctorProfile = () => {
         />
       )}
       <p className="mt-4">Rating: {Number(doctor.rating_avg).toFixed(1)}</p>
+      {/* Agrega aquí más campos si los necesitas */}
     </div>
   );
 };
