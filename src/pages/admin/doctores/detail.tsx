@@ -1,9 +1,7 @@
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-console.log('detail.tsx: About to import AdminEditDoctor');
 import { AdminEditDoctor } from '@/components/AdminEditDoctor';
-console.log('detail.tsx: AdminEditDoctor imported successfully');
 
 export default function AdminDoctorDetailPage() {
   const { id } = useParams<{ id: string }>();

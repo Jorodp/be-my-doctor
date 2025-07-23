@@ -24,9 +24,8 @@ import { CompleteDoctorProfile } from "./pages/CompleteDoctorProfile";
 import { CompletePatientProfile } from "./pages/CompletePatientProfile";
 import PendingVerification from "./pages/PendingVerification";
 import AdminSubscriptions from "./pages/AdminSubscriptions";
-// Temporarily commenting out problematic imports for debugging
-// import AdminDoctorsPage from "./pages/admin/doctores/index";
-// import AdminDoctorDetailPage from "./pages/admin/doctores/detail";
+import AdminDoctorsPage from "./pages/admin/doctores/index";
+import AdminDoctorDetailPage from "./pages/admin/doctores/detail";
 import ResetPassword from "./pages/ResetPassword";
 
 const queryClient = new QueryClient();
@@ -83,7 +82,6 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
-            {/* Temporarily commenting out problematic routes
             <Route
               path="/admin/doctores"
               element={
@@ -100,7 +98,6 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
-            */}
             <Route path="/search" element={<DoctorSearch />} />
 
             {/* Ahora el perfil del doctor está protegido para pacientes */}
