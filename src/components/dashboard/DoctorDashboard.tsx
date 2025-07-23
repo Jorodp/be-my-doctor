@@ -23,7 +23,9 @@ import {
   MapPin,
   Timer,
   CreditCard,
-  UserCheck
+  UserCheck,
+  MessageSquare,
+  History
 } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
@@ -35,6 +37,8 @@ import { ConsultationFlowManager } from '@/components/ConsultationFlowManager';
 import { DoctorCalendarSchedule } from '@/components/DoctorCalendarSchedule';
 import { SubscriptionStatus } from '@/components/SubscriptionStatus';
 import { AssistantManager } from '@/components/AssistantManager';
+import { DoctorChatManager } from '@/components/doctor/DoctorChatManager';
+import { DoctorAppointmentHistory } from '@/components/doctor/DoctorAppointmentHistory';
 
 interface DoctorProfile {
   id: string;
@@ -538,7 +542,7 @@ const DoctorDashboardContent = () => {
 
         {/* Main Content Tabs */}
         <Tabs defaultValue="consultas" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-7">
+          <TabsList className="grid w-full grid-cols-9">
             <TabsTrigger value="consultas" className="flex items-center gap-2">
               <Timer className="h-4 w-4" />
               Flujo de Consultas
@@ -566,6 +570,14 @@ const DoctorDashboardContent = () => {
             <TabsTrigger value="assistants" className="flex items-center gap-2">
               <UserCheck className="h-4 w-4" />
               Asistentes
+            </TabsTrigger>
+            <TabsTrigger value="chat" className="flex items-center gap-2">
+              <MessageSquare className="h-4 w-4" />
+              Chat
+            </TabsTrigger>
+            <TabsTrigger value="history" className="flex items-center gap-2">
+              <History className="h-4 w-4" />
+              Historial
             </TabsTrigger>
           </TabsList>
 
@@ -796,6 +808,14 @@ const DoctorDashboardContent = () => {
                 <AssistantManager />
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="chat">
+            <DoctorChatManager />
+          </TabsContent>
+
+          <TabsContent value="history">
+            <DoctorAppointmentHistory />
           </TabsContent>
         </Tabs>
       </div>
