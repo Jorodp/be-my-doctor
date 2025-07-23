@@ -271,11 +271,11 @@ export const PatientDashboard = () => {
                              </div>
                            )}
                            
-                           {/* Chat button for each appointment */}
+                           {/* Chat button - only for completed and scheduled appointments */}
                            <AppointmentChatButton
                              appointmentId={appointment.id}
                              doctorName={doctor?.full_name || 'Doctor'}
-                             isCompleted={appointment.status === 'completed'}
+                             appointmentStatus={appointment.status}
                            />
                          </div>
                       );

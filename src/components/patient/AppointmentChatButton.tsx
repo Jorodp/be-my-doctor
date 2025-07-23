@@ -10,18 +10,34 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 interface AppointmentChatButtonProps {
   appointmentId: string;
   doctorName: string;
-  isCompleted?: boolean;
+  appointmentStatus: string;
 }
 
 export const AppointmentChatButton = ({ 
   appointmentId, 
   doctorName, 
-  isCompleted = false 
+  appointmentStatus
 }: AppointmentChatButtonProps) => {
   const { user } = useAuth();
   const [chatOpen, setChatOpen] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // Don't show chat button for cancelled appointments
+  if (appointmentStatus === 'cancelled') {
+    return null;
+  }
+
+  const isCompleted = appointmentStatus === 'completed';
+  const isScheduled = appointmentStatus === 'scheduled';
+  
+  const chatLabel = isCompleted 
+    ? `Chatear con Dr. ${doctorName}` 
+    : `Chatear con asistente de Dr. ${doctorName}`;
+    
+  const dialogTitle = isCompleted 
+    ? `Chat con Dr. ${doctorName}` 
+    : `Chat con asistente de Dr. ${doctorName}`;
 
   useEffect(() => {
     if (chatOpen && !conversationId) {
@@ -68,14 +84,14 @@ export const AppointmentChatButton = ({
           className="mt-2"
         >
           <MessageSquare className="w-4 h-4 mr-2" />
-          Chatear con Dr. {doctorName}
+          {chatLabel}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[80vh]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <MessageSquare className="h-5 w-5 text-primary" />
-            Chat con Dr. {doctorName}
+            {dialogTitle}
           </DialogTitle>
         </DialogHeader>
         <div className="flex-1 overflow-hidden">
@@ -94,6 +110,11 @@ export const AppointmentChatButton = ({
         {isCompleted && (
           <div className="text-sm text-muted-foreground bg-muted p-3 rounded">
             Esta consulta ya finalizó. Puedes revisar el historial de mensajes pero no enviar nuevos.
+          </div>
+        )}
+        {isScheduled && (
+          <div className="text-sm text-muted-foreground bg-blue-50 p-3 rounded border border-blue-200">
+            Estás chateando con el asistente de Dr. {doctorName}. Te ayudará con dudas sobre tu cita programada.
           </div>
         )}
       </DialogContent>
