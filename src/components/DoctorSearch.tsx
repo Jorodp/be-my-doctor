@@ -33,7 +33,7 @@ const DoctorSearch = () => {
     if (user) {
       navigate(`/doctor/${doctorId}`);
     } else {
-      navigate('/auth');
+      navigate(`/auth?redirect=/doctor/${doctorId}`);
     }
   };
 

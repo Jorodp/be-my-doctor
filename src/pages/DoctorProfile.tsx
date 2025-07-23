@@ -29,26 +29,38 @@ const DoctorProfile = () => {
     const fetchDoctor = async () => {
       setLoading(true);
       try {
-        // Intentar obtener un único registro de la vista
-        const { data, error: fetchError } = await supabase
-          .from('public_doctors_public')
-          .select('*')
-          .eq('doctor_user_id', doctorId)
-          .maybeSingle();  // Usa maybeSingle para evitar 406 si no hay PK en la vista
-
-        console.log('Doctor raw data:', data, 'error:', fetchError);
-        if (fetchError) throw fetchError;
-        if (!data) throw new Error('Doctor no encontrado');
-
-        // Fetch user profile
-        const { data: userProfile, error: userError } = await supabase
-          .from('profiles')
-          .select('email, phone')
+        // Obtener perfil del doctor desde doctor_profiles y profiles
+        const { data: doctorData, error: doctorError } = await supabase
+          .from('doctor_profiles')
+          .select(`
+            *,
+            profiles!inner(full_name, email, phone, profile_image_url)
+          `)
           .eq('user_id', doctorId)
+          .eq('verification_status', 'verified')
+          .eq('profile_complete', true)
           .single();
-        if (userError) throw userError;
 
-        setDoctor({ ...data, ...userProfile });
+        console.log('Doctor data:', doctorData, 'error:', doctorError);
+        if (doctorError) throw doctorError;
+        if (!doctorData) throw new Error('Doctor no encontrado');
+
+        // Formatear datos para el componente
+        const formattedDoctor = {
+          user_id: doctorData.user_id,
+          full_name: doctorData.profiles.full_name,
+          specialty: doctorData.specialty,
+          biography: doctorData.biography,
+          professional_title: doctorData.professional_title,
+          license_number: doctorData.professional_license,
+          practice_locations: doctorData.practice_locations || [],
+          consultation_fee: doctorData.consultation_fee,
+          profile_image_url: doctorData.profiles.profile_image_url,
+          email: doctorData.profiles.email,
+          phone: doctorData.profiles.phone,
+        };
+
+        setDoctor(formattedDoctor);
       } catch (err: any) {
         console.error('Error fetching doctor', err);
         setError(err.message || 'Error al cargar el perfil');

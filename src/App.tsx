@@ -79,7 +79,7 @@ const App = () => (
                } 
              />
             <Route path="/search" element={<DoctorSearch />} />
-            <Route path="/doctor/:doctorId" element={<DoctorProfile />} />
+            <Route path="/doctor/:id" element={<DoctorProfile />} />
             <Route 
               path="/book/:doctorId" 
               element={
