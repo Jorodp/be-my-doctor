@@ -16,7 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAdminProfileAPI } from '@/hooks/useAdminProfileAPI';
 import { SubscriptionHistoryModal } from '@/components/admin/SubscriptionHistoryModal';
 import { DoctorAppointmentsDrawer } from '@/components/admin/DoctorAppointmentsDrawer';
-import { Eye, Calendar, CreditCard, Edit } from 'lucide-react';
+import { Eye, Calendar, CreditCard, Edit, ArrowLeft } from 'lucide-react';
 
 interface DoctorListItem {
   doctor_user_id: string;
@@ -104,6 +104,14 @@ export default function AdminDoctorsPage() {
 
   return (
     <div className="container mx-auto py-8 px-4">
+      {/* Botón de volver */}
+      <Link to="/dashboard">
+        <Button variant="ghost" className="mb-4 flex items-center gap-2">
+          <ArrowLeft className="h-4 w-4" />
+          Volver al Dashboard
+        </Button>
+      </Link>
+      
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-3xl font-bold">Gestión de Doctores</h1>
