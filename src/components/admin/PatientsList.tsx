@@ -6,7 +6,10 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Search, Eye, Calendar, User } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { Search, Eye, Calendar, User, Upload, FileText, Star, MessageSquare, Image, IdCard } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -19,6 +22,8 @@ interface Patient {
   phone: string | null;
   date_of_birth: string | null;
   address: string | null;
+  profile_image_url: string | null;
+  id_document_url: string | null;
   created_at: string;
 }
 
@@ -32,6 +37,16 @@ interface Appointment {
     specialty: string;
   } | null;
   doctor_name: string | null;
+  rating?: number;
+  rating_comment?: string;
+}
+
+interface AppointmentRating {
+  id: string;
+  appointment_id: string;
+  rating: number;
+  comment: string | null;
+  created_at: string;
 }
 
 export const PatientsList = () => {
@@ -43,6 +58,7 @@ export const PatientsList = () => {
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [patientAppointments, setPatientAppointments] = useState<Appointment[]>([]);
   const [loadingAppointments, setLoadingAppointments] = useState(false);
+  const [uploading, setUploading] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -57,7 +73,7 @@ export const PatientsList = () => {
     try {
       const { data: profiles, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select('*, profile_image_url, id_document_url')
         .eq('role', 'patient')
         .order('created_at', { ascending: false });
 
@@ -135,8 +151,8 @@ export const PatientsList = () => {
 
       if (error) throw error;
 
-      // Get doctor names and specialties
-      const appointmentsWithDoctors = await Promise.all(
+      // Get doctor names, specialties, and ratings
+      const appointmentsWithDetails = await Promise.all(
         appointments.map(async (appointment) => {
           try {
             // Get doctor profile
@@ -153,22 +169,33 @@ export const PatientsList = () => {
               .eq('user_id', appointment.doctor_user_id)
               .single();
 
+            // Get rating for this appointment
+            const { data: rating } = await supabase
+              .from('doctor_ratings')
+              .select('rating, comment')
+              .eq('appointment_id', appointment.id)
+              .single();
+
             return {
               ...appointment,
               doctor_profile: doctorProfile,
-              doctor_name: profile?.full_name || null
+              doctor_name: profile?.full_name || null,
+              rating: rating?.rating || null,
+              rating_comment: rating?.comment || null
             };
           } catch (error) {
             return {
               ...appointment,
               doctor_profile: null,
-              doctor_name: null
+              doctor_name: null,
+              rating: null,
+              rating_comment: null
             };
           }
         })
       );
 
-      setPatientAppointments(appointmentsWithDoctors);
+      setPatientAppointments(appointmentsWithDetails);
     } catch (error) {
       console.error('Error fetching appointments:', error);
       toast({
@@ -179,6 +206,74 @@ export const PatientsList = () => {
     } finally {
       setLoadingAppointments(false);
     }
+  };
+
+  const uploadFile = async (file: File, folder: string, patientId: string) => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${folder}/${patientId}/${Date.now()}.${fileExt}`;
+    
+    const { data, error } = await supabase.storage
+      .from('patient-documents')
+      .upload(fileName, file, {
+        cacheControl: '3600',
+        upsert: true
+      });
+
+    if (error) throw error;
+    
+    const { data: { publicUrl } } = supabase.storage
+      .from('patient-documents')
+      .getPublicUrl(fileName);
+    
+    return publicUrl;
+  };
+
+  const handleFileUpload = async (file: File, field: 'profile_image_url' | 'id_document_url', patient: Patient) => {
+    try {
+      setUploading(field);
+      const folder = field === 'profile_image_url' ? 'profile' : 'documents';
+      const url = await uploadFile(file, folder, patient.user_id);
+      
+      // Update patient profile in database
+      const { error } = await supabase
+        .from('profiles')
+        .update({ [field]: url })
+        .eq('user_id', patient.user_id);
+      
+      if (error) throw error;
+      
+      // Update local state
+      setSelectedPatient(prev => prev ? { ...prev, [field]: url } : null);
+      
+      // Refresh patients list
+      await fetchPatients();
+      
+      toast({
+        title: 'Éxito',
+        description: 'Archivo subido correctamente',
+        variant: 'default'
+      });
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      toast({
+        title: 'Error',
+        description: 'No se pudo subir el archivo',
+        variant: 'destructive'
+      });
+    } finally {
+      setUploading(null);
+    }
+  };
+
+  const renderStars = (rating: number) => {
+    return Array.from({ length: 5 }, (_, i) => (
+      <Star
+        key={i}
+        className={`h-4 w-4 ${
+          i < rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'
+        }`}
+      />
+    ));
   };
 
   const getStatusBadge = (status: string) => {
@@ -261,18 +356,41 @@ export const PatientsList = () => {
             {filteredPatients.map((patient) => (
               <div key={patient.id} className="border rounded-lg p-4 hover:bg-muted/50 transition-colors">
                 <div className="flex justify-between items-start">
-                  <div className="space-y-2 flex-1">
-                    <div className="flex items-center gap-3">
-                      <User className="h-5 w-5 text-muted-foreground" />
-                      <h3 className="font-semibold">{patient.full_name || 'Sin nombre'}</h3>
-                    </div>
-                    <div className="text-sm text-muted-foreground space-y-1">
-                      <div>Email: {patient.email || 'N/A'}</div>
-                      <div>Teléfono: {patient.phone || 'N/A'}</div>
-                      {patient.date_of_birth && (
-                        <div>Edad: {calculateAge(patient.date_of_birth)} años</div>
-                      )}
-                      <div>Registrado: {formatDate(patient.created_at)}</div>
+                  <div className="flex items-center gap-4 flex-1">
+                    {/* Avatar */}
+                    <Avatar className="h-12 w-12">
+                      <AvatarImage src={patient.profile_image_url || ''} />
+                      <AvatarFallback>
+                        <User className="h-6 w-6" />
+                      </AvatarFallback>
+                    </Avatar>
+                    
+                    <div className="space-y-2 flex-1">
+                      <div className="flex items-center gap-3">
+                        <h3 className="font-semibold">{patient.full_name || 'Sin nombre'}</h3>
+                        <div className="flex gap-2">
+                          {patient.profile_image_url && (
+                            <Badge variant="outline" className="text-xs">
+                              <Image className="h-3 w-3 mr-1" />
+                              Foto
+                            </Badge>
+                          )}
+                          {patient.id_document_url && (
+                            <Badge variant="outline" className="text-xs">
+                              <IdCard className="h-3 w-3 mr-1" />
+                              ID
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-sm text-muted-foreground space-y-1">
+                        <div>Email: {patient.email || 'N/A'}</div>
+                        <div>Teléfono: {patient.phone || 'N/A'}</div>
+                        {patient.date_of_birth && (
+                          <div>Edad: {calculateAge(patient.date_of_birth)} años</div>
+                        )}
+                        <div>Registrado: {formatDate(patient.created_at)}</div>
+                      </div>
                     </div>
                   </div>
                   
