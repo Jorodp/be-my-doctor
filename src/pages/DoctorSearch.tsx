@@ -145,7 +145,7 @@ export default function DoctorSearch() {
                 <Card
                   key={doc.doctor_id}
                   className="group cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1 hover:scale-[1.02] border-0 shadow-md bg-gradient-to-br from-background to-background/80"
-                  onClick={() => handleDoctorClick(doc.doctor_profile_id)}
+                  onClick={() => handleDoctorClick(doc.doctor_user_id)}
                 >
                   <CardContent className="p-6">
                     <div className="flex flex-col items-center text-center space-y-4">
