@@ -19,7 +19,7 @@ interface DoctorProfileData {
 }
 
 const DoctorProfile = () => {
-  const { doctorId } = useParams<{ doctorId: string }>();
+  const { id: doctorId } = useParams<{ id: string }>();
   const [doctor, setDoctor] = useState<DoctorProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
