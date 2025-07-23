@@ -19,12 +19,10 @@ import { MapPin, DollarSign, FileText, Calendar, User } from "lucide-react";
 interface DoctorProfileData {
   user_id: string;
   full_name: string;
-  email: string;
   phone: string;
   specialty: string;
   biography: string | null;
   professional_license: string;
-  university_degree: string;
   practice_locations: string[];
   consultation_fee: number | null;
   profile_image_url: string | null;
@@ -46,7 +44,9 @@ export default function DoctorProfile() {
   useEffect(() => {
     async function fetchDoctor() {
       setLoading(true);
-      const { data: dp } = await supabase
+      console.log('🔍 doctorId from URL:', doctorId);
+      
+      const { data: dp, error: dpErr, status: dpStatus } = await supabase
         .from("doctor_profiles")
         .select(
           `
@@ -54,30 +54,37 @@ export default function DoctorProfile() {
             specialty,
             biography,
             professional_license,
-            university_degree,
+            experience_years,
             practice_locations,
             consultation_fee,
             profile_image_url
           `
         )
-        .eq("user_id", doctorId)
+        .eq("id", doctorId)
         .limit(1)
         .maybeSingle();
 
-      const { data: pr } = await supabase
+      console.log('📊 doctor_profiles response:', { dp, dpErr, dpStatus });
+
+      if (!dp) {
+        setLoading(false);
+        return;
+      }
+
+      console.log('📡 Fetching profiles for', dp.user_id);
+      const { data: pr, error: prErr, status: prStatus } = await supabase
         .from("profiles")
-        .select("full_name, email, phone")
-        .eq("user_id", doctorId)
+        .select("full_name, phone")
+        .eq("user_id", dp.user_id)
         .limit(1)
         .maybeSingle();
+
+      console.log('📊 profiles response:', { pr, prErr, prStatus });
 
       // documents stored in doctor_profiles or separate table
       const documents = [];
       if (dp?.professional_license) {
         documents.push({ label: "Cédula Profesional", url: dp.professional_license });
-      }
-      if (dp?.university_degree) {
-        documents.push({ label: "Título Universitario", url: dp.university_degree });
       }
 
       if (dp && pr) {
@@ -146,7 +153,6 @@ export default function DoctorProfile() {
                 </TabsList>
 
                 <TabsContent value="about" className="pt-4">
-                  <p className="text-sm">Email: {doctor.email}</p>
                   <p className="text-sm">Teléfono: {doctor.phone}</p>
                 </TabsContent>
 
