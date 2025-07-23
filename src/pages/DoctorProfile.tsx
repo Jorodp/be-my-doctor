@@ -28,7 +28,9 @@ const DoctorProfile = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Si la sesión aún carga, mostramos spinner
+  console.log("🔍 authLoading:", authLoading, "user:", user);
+  console.log("🔍 doctorId from URL:", doctorId);
+
   if (authLoading) {
     return (
       <div className="flex justify-center py-12">
@@ -36,9 +38,8 @@ const DoctorProfile = () => {
       </div>
     );
   }
-
-  // Si no hay usuario, redirigimos a login
   if (!user) {
+    console.log("⛔ No hay usuario, redirigiendo a /auth");
     return <Navigate to="/auth" replace />;
   }
 
@@ -46,11 +47,10 @@ const DoctorProfile = () => {
     const fetchDoctor = async () => {
       setLoading(true);
       try {
-        // 1) doctor_profiles
-        const { data: dp, error: dpErr } = await supabase
+        console.log("📡 Fetching doctor_profiles for", doctorId);
+        const { data: dp, error: dpErr, status: dpStatus } = await supabase
           .from("doctor_profiles")
-          .select(
-            `
+          .select(`
             user_id,
             specialty,
             biography,
@@ -59,27 +59,28 @@ const DoctorProfile = () => {
             practice_locations,
             consultation_fee,
             profile_image_url
-          `
-          )
+          `)
           .eq("user_id", doctorId)
           .limit(1)
           .maybeSingle();
+        console.log("📊 doctor_profiles response:", { dp, dpErr, dpStatus });
         if (dpErr) throw dpErr;
-        if (!dp) throw new Error("Doctor no encontrado");
+        if (!dp) throw new Error("Doctor no encontrado en doctor_profiles");
 
-        // 2) profiles
-        const { data: pr, error: prErr } = await supabase
+        console.log("📡 Fetching profiles for", doctorId);
+        const { data: pr, error: prErr, status: prStatus } = await supabase
           .from("profiles")
           .select("full_name, email, phone")
           .eq("user_id", doctorId)
           .limit(1)
           .maybeSingle();
+        console.log("📊 profiles response:", { pr, prErr, prStatus });
         if (prErr) throw prErr;
-        if (!pr) throw new Error("Perfil de usuario no encontrado");
+        if (!pr) throw new Error("Usuario no encontrado en profiles");
 
         setDoctor({ ...dp, ...pr });
       } catch (err: any) {
-        console.error("Error fetching doctor profile:", err);
+        console.error("❌ Error fetching doctor profile:", err);
         setError(err.message || "Error al cargar el perfil");
       } finally {
         setLoading(false);
@@ -88,6 +89,10 @@ const DoctorProfile = () => {
 
     if (doctorId) {
       fetchDoctor();
+    } else {
+      console.warn("⚠️ No se recibió doctorId en params");
+      setError("ID de doctor inválido");
+      setLoading(false);
     }
   }, [doctorId]);
 
@@ -98,13 +103,19 @@ const DoctorProfile = () => {
       </div>
     );
   }
-
   if (error) {
-    return <p className="text-center text-red-500 p-4">{error}</p>;
+    return (
+      <div className="p-4 text-center">
+        <p className="text-red-500">{error}</p>
+      </div>
+    );
   }
-
   if (!doctor) {
-    return <p className="text-center p-4">Doctor no encontrado</p>;
+    return (
+      <div className="p-4 text-center">
+        <p>Doctor no encontrado</p>
+      </div>
+    );
   }
 
   return (
