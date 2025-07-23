@@ -18,7 +18,7 @@ interface DoctorProfileData {
   practice_locations: string[];
   consultation_fee: number | null;
   profile_image_url: string | null;
-  profile_complete: boolean;
+  // eliminamos profile_complete porque ya no lo usamos para ocultar el perfil
 }
 
 const DoctorProfile = () => {
@@ -44,8 +44,7 @@ const DoctorProfile = () => {
             experience_years,
             practice_locations,
             consultation_fee,
-            profile_image_url,
-            profile_complete
+            profile_image_url
           `)
           .eq("user_id", doctorId)
           .limit(1)
@@ -89,16 +88,7 @@ const DoctorProfile = () => {
     return <p className="text-center p-4">Doctor no encontrado</p>;
   }
 
-  if (!doctor.profile_complete) {
-    return (
-      <div className="p-6 text-center">
-        <p className="text-xl font-medium">
-          El doctor aún no ha completado su perfil.
-        </p>
-      </div>
-    );
-  }
-
+  // Renderizamos siempre el perfil, incluso si está incompleto
   return (
     <div className="container mx-auto py-8">
       <Card className="mb-8">
@@ -155,3 +145,4 @@ const DoctorProfile = () => {
 };
 
 export default DoctorProfile;
+
