@@ -409,80 +409,256 @@ export const PatientsList = () => {
                           <Eye className="h-4 w-4" />
                         </Button>
                       </DialogTrigger>
-                      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                      <DialogContent className="max-w-6xl max-h-[85vh] overflow-y-auto">
                         <DialogHeader>
-                          <DialogTitle>Perfil del Paciente</DialogTitle>
+                          <DialogTitle className="flex items-center gap-2">
+                            <User className="h-5 w-5" />
+                            Perfil del Paciente: {selectedPatient?.full_name || 'Sin nombre'}
+                          </DialogTitle>
                         </DialogHeader>
                         {selectedPatient && (
-                          <div className="space-y-6">
-                            {/* Patient Info */}
-                            <div className="grid grid-cols-2 gap-4">
-                              <div>
-                                <Label>Nombre Completo</Label>
-                                <div className="font-medium">{selectedPatient.full_name || 'N/A'}</div>
-                              </div>
-                              <div>
-                                <Label>Email</Label>
-                                <div className="font-medium">{selectedPatient.email || 'N/A'}</div>
-                              </div>
-                              <div>
-                                <Label>Teléfono</Label>
-                                <div className="font-medium">{selectedPatient.phone || 'N/A'}</div>
-                              </div>
-                              {selectedPatient.date_of_birth && (
-                                <div>
-                                  <Label>Edad</Label>
-                                  <div className="font-medium">{calculateAge(selectedPatient.date_of_birth)} años</div>
-                                </div>
-                              )}
-                              <div className="col-span-2">
-                                <Label>Dirección</Label>
-                                <div className="font-medium">{selectedPatient.address || 'N/A'}</div>
-                              </div>
-                            </div>
+                          <Tabs defaultValue="info" className="w-full">
+                            <TabsList className="grid w-full grid-cols-3">
+                              <TabsTrigger value="info">Información Personal</TabsTrigger>
+                              <TabsTrigger value="documents">Documentos</TabsTrigger>
+                              <TabsTrigger value="appointments">Historial de Citas</TabsTrigger>
+                            </TabsList>
 
-                            {/* Appointments History */}
-                            <div>
-                              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                                <Calendar className="h-5 w-5" />
-                                Historial de Citas
-                              </h3>
-                              
-                              {loadingAppointments ? (
-                                <div className="text-center py-4">Cargando citas...</div>
-                              ) : patientAppointments.length > 0 ? (
-                                <div className="space-y-3">
-                                  {patientAppointments.map((appointment) => (
-                                    <div key={appointment.id} className="border rounded-lg p-3">
-                                      <div className="flex justify-between items-start">
-                                        <div className="space-y-2">
-                                          <div className="flex items-center gap-2">
-                                            <span className="font-medium">
-                                              Dr. {appointment.doctor_name || 'Desconocido'}
-                                            </span>
-                                            {getStatusBadge(appointment.status)}
+                            {/* Tab: Información Personal */}
+                            <TabsContent value="info" className="space-y-6">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {/* Foto de Perfil */}
+                                <Card>
+                                  <CardHeader>
+                                    <CardTitle className="text-sm">Foto de Perfil</CardTitle>
+                                  </CardHeader>
+                                  <CardContent className="flex flex-col items-center space-y-4">
+                                    <Avatar className="h-24 w-24">
+                                      <AvatarImage src={selectedPatient.profile_image_url || ''} />
+                                      <AvatarFallback>
+                                        <User className="h-12 w-12" />
+                                      </AvatarFallback>
+                                    </Avatar>
+                                    <div className="space-y-2 w-full">
+                                      <Input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={(e) => {
+                                          const file = e.target.files?.[0];
+                                          if (file) {
+                                            handleFileUpload(file, 'profile_image_url', selectedPatient);
+                                          }
+                                        }}
+                                        disabled={uploading === 'profile_image_url'}
+                                      />
+                                      {uploading === 'profile_image_url' && (
+                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                          <LoadingSpinner size="sm" />
+                                          Subiendo...
+                                        </div>
+                                      )}
+                                    </div>
+                                  </CardContent>
+                                </Card>
+
+                                {/* Información Básica */}
+                                <Card>
+                                  <CardHeader>
+                                    <CardTitle className="text-sm">Datos Personales</CardTitle>
+                                  </CardHeader>
+                                  <CardContent className="space-y-3">
+                                    <div>
+                                      <Label className="text-xs text-muted-foreground">Nombre Completo</Label>
+                                      <div className="font-medium">{selectedPatient.full_name || 'N/A'}</div>
+                                    </div>
+                                    <div>
+                                      <Label className="text-xs text-muted-foreground">Email</Label>
+                                      <div className="font-medium">{selectedPatient.email || 'N/A'}</div>
+                                    </div>
+                                    <div>
+                                      <Label className="text-xs text-muted-foreground">Teléfono</Label>
+                                      <div className="font-medium">{selectedPatient.phone || 'N/A'}</div>
+                                    </div>
+                                    {selectedPatient.date_of_birth && (
+                                      <div>
+                                        <Label className="text-xs text-muted-foreground">Edad</Label>
+                                        <div className="font-medium">{calculateAge(selectedPatient.date_of_birth)} años</div>
+                                      </div>
+                                    )}
+                                    <div>
+                                      <Label className="text-xs text-muted-foreground">Dirección</Label>
+                                      <div className="font-medium">{selectedPatient.address || 'N/A'}</div>
+                                    </div>
+                                    <div>
+                                      <Label className="text-xs text-muted-foreground">Registrado</Label>
+                                      <div className="font-medium">{formatDate(selectedPatient.created_at)}</div>
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              </div>
+                            </TabsContent>
+
+                            {/* Tab: Documentos */}
+                            <TabsContent value="documents" className="space-y-6">
+                              <Card>
+                                <CardHeader>
+                                  <CardTitle className="flex items-center gap-2">
+                                    <IdCard className="h-5 w-5" />
+                                    Documentos de Identificación
+                                  </CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-6">
+                                  <div>
+                                    <Label className="text-sm font-medium">Documento de Identidad</Label>
+                                    <div className="mt-2 space-y-3">
+                                      {selectedPatient.id_document_url ? (
+                                        <div className="flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                                          <FileText className="h-5 w-5 text-green-600" />
+                                          <div className="flex-1">
+                                            <div className="text-sm font-medium text-green-800">Documento subido</div>
+                                            <div className="text-xs text-green-600">Documento disponible</div>
                                           </div>
-                                          <div className="text-sm text-muted-foreground">
-                                            <div>Especialidad: {appointment.doctor_profile?.specialty || 'N/A'}</div>
-                                            <div>Fecha: {formatDate(appointment.starts_at)}</div>
-                                            {appointment.notes && (
-                                              <div className="mt-2">
-                                                <span className="font-medium">Notas:</span> {appointment.notes}
-                                              </div>
-                                            )}
+                                          <Button 
+                                            size="sm" 
+                                            variant="outline"
+                                            onClick={() => window.open(selectedPatient.id_document_url!, '_blank')}
+                                          >
+                                            Ver
+                                          </Button>
+                                        </div>
+                                      ) : (
+                                        <div className="flex items-center gap-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                          <FileText className="h-5 w-5 text-yellow-600" />
+                                          <div className="flex-1">
+                                            <div className="text-sm font-medium text-yellow-800">Sin documento</div>
+                                            <div className="text-xs text-yellow-600">No se ha subido identificación</div>
                                           </div>
                                         </div>
+                                      )}
+                                      
+                                      <div>
+                                        <Input
+                                          type="file"
+                                          accept=".pdf,.jpg,.jpeg,.png"
+                                          onChange={(e) => {
+                                            const file = e.target.files?.[0];
+                                            if (file) {
+                                              handleFileUpload(file, 'id_document_url', selectedPatient);
+                                            }
+                                          }}
+                                          disabled={uploading === 'id_document_url'}
+                                        />
+                                        {uploading === 'id_document_url' && (
+                                          <div className="flex items-center gap-2 text-sm text-muted-foreground mt-2">
+                                            <LoadingSpinner size="sm" />
+                                            Subiendo documento...
+                                          </div>
+                                        )}
                                       </div>
                                     </div>
-                                  ))}
-                                </div>
-                              ) : (
-                                <div className="text-center py-4 text-muted-foreground">
-                                  No hay citas registradas
-                                </div>
-                              )}
-                            </div>
-                          </div>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            </TabsContent>
+
+                            {/* Tab: Historial de Citas */}
+                            <TabsContent value="appointments" className="space-y-6">
+                              <Card>
+                                <CardHeader>
+                                  <CardTitle className="flex items-center gap-2">
+                                    <Calendar className="h-5 w-5" />
+                                    Historial de Citas y Calificaciones
+                                  </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                  {loadingAppointments ? (
+                                    <div className="flex justify-center py-8">
+                                      <LoadingSpinner />
+                                    </div>
+                                  ) : patientAppointments.length > 0 ? (
+                                    <div className="space-y-4">
+                                      {patientAppointments.map((appointment) => (
+                                        <Card key={appointment.id} className="border-l-4 border-l-primary">
+                                          <CardContent className="pt-4">
+                                            <div className="space-y-3">
+                                              {/* Información de la cita */}
+                                              <div className="flex justify-between items-start">
+                                                <div className="space-y-2">
+                                                  <div className="flex items-center gap-2">
+                                                    <span className="font-medium">
+                                                      Dr. {appointment.doctor_name || 'Desconocido'}
+                                                    </span>
+                                                    {getStatusBadge(appointment.status)}
+                                                  </div>
+                                                  <div className="text-sm text-muted-foreground space-y-1">
+                                                    <div>
+                                                      <span className="font-medium">Especialidad:</span> {appointment.doctor_profile?.specialty || 'N/A'}
+                                                    </div>
+                                                    <div>
+                                                      <span className="font-medium">Fecha:</span> {formatDate(appointment.starts_at)}
+                                                    </div>
+                                                    {appointment.notes && (
+                                                      <div>
+                                                        <span className="font-medium">Notas:</span> {appointment.notes}
+                                                      </div>
+                                                    )}
+                                                  </div>
+                                                </div>
+                                              </div>
+                                              
+                                              {/* Calificación y comentarios */}
+                                              {appointment.rating && (
+                                                <div className="border-t pt-3 mt-3">
+                                                  <div className="flex items-center gap-2 mb-2">
+                                                    <Star className="h-4 w-4 text-yellow-500" />
+                                                    <span className="text-sm font-medium">Calificación del paciente:</span>
+                                                  </div>
+                                                  <div className="space-y-2">
+                                                    <div className="flex items-center gap-1">
+                                                      {renderStars(appointment.rating)}
+                                                      <span className="text-sm text-muted-foreground ml-2">
+                                                        ({appointment.rating}/5)
+                                                      </span>
+                                                    </div>
+                                                    {appointment.rating_comment && (
+                                                      <div className="bg-muted p-3 rounded-lg">
+                                                        <div className="flex items-start gap-2">
+                                                          <MessageSquare className="h-4 w-4 text-muted-foreground mt-0.5" />
+                                                          <div>
+                                                            <div className="text-xs text-muted-foreground mb-1">Comentario:</div>
+                                                            <div className="text-sm italic">"{appointment.rating_comment}"</div>
+                                                          </div>
+                                                        </div>
+                                                      </div>
+                                                    )}
+                                                  </div>
+                                                </div>
+                                              )}
+                                              
+                                              {/* Sin calificación */}
+                                              {appointment.status === 'completed' && !appointment.rating && (
+                                                <div className="border-t pt-3 mt-3">
+                                                  <div className="flex items-center gap-2 text-muted-foreground">
+                                                    <Star className="h-4 w-4" />
+                                                    <span className="text-sm">Esta cita no fue calificada por el paciente</span>
+                                                  </div>
+                                                </div>
+                                              )}
+                                            </div>
+                                          </CardContent>
+                                        </Card>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <div className="text-center py-8 text-muted-foreground">
+                                      <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                                      <div>No hay citas registradas para este paciente</div>
+                                    </div>
+                                  )}
+                                </CardContent>
+                              </Card>
+                            </TabsContent>
+                          </Tabs>
                         )}
                       </DialogContent>
                     </Dialog>
