@@ -10,8 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 interface DoctorProfileData {
   user_id: string;
   full_name: string;
-  email: string;
-  phone: string;
+  phone: string | null;
   specialty: string;
   biography: string | null;
   professional_license: string;
@@ -70,7 +69,7 @@ const DoctorProfile = () => {
         console.log("📡 Fetching profiles for", dp.user_id);
         const { data: pr, error: prErr, status: prStatus } = await supabase
           .from("profiles")
-          .select("full_name, email, phone")
+          .select("full_name, phone")
           .eq("user_id", dp.user_id)
           .limit(1)
           .maybeSingle();
@@ -159,14 +158,13 @@ const DoctorProfile = () => {
               <strong>Honorarios:</strong> ${doctor.consultation_fee}
             </p>
           )}
-          <div className="space-y-1">
-            <p>
-              <strong>Email:</strong> {doctor.email}
-            </p>
-            <p>
-              <strong>Teléfono:</strong> {doctor.phone}
-            </p>
-          </div>
+          {doctor.phone && (
+            <div className="space-y-1">
+              <p>
+                <strong>Teléfono:</strong> {doctor.phone}
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
