@@ -18,6 +18,7 @@ import {
   XCircle,
   Clock
 } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
 import { useAdminProfileAPI } from '@/hooks/useAdminProfileAPI';
@@ -200,8 +201,9 @@ export const DoctorListComponent: React.FC<DoctorListComponentProps> = ({
   }
 
   return (
-    <div className="space-y-6">
-      <Card>
+    <TooltipProvider>
+      <div className="space-y-6">
+        <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             <span className="flex items-center gap-2">
@@ -332,32 +334,60 @@ export const DoctorListComponent: React.FC<DoctorListComponentProps> = ({
                       {showActions && (
                         <TableCell>
                           <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleViewProfile(doctor)}
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Link to={`/admin/doctores/${doctor.doctor_user_id}`}>
-                              <Button size="sm">
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                            </Link>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleViewAppointments(doctor)}
-                            >
-                              <Calendar className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleViewSubscriptions(doctor)}
-                            >
-                              <CreditCard className="h-4 w-4" />
-                            </Button>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleViewProfile(doctor)}
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Ver perfil completo</p>
+                              </TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Link to={`/admin/doctores/${doctor.doctor_user_id}`}>
+                                  <Button size="sm">
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                </Link>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Editar información</p>
+                              </TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleViewAppointments(doctor)}
+                                >
+                                  <Calendar className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Ver citas médicas</p>
+                              </TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleViewSubscriptions(doctor)}
+                                >
+                                  <CreditCard className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Ver historial de suscripciones</p>
+                              </TooltipContent>
+                            </Tooltip>
                           </div>
                         </TableCell>
                       )}
@@ -400,7 +430,8 @@ export const DoctorListComponent: React.FC<DoctorListComponentProps> = ({
           doctorUserId={selectedDoctor.doctor_user_id}
           doctorName={selectedDoctor.full_name}
         />
-      )}
-    </div>
+     )}
+      </div>
+    </TooltipProvider>
   );
 };
