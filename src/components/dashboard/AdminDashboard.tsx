@@ -5,14 +5,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, UserCheck, Clock, Shield, Star, Calendar, Activity, CreditCard, FileText } from 'lucide-react';
+import { Users, UserCheck, Clock, Shield, Star, Calendar, Activity, CreditCard, FileText, DollarSign } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
 import { DoctorListComponent } from '@/components/admin/DoctorListComponent';
 import { PatientsList } from '@/components/admin/PatientsList';
 import { AdminAppointments } from '@/components/admin/AdminAppointments';
 import { PaymentSettings } from '@/components/admin/PaymentSettings';
-import { SubscriptionRenewals } from '@/components/admin/SubscriptionRenewals';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { DashboardLayout } from '@/components/ui/DashboardLayout';
@@ -375,20 +374,9 @@ export const AdminDashboard = () => {
             <TabsTrigger value="overview">Resumen</TabsTrigger>
             <TabsTrigger value="doctors">Doctores</TabsTrigger>
             <TabsTrigger value="patients">Pacientes</TabsTrigger>
-            <TabsTrigger value="payments">Pagos</TabsTrigger>
+            <TabsTrigger value="pricing">Precios</TabsTrigger>
           </TabsList>
 
-          {/* Navigation to Subscriptions Page */}
-          <div className="mb-6">
-            <Button 
-              onClick={() => window.location.href = '/admin/subscriptions'}
-              className="w-full justify-start"
-              variant="outline"
-            >
-              <FileText className="mr-2 h-4 w-4" />
-              Ver Suscripciones de Médicos
-            </Button>
-          </div>
 
           <TabsContent value="overview">
             <div className="space-y-6">
@@ -438,7 +426,7 @@ export const AdminDashboard = () => {
                     <CardTitle>Acciones Rápidas</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                       <Button className="h-20 flex flex-col gap-2" onClick={() => setActiveTab('doctors')}>
                         <UserCheck className="h-6 w-6" />
                         Gestionar Doctores
@@ -447,17 +435,9 @@ export const AdminDashboard = () => {
                         <Users className="h-6 w-6" />
                         Ver Pacientes
                       </Button>
-                      <Button variant="outline" className="h-20 flex flex-col gap-2" onClick={() => setActiveTab('payments')}>
-                        <CreditCard className="h-6 w-6" />
-                        Gestionar Pagos
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        className="h-20 flex flex-col gap-2" 
-                        onClick={() => window.location.href = '/admin/subscriptions'}
-                      >
-                        <FileText className="h-6 w-6" />
-                        Suscripciones
+                      <Button variant="outline" className="h-20 flex flex-col gap-2" onClick={() => setActiveTab('pricing')}>
+                        <DollarSign className="h-6 w-6" />
+                        Configurar Precios
                       </Button>
                     </div>
                   </CardContent>
@@ -479,10 +459,22 @@ export const AdminDashboard = () => {
             <PatientsList />
           </TabsContent>
 
-          <TabsContent value="payments">
+          <TabsContent value="pricing">
             <div className="space-y-6">
-              <PaymentSettings />
-              <SubscriptionRenewals />
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <DollarSign className="h-5 w-5" />
+                    Configuración de Precios Globales
+                  </CardTitle>
+                  <CardDescription>
+                    Establece los precios base para la plataforma. Los médicos podrán ajustar estos precios individualmente.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <PaymentSettings />
+                </CardContent>
+              </Card>
             </div>
           </TabsContent>
         </Tabs>
