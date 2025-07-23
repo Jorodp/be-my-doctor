@@ -134,12 +134,19 @@ export default function DoctorProfile() {
                 <div className="relative z-10">
                   <Avatar className="w-32 h-32 border-4 border-white shadow-xl ring-4 ring-white/20">
                     {doctor.profile_image_url ? (
-                      <AvatarImage src={doctor.profile_image_url} alt={doctor.full_name} />
-                    ) : (
-                      <AvatarFallback className="bg-primary text-primary-foreground text-2xl">
-                        <User className="w-16 h-16" />
-                      </AvatarFallback>
-                    )}
+                      <AvatarImage 
+                        src={doctor.profile_image_url} 
+                        alt={doctor.full_name}
+                        className="object-cover"
+                        onError={(e) => {
+                          console.log('Error loading image:', doctor.profile_image_url);
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
+                    ) : null}
+                    <AvatarFallback className="bg-primary text-primary-foreground text-2xl">
+                      <User className="w-16 h-16" />
+                    </AvatarFallback>
                   </Avatar>
                   <div className="absolute -bottom-2 -right-2 bg-accent w-8 h-8 rounded-full border-4 border-white flex items-center justify-center">
                     <div className="w-3 h-3 bg-white rounded-full"></div>
