@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Save, User, Stethoscope, CreditCard } from 'lucide-react';
+import { Save, User, Stethoscope, CreditCard, Upload, FileText } from 'lucide-react';
 
 interface DoctorProfile {
   id: string;
@@ -41,6 +41,7 @@ export function AdminEditDoctor({ doctorId }: AdminEditDoctorProps) {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState<string | null>(null);
   const { toast } = useToast();
 
   // Form data
@@ -56,7 +57,11 @@ export function AdminEditDoctor({ doctorId }: AdminEditDoctorProps) {
     professional_license: '',
     office_phone: '',
     office_address: '',
-    profile_image_url: ''
+    profile_image_url: '',
+    professional_license_document_url: '',
+    university_degree_document_url: '',
+    identification_document_url: '',
+    curp_document_url: ''
   });
 
   useEffect(() => {
@@ -101,7 +106,11 @@ export function AdminEditDoctor({ doctorId }: AdminEditDoctorProps) {
         professional_license: doctorData?.professional_license || '',
         office_phone: doctorData?.office_phone || '',
         office_address: doctorData?.office_address || '',
-        profile_image_url: userData?.profile_image_url || ''
+        profile_image_url: userData?.profile_image_url || '',
+        professional_license_document_url: doctorData?.professional_license_document_url || '',
+        university_degree_document_url: doctorData?.university_degree_document_url || '',
+        identification_document_url: doctorData?.identification_document_url || '',
+        curp_document_url: doctorData?.curp_document_url || ''
       });
 
     } catch (error) {
@@ -122,6 +131,95 @@ export function AdminEditDoctor({ doctorId }: AdminEditDoctorProps) {
       [field]: value
     }));
   };
+
+  const uploadFile = async (file: File, bucket: string, folder: string) => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${folder}/${doctorId}/${Date.now()}.${fileExt}`;
+    
+    const { data, error } = await supabase.storage
+      .from(bucket)
+      .upload(fileName, file, {
+        cacheControl: '3600',
+        upsert: true
+      });
+
+    if (error) throw error;
+    
+    const { data: { publicUrl } } = supabase.storage
+      .from(bucket)
+      .getPublicUrl(fileName);
+    
+    return publicUrl;
+  };
+
+  const handleFileUpload = async (file: File, field: string, bucket: string, folder: string) => {
+    try {
+      setUploading(field);
+      const url = await uploadFile(file, bucket, folder);
+      handleInputChange(field, url);
+      
+      toast({
+        title: 'Éxito',
+        description: 'Archivo subido correctamente',
+        variant: 'default'
+      });
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      toast({
+        title: 'Error',
+        description: 'No se pudo subir el archivo',
+        variant: 'destructive'
+      });
+    } finally {
+      setUploading(null);
+    }
+  };
+
+  const FileUploadField = ({ 
+    label, 
+    field, 
+    bucket, 
+    folder, 
+    accept = "image/*",
+    currentValue 
+  }: {
+    label: string;
+    field: string;
+    bucket: string;
+    folder: string;
+    accept?: string;
+    currentValue: string;
+  }) => (
+    <div className="space-y-2">
+      <Label>{label}</Label>
+      <div className="space-y-2">
+        <Input
+          type="file"
+          accept={accept}
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) {
+              handleFileUpload(file, field, bucket, folder);
+            }
+          }}
+          disabled={uploading === field}
+        />
+        {uploading === field && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <LoadingSpinner size="sm" />
+            Subiendo archivo...
+          </div>
+        )}
+        {currentValue && (
+          <div className="text-sm text-muted-foreground">
+            <a href={currentValue} target="_blank" rel="noopener noreferrer" className="hover:underline">
+              Ver archivo actual
+            </a>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 
   const handleSave = async () => {
     try {
@@ -147,7 +245,11 @@ export function AdminEditDoctor({ doctorId }: AdminEditDoctorProps) {
         verification_status: formData.verification_status,
         professional_license: formData.professional_license,
         office_phone: formData.office_phone,
-        office_address: formData.office_address
+        office_address: formData.office_address,
+        professional_license_document_url: formData.professional_license_document_url,
+        university_degree_document_url: formData.university_degree_document_url,
+        identification_document_url: formData.identification_document_url,
+        curp_document_url: formData.curp_document_url
       };
 
       // Solo incluir campos numéricos si tienen valor
@@ -245,15 +347,14 @@ export function AdminEditDoctor({ doctorId }: AdminEditDoctorProps) {
                 placeholder="Teléfono del consultorio"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="profile_image_url">URL de foto de perfil</Label>
-              <Input
-                id="profile_image_url"
-                value={formData.profile_image_url}
-                onChange={(e) => handleInputChange('profile_image_url', e.target.value)}
-                placeholder="URL de la imagen de perfil"
-              />
-            </div>
+            <FileUploadField
+              label="Foto de perfil"
+              field="profile_image_url"
+              bucket="doctor-photos"
+              folder="profile"
+              accept="image/*"
+              currentValue={formData.profile_image_url}
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="office_address">Dirección del consultorio</Label>
@@ -326,6 +427,52 @@ export function AdminEditDoctor({ doctorId }: AdminEditDoctorProps) {
               onChange={(e) => handleInputChange('biography', e.target.value)}
               placeholder="Biografía del doctor"
               rows={4}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Documentos Legales */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="h-5 w-5" />
+            Documentos Legales
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FileUploadField
+              label="Cédula Profesional (Documento)"
+              field="professional_license_document_url"
+              bucket="doctor-documents"
+              folder="license"
+              accept=".pdf,.jpg,.jpeg,.png"
+              currentValue={formData.professional_license_document_url}
+            />
+            <FileUploadField
+              label="Título Universitario"
+              field="university_degree_document_url"
+              bucket="doctor-documents"
+              folder="degree"
+              accept=".pdf,.jpg,.jpeg,.png"
+              currentValue={formData.university_degree_document_url}
+            />
+            <FileUploadField
+              label="Identificación Oficial"
+              field="identification_document_url"
+              bucket="doctor-documents"
+              folder="identification"
+              accept=".pdf,.jpg,.jpeg,.png"
+              currentValue={formData.identification_document_url}
+            />
+            <FileUploadField
+              label="CURP"
+              field="curp_document_url"
+              bucket="doctor-documents"
+              folder="curp"
+              accept=".pdf,.jpg,.jpeg,.png"
+              currentValue={formData.curp_document_url}
             />
           </div>
         </CardContent>
