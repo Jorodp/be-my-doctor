@@ -24,6 +24,8 @@ import { CompleteDoctorProfile } from "./pages/CompleteDoctorProfile";
 import { CompletePatientProfile } from "./pages/CompletePatientProfile";
 import PendingVerification from "./pages/PendingVerification";
 import AdminSubscriptions from "./pages/AdminSubscriptions";
+import AdminDoctorsPage from "./pages/admin/doctores/index";
+import AdminDoctorDetailPage from "./pages/admin/doctores/[id]";
 import ResetPassword from "./pages/ResetPassword";
 
 const queryClient = new QueryClient();
@@ -77,6 +79,22 @@ const App = () => (
               element={
                 <ProtectedRoute role="admin">
                   <AdminSubscriptions />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/doctores"
+              element={
+                <ProtectedRoute role="admin">
+                  <AdminDoctorsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/doctores/:id"
+              element={
+                <ProtectedRoute role="admin">
+                  <AdminDoctorDetailPage />
                 </ProtectedRoute>
               }
             />

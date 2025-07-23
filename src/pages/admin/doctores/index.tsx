@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { 
   Table, 
   TableBody, 
@@ -13,10 +14,9 @@ import { Badge } from '@/components/ui/badge';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
 import { useAdminProfileAPI } from '@/hooks/useAdminProfileAPI';
-import { EditDoctorProfile } from '@/components/admin/EditDoctorProfile';
 import { SubscriptionHistoryModal } from '@/components/admin/SubscriptionHistoryModal';
 import { DoctorAppointmentsDrawer } from '@/components/admin/DoctorAppointmentsDrawer';
-import { Eye, Calendar, CreditCard } from 'lucide-react';
+import { Eye, Calendar, CreditCard, Edit } from 'lucide-react';
 
 interface DoctorListItem {
   doctor_user_id: string;
@@ -32,13 +32,11 @@ export default function AdminDoctorsPage() {
   const [doctors, setDoctors] = useState<DoctorListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDoctor, setSelectedDoctor] = useState<any>(null);
-  const [selectedProfile, setSelectedProfile] = useState<any>(null);
-  const [showEditProfile, setShowEditProfile] = useState(false);
   const [showSubscriptionHistory, setShowSubscriptionHistory] = useState(false);
   const [showAppointments, setShowAppointments] = useState(false);
   
   const { toast } = useToast();
-  const { listDoctors, getDoctorProfile, loading: apiLoading } = useAdminProfileAPI();
+  const { listDoctors, loading: apiLoading } = useAdminProfileAPI();
 
   const loadDoctors = async () => {
     try {
@@ -59,21 +57,6 @@ export default function AdminDoctorsPage() {
   useEffect(() => {
     loadDoctors();
   }, []);
-
-  const handleViewProfile = async (doctor: DoctorListItem) => {
-    try {
-      const { profile, doctorProfile } = await getDoctorProfile(doctor.doctor_user_id);
-      setSelectedDoctor(doctorProfile);
-      setSelectedProfile(profile);
-      setShowEditProfile(true);
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'No se pudo cargar el perfil del doctor',
-        variant: 'destructive'
-      });
-    }
-  };
 
   const handleViewAppointments = (doctor: DoctorListItem) => {
     setSelectedDoctor(doctor);
@@ -170,15 +153,16 @@ export default function AdminDoctorsPage() {
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleViewProfile(doctor)}
-                        className="flex items-center gap-1"
-                      >
-                        <Eye className="h-4 w-4" />
-                        Ver Perfil
-                      </Button>
+                      <Link to={`/admin/doctores/${doctor.doctor_user_id}`}>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="flex items-center gap-1"
+                        >
+                          <Edit className="h-4 w-4" />
+                          Editar
+                        </Button>
+                      </Link>
                       <Button
                         size="sm"
                         variant="outline"
@@ -186,7 +170,7 @@ export default function AdminDoctorsPage() {
                         className="flex items-center gap-1"
                       >
                         <Calendar className="h-4 w-4" />
-                        Ver Citas
+                        Citas
                       </Button>
                       <Button
                         size="sm"
@@ -211,24 +195,6 @@ export default function AdminDoctorsPage() {
           </div>
         )}
       </Card>
-
-      {/* Edit Profile Modal */}
-      <EditDoctorProfile
-        isOpen={showEditProfile}
-        onClose={() => {
-          setShowEditProfile(false);
-          setSelectedDoctor(null);
-          setSelectedProfile(null);
-        }}
-        doctorProfile={selectedDoctor}
-        profile={selectedProfile}
-        onProfileUpdated={() => {
-          loadDoctors();
-          setShowEditProfile(false);
-          setSelectedDoctor(null);
-          setSelectedProfile(null);
-        }}
-      />
 
       {/* Subscription History Modal */}
       <SubscriptionHistoryModal
