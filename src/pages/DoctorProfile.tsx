@@ -60,18 +60,18 @@ const DoctorProfile = () => {
             consultation_fee,
             profile_image_url
           `)
-          .eq("user_id", doctorId)
+          .eq("id", doctorId)
           .limit(1)
           .maybeSingle();
         console.log("📊 doctor_profiles response:", { dp, dpErr, dpStatus });
         if (dpErr) throw dpErr;
         if (!dp) throw new Error("Doctor no encontrado en doctor_profiles");
 
-        console.log("📡 Fetching profiles for", doctorId);
+        console.log("📡 Fetching profiles for", dp.user_id);
         const { data: pr, error: prErr, status: prStatus } = await supabase
           .from("profiles")
           .select("full_name, email, phone")
-          .eq("user_id", doctorId)
+          .eq("user_id", dp.user_id)
           .limit(1)
           .maybeSingle();
         console.log("📊 profiles response:", { pr, prErr, prStatus });
