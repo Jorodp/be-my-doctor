@@ -13,8 +13,8 @@ interface DoctorProfileData {
   phone: string;
   specialty: string;
   biography: string | null;
-  professional_license: string;       // ← número de cédula
-  experience_years: number;            // ← años de experiencia
+  professional_license: string;
+  experience_years: number;
   practice_locations: string[];
   consultation_fee: number | null;
   profile_image_url: string | null;
@@ -48,7 +48,8 @@ const DoctorProfile = () => {
             profile_complete
           `)
           .eq("user_id", doctorId)
-          .single();
+          .limit(1)
+          .maybeSingle();
         if (dpErr) throw dpErr;
         if (!dp) throw new Error("Doctor no encontrado");
 
@@ -57,8 +58,10 @@ const DoctorProfile = () => {
           .from("profiles")
           .select("full_name, email, phone")
           .eq("user_id", doctorId)
-          .single();
+          .limit(1)
+          .maybeSingle();
         if (prErr) throw prErr;
+        if (!pr) throw new Error("Perfil de usuario no encontrado");
 
         setDoctor({ ...dp, ...pr });
       } catch (err: any) {
@@ -77,12 +80,15 @@ const DoctorProfile = () => {
       </div>
     );
   }
+
   if (error) {
     return <p className="text-center text-red-500 p-4">{error}</p>;
   }
+
   if (!doctor) {
     return <p className="text-center p-4">Doctor no encontrado</p>;
   }
+
   if (!doctor.profile_complete) {
     return (
       <div className="p-6 text-center">
@@ -119,7 +125,7 @@ const DoctorProfile = () => {
             <strong>Años de experiencia:</strong> {doctor.experience_years}
           </p>
           {doctor.biography && <p>{doctor.biography}</p>}
-          {doctor.practice_locations?.length > 0 && (
+          {doctor.practice_locations.length > 0 && (
             <div>
               <strong>Consultorios:</strong>
               <ul className="list-disc list-inside">
