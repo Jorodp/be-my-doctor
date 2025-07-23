@@ -9,12 +9,12 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-import { MapPin, DollarSign, FileText, Calendar, User } from "lucide-react";
+import { MapPin, DollarSign, Star, Calendar, User, Phone, FileText, Clock, Award } from "lucide-react";
 
 interface DoctorProfileData {
   user_id: string;
@@ -26,6 +26,9 @@ interface DoctorProfileData {
   practice_locations: string[];
   consultation_fee: number | null;
   profile_image_url: string | null;
+  experience_years?: number;
+  rating_avg?: number;
+  rating_count?: number;
   documents: {
     label: string;
     url: string;
@@ -57,7 +60,9 @@ export default function DoctorProfile() {
             experience_years,
             practice_locations,
             consultation_fee,
-            profile_image_url
+            profile_image_url,
+            rating_avg,
+            rating_count
           `
         )
         .eq("id", doctorId)
@@ -103,87 +108,197 @@ export default function DoctorProfile() {
   if (loading) return <LoadingSpinner size="lg" />;
   if (!doctor) return <p>Doctor no encontrado</p>;
 
+  const renderStars = (rating: number) => {
+    return Array.from({ length: 5 }, (_, i) => (
+      <Star 
+        key={i} 
+        className={`w-4 h-4 ${i < Math.floor(rating) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} 
+      />
+    ));
+  };
+
   return (
-    <div className="container mx-auto py-8">
-      <Card className="shadow-lg">
-        <CardHeader>
-          <div className="flex items-center space-x-6">
-            <Avatar className="w-24 h-24">
-              {doctor.profile_image_url ? (
-                <AvatarImage src={doctor.profile_image_url} alt={doctor.full_name} />
-              ) : (
-                <AvatarFallback>
-                  <User className="w-10 h-10" />
-                </AvatarFallback>
-              )}
-            </Avatar>
-            <div>
-              <CardTitle className="text-3xl">{doctor.full_name}</CardTitle>
-              <CardDescription className="flex items-center space-x-2 text-muted-foreground">
-                <MapPin className="w-4 h-4" />
-                <span>{doctor.practice_locations.join(", ")}</span>
-              </CardDescription>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="container mx-auto px-4 py-8">
+        {/* Header Section - Hero Style */}
+        <Card className="mb-8 overflow-hidden shadow-xl border-0 bg-gradient-to-r from-blue-600 to-indigo-600">
+          <CardContent className="p-0">
+            <div className="relative bg-gradient-to-r from-blue-600 to-indigo-600 h-48">
+              <div className="absolute inset-0 bg-black/20"></div>
             </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="space-y-4">
-              <div className="flex items-center space-x-2">
-                <DollarSign className="w-5 h-5 text-green-600" />
-                <span className="font-medium text-lg">
-                  Honorarios: ${doctor.consultation_fee}
-                </span>
-              </div>
-              <div>
-                <h4 className="font-semibold">Especialidad</h4>
-                <p>{doctor.specialty}</p>
-              </div>
-              <div>
-                <h4 className="font-semibold">Biografía</h4>
-                <p>{doctor.biography}</p>
+            
+            {/* Profile Section */}
+            <div className="relative px-6 pb-6">
+              <div className="flex flex-col md:flex-row items-center md:items-end gap-6 -mt-16">
+                {/* Profile Image - Centro de atención */}
+                <div className="relative">
+                  <Avatar className="w-32 h-32 border-4 border-white shadow-xl">
+                    {doctor.profile_image_url ? (
+                      <AvatarImage src={doctor.profile_image_url} alt={doctor.full_name} />
+                    ) : (
+                      <AvatarFallback className="bg-blue-500 text-white text-2xl">
+                        <User className="w-16 h-16" />
+                      </AvatarFallback>
+                    )}
+                  </Avatar>
+                  <div className="absolute -bottom-2 -right-2 bg-green-500 w-8 h-8 rounded-full border-4 border-white flex items-center justify-center">
+                    <div className="w-3 h-3 bg-white rounded-full"></div>
+                  </div>
+                </div>
+
+                {/* Doctor Info */}
+                <div className="flex-1 text-center md:text-left text-white">
+                  <h1 className="text-3xl md:text-4xl font-bold mb-2">{doctor.full_name}</h1>
+                  <p className="text-xl text-blue-100 mb-3">{doctor.specialty}</p>
+                  
+                  {/* Rating */}
+                  <div className="flex items-center justify-center md:justify-start gap-2 mb-4">
+                    <div className="flex">
+                      {renderStars(doctor.rating_avg || 0)}
+                    </div>
+                    <span className="text-blue-100">
+                      {doctor.rating_avg?.toFixed(1) || '0.0'} ({doctor.rating_count || 0} reseñas)
+                    </span>
+                  </div>
+
+                  {/* Stats */}
+                  <div className="flex flex-wrap justify-center md:justify-start gap-4 text-sm">
+                    <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
+                      <Award className="w-4 h-4 mr-1" />
+                      {doctor.experience_years || 0} años de experiencia
+                    </Badge>
+                    <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
+                      <MapPin className="w-4 h-4 mr-1" />
+                      {doctor.practice_locations?.length || 0} consultorios
+                    </Badge>
+                  </div>
+                </div>
+
+                {/* Price and Action */}
+                <div className="text-center">
+                  <div className="bg-white/20 backdrop-blur-sm rounded-lg p-4 mb-4">
+                    <div className="text-3xl font-bold text-white mb-1">
+                      ${doctor.consultation_fee || 0}
+                    </div>
+                    <div className="text-blue-100 text-sm">por consulta</div>
+                  </div>
+                  <Button size="lg" className="bg-white text-blue-600 hover:bg-blue-50 font-semibold px-8">
+                    <Calendar className="w-5 h-5 mr-2" />
+                    Agendar Cita
+                  </Button>
+                </div>
               </div>
             </div>
-            <div>
-              <Tabs defaultValue="about">
-                <TabsList className="grid grid-cols-3">
-                  <TabsTrigger value="about">Sobre mí</TabsTrigger>
-                  <TabsTrigger value="locations">Consultorios</TabsTrigger>
-                  <TabsTrigger value="documents">Documentos</TabsTrigger>
-                </TabsList>
+          </CardContent>
+        </Card>
 
-                <TabsContent value="about" className="pt-4">
-                  <p className="text-sm">Teléfono: {doctor.phone}</p>
-                </TabsContent>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left Column - Doctor Details */}
+          <div className="lg:col-span-1 space-y-6">
+            {/* About */}
+            <Card className="shadow-lg">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <User className="w-5 h-5 text-blue-600" />
+                  Sobre el Doctor
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {doctor.biography && (
+                  <p className="text-muted-foreground leading-relaxed">{doctor.biography}</p>
+                )}
+                
+                <div className="space-y-3">
+                  {doctor.phone && (
+                    <div className="flex items-center gap-3">
+                      <Phone className="w-4 h-4 text-blue-600" />
+                      <span className="text-sm">{doctor.phone}</span>
+                    </div>
+                  )}
+                  
+                  <div className="flex items-center gap-3">
+                    <Clock className="w-4 h-4 text-blue-600" />
+                    <span className="text-sm">Disponible para consultas</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-                <TabsContent value="locations" className="pt-4">
-                  <ul className="list-disc list-inside">
-                    {doctor.practice_locations.map((loc, i) => (
-                      <li key={i}>{loc}</li>
-                    ))}
-                  </ul>
-                </TabsContent>
+            {/* Locations */}
+            <Card className="shadow-lg">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MapPin className="w-5 h-5 text-blue-600" />
+                  Consultorios
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {doctor.practice_locations?.map((location, index) => (
+                    <div key={index} className="p-3 bg-blue-50 rounded-lg">
+                      <div className="font-medium text-sm">{location}</div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
 
-                <TabsContent value="documents" className="pt-4 space-y-2">
-                  {doctor.documents.map((doc, i) => (
+            {/* Documents */}
+            <Card className="shadow-lg">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-blue-600" />
+                  Documentos
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {doctor.documents.map((doc, index) => (
                     <a
-                      key={i}
+                      key={index}
                       href={doc.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center space-x-2 text-blue-600 hover:underline"
+                      className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
                     >
-                      <FileText className="w-5 h-5" />
-                      <span>{doc.label}</span>
+                      <FileText className="w-4 h-4 text-blue-600" />
+                      <span className="text-sm font-medium">{doc.label}</span>
                     </a>
                   ))}
-                  {!doctor.documents.length && <p>No hay documentos disponibles.</p>}
-                </TabsContent>
-              </Tabs>
-            </div>
+                  {!doctor.documents.length && (
+                    <p className="text-muted-foreground text-sm">No hay documentos disponibles.</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           </div>
-        </CardContent>
-      </Card>
+
+          {/* Right Column - Calendar */}
+          <div className="lg:col-span-2">
+            <Card className="shadow-lg h-fit">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Calendar className="w-5 h-5 text-blue-600" />
+                  Agendar Cita
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="bg-gray-50 rounded-lg p-8 text-center">
+                  <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">Calendario Próximamente</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Pronto podrás ver los horarios disponibles y agendar tu cita directamente desde aquí.
+                  </p>
+                  <Button variant="outline" className="gap-2">
+                    <Phone className="w-4 h-4" />
+                    Contactar por teléfono
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
