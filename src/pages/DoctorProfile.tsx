@@ -13,8 +13,8 @@ interface DoctorProfileData {
   phone: string;
   specialty: string;
   biography: string | null;
-  professional_title?: string;
-  license_number?: string;
+  professional_license: string;       // ← número de cédula
+  experience_years: number;            // ← años de experiencia
   practice_locations: string[];
   consultation_fee: number | null;
   profile_image_url: string | null;
@@ -33,28 +33,26 @@ const DoctorProfile = () => {
     (async () => {
       setLoading(true);
       try {
-        // 1) Fetch doctor_profiles
+        // 1) Traer doctor_profiles
         const { data: dp, error: dpErr } = await supabase
           .from("doctor_profiles")
-          .select(
-            `
-              user_id,
-              specialty,
-              biography,
-              professional_title,
-              license_number,
-              practice_locations,
-              consultation_fee,
-              profile_image_url,
-              profile_complete
-            `
-          )
+          .select(`
+            user_id,
+            specialty,
+            biography,
+            professional_license,
+            experience_years,
+            practice_locations,
+            consultation_fee,
+            profile_image_url,
+            profile_complete
+          `)
           .eq("user_id", doctorId)
           .single();
         if (dpErr) throw dpErr;
         if (!dp) throw new Error("Doctor no encontrado");
 
-        // 2) Fetch profiles (for name & contact)
+        // 2) Traer profiles (nombre y contacto)
         const { data: pr, error: prErr } = await supabase
           .from("profiles")
           .select("full_name, email, phone")
@@ -85,8 +83,6 @@ const DoctorProfile = () => {
   if (!doctor) {
     return <p className="text-center p-4">Doctor no encontrado</p>;
   }
-
-  // Si el doctor no completó su perfil, mostramos mensaje
   if (!doctor.profile_complete) {
     return (
       <div className="p-6 text-center">
@@ -97,7 +93,6 @@ const DoctorProfile = () => {
     );
   }
 
-  // Perfil completo
   return (
     <div className="container mx-auto py-8">
       <Card className="mb-8">
@@ -117,18 +112,14 @@ const DoctorProfile = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {doctor.professional_title && (
-            <p>
-              <strong>Título profesional:</strong> {doctor.professional_title}
-            </p>
-          )}
-          {doctor.license_number && (
-            <p>
-              <strong>Cédula:</strong> {doctor.license_number}
-            </p>
-          )}
+          <p>
+            <strong>Cédula profesional:</strong> {doctor.professional_license}
+          </p>
+          <p>
+            <strong>Años de experiencia:</strong> {doctor.experience_years}
+          </p>
           {doctor.biography && <p>{doctor.biography}</p>}
-          {doctor.practice_locations.length > 0 && (
+          {doctor.practice_locations?.length > 0 && (
             <div>
               <strong>Consultorios:</strong>
               <ul className="list-disc list-inside">
