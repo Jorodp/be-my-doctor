@@ -9,6 +9,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Save, User, Stethoscope, CreditCard, Upload, FileText } from 'lucide-react';
+import { DoctorClinicsManager } from './admin/DoctorClinicsManager';
 
 interface DoctorProfile {
   id: string;
@@ -338,32 +339,16 @@ export function AdminEditDoctor({ doctorId }: AdminEditDoctorProps) {
                 placeholder="Número de teléfono"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="office_phone">Teléfono del consultorio</Label>
-              <Input
-                id="office_phone"
-                value={formData.office_phone}
-                onChange={(e) => handleInputChange('office_phone', e.target.value)}
-                placeholder="Teléfono del consultorio"
-              />
-            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Foto de perfil</Label>
             <FileUploadField
-              label="Foto de perfil"
+              label=""
               field="profile_image_url"
-              bucket="doctor-photos"
+              bucket="doctor-profiles"
               folder="profile"
               accept="image/*"
               currentValue={formData.profile_image_url}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="office_address">Dirección del consultorio</Label>
-            <Textarea
-              id="office_address"
-              value={formData.office_address}
-              onChange={(e) => handleInputChange('office_address', e.target.value)}
-              placeholder="Dirección completa del consultorio"
-              rows={2}
             />
           </div>
         </CardContent>
@@ -396,17 +381,6 @@ export function AdminEditDoctor({ doctorId }: AdminEditDoctorProps) {
                 value={formData.experience_years}
                 onChange={(e) => handleInputChange('experience_years', e.target.value)}
                 placeholder="Años de experiencia"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="consultation_fee">Precio de consulta (MXN)</Label>
-              <Input
-                id="consultation_fee"
-                type="number"
-                step="0.01"
-                value={formData.consultation_fee}
-                onChange={(e) => handleInputChange('consultation_fee', e.target.value)}
-                placeholder="Precio de consulta"
               />
             </div>
             <div className="space-y-2">
@@ -477,6 +451,12 @@ export function AdminEditDoctor({ doctorId }: AdminEditDoctorProps) {
           </div>
         </CardContent>
       </Card>
+
+      {/* Consultorios */}
+      <DoctorClinicsManager 
+        doctorUserId={doctorId}
+        onClinicsChange={loadDoctorData}
+      />
 
       {/* Estado y Suscripción */}
       <Card>

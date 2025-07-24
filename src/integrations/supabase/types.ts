@@ -468,12 +468,14 @@ export type Database = {
         Row: {
           address: string | null
           city: string | null
+          consultation_fee: number | null
           country: string | null
           created_at: string | null
           doctor_id: string
           geo_lat: number | null
           geo_lng: number | null
           id: string
+          is_primary: boolean | null
           name: string
           state: string | null
           updated_at: string | null
@@ -481,12 +483,14 @@ export type Database = {
         Insert: {
           address?: string | null
           city?: string | null
+          consultation_fee?: number | null
           country?: string | null
           created_at?: string | null
           doctor_id: string
           geo_lat?: number | null
           geo_lng?: number | null
           id?: string
+          is_primary?: boolean | null
           name: string
           state?: string | null
           updated_at?: string | null
@@ -494,12 +498,14 @@ export type Database = {
         Update: {
           address?: string | null
           city?: string | null
+          consultation_fee?: number | null
           country?: string | null
           created_at?: string | null
           doctor_id?: string
           geo_lat?: number | null
           geo_lng?: number | null
           id?: string
+          is_primary?: boolean | null
           name?: string
           state?: string | null
           updated_at?: string | null
