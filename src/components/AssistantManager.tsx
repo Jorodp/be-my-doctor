@@ -130,7 +130,7 @@ export const AssistantManager = () => {
       const { data, error } = await supabase.functions.invoke('assign-assistant-by-email', {
         body: { 
           email: inviteEmail.trim(),
-          doctor_id: user.id
+          doctor_id: user.id // Este es el user_id del doctor autenticado
         }
       });
 
