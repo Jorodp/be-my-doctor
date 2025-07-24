@@ -1,9 +1,9 @@
 // src/App.tsx
 
-import { Toaster } from "@/components/ui/toaster";
+import CustomerSupport from "./pages/CustomerSupport";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Toaster } from "@/components/ui/toaster";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
@@ -27,6 +27,7 @@ import AdminSubscriptions from "./pages/AdminSubscriptions";
 import AdminDoctorsPage from "./pages/admin/doctores/index";
 import AdminDoctorDetailPage from "./pages/admin/doctores/detail";
 import ResetPassword from "./pages/ResetPassword";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 const queryClient = new QueryClient();
 
@@ -153,6 +154,7 @@ const App = () => (
               }
             />
             <Route path="/emergency-logout" element={<EmergencyLogout />} />
+            <Route path="/customer-support" element={<CustomerSupport />} />
             <Route path="/unauthorized" element={<Unauthorized />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

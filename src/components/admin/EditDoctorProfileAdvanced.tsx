@@ -11,9 +11,10 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
 import { useSignedUrl } from '@/hooks/useSignedUrl';
 import { supabase } from '@/integrations/supabase/client';
-import { Upload, Trash2, User, Building2, Save, Plus, X, FileText, Camera } from 'lucide-react';
+import { Upload, Trash2, User, Building2, Save, Plus, X, FileText, Camera, CreditCard } from 'lucide-react';
 import { ProfessionalDocumentManager } from '@/components/ProfessionalDocumentManager';
 import { DoctorDocumentManager } from '@/components/admin/DoctorDocumentManager';
+import { PhysicalPaymentButton } from '@/components/admin/PhysicalPaymentButton';
 
 interface Consultorio {
   nombre: string;
@@ -49,6 +50,7 @@ interface EditDoctorProfileAdvancedProps {
   doctorProfile: DoctorProfile | null;
   profile: Profile | null;
   onProfileUpdated: () => void;
+  physicalPaymentEnabled?: boolean;
 }
 
 export const EditDoctorProfileAdvanced = ({ 
@@ -56,7 +58,8 @@ export const EditDoctorProfileAdvanced = ({
   onClose, 
   doctorProfile,
   profile,
-  onProfileUpdated 
+  onProfileUpdated,
+  physicalPaymentEnabled = false
 }: EditDoctorProfileAdvancedProps) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -310,12 +313,13 @@ export const EditDoctorProfileAdvanced = ({
         </DialogHeader>
 
         <Tabs defaultValue="general" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="general">General</TabsTrigger>
             <TabsTrigger value="profile-image">Foto</TabsTrigger>
             <TabsTrigger value="documents">Documentos</TabsTrigger>
             <TabsTrigger value="consultorios">Consultorios</TabsTrigger>
             <TabsTrigger value="practice">Práctica</TabsTrigger>
+            <TabsTrigger value="payments">Pagos</TabsTrigger>
           </TabsList>
 
           <TabsContent value="general" className="space-y-4">
@@ -627,6 +631,40 @@ export const EditDoctorProfileAdvanced = ({
                     <Plus className="mr-2 h-4 w-4" />
                     Agregar lugar de atención
                   </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="payments" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CreditCard className="h-5 w-5" />
+                  Configuración de Pagos
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {doctorProfile && profile && (
+                  <PhysicalPaymentButton
+                    doctorUserId={doctorProfile.user_id}
+                    doctorName={profile.full_name || 'Doctor'}
+                    isEnabled={physicalPaymentEnabled}
+                    onToggleComplete={onProfileUpdated}
+                  />
+                )}
+                
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                  <h4 className="font-medium text-gray-900 mb-2">Información sobre Pagos Físicos</h4>
+                  <p className="text-sm text-gray-700 mb-3">
+                    Los pagos físicos permiten al doctor solicitar ayuda para realizar el pago de su suscripción 
+                    en efectivo o con tarjeta física a través de nuestro equipo de atención al cliente.
+                  </p>
+                  <ul className="text-sm text-gray-600 space-y-1">
+                    <li>• El doctor puede contactar al equipo de soporte para coordinar el pago</li>
+                    <li>• Se proporcionarán instrucciones específicas para el pago presencial</li>
+                    <li>• El proceso incluye verificación manual por parte del equipo</li>
+                  </ul>
                 </div>
               </CardContent>
             </Card>

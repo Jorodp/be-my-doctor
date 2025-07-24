@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { useNavigate } from 'react-router-dom';
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { CalendarDays, CreditCard, RefreshCw, Crown, CheckCircle, Settings } from "lucide-react";
+import { CalendarDays, CreditCard, RefreshCw, Crown, CheckCircle, Settings, MessageCircle, HandCoins } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { toast } from "@/hooks/use-toast";
@@ -20,16 +21,19 @@ interface Subscription {
 
 export function SubscriptionStatus() {
   const { user, profile } = useAuth();
+  const navigate = useNavigate();
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(false);
   const [creatingSubscription, setCreatingSubscription] = useState(false);
   const [openingPortal, setOpeningPortal] = useState(false);
   const [prices, setPrices] = useState({ monthly: 2000, annual: 20000 });
+  const [physicalPaymentEnabled, setPhysicalPaymentEnabled] = useState(false);
 
   useEffect(() => {
     if (user && profile?.role === "doctor") {
       checkSubscription();
       fetchPrices();
+      checkPhysicalPaymentEnabled();
     }
   }, [user, profile]);
 
@@ -173,6 +177,31 @@ export function SubscriptionStatus() {
     }
   };
 
+  const checkPhysicalPaymentEnabled = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('doctor_physical_payments')
+        .select('enabled')
+        .eq('doctor_user_id', user.id)
+        .maybeSingle();
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error checking physical payment status:', error);
+        return;
+      }
+
+      setPhysicalPaymentEnabled(data?.enabled || false);
+    } catch (error) {
+      console.error('Error checking physical payment status:', error);
+    }
+  };
+
+  const handlePhysicalPaymentRequest = () => {
+    navigate('/customer-support?reason=physical_payment');
+  };
+
   if (profile?.role !== "doctor") {
     return null;
   }
@@ -261,6 +290,26 @@ export function SubscriptionStatus() {
                   {openingPortal ? "Abriendo..." : "Gestionar"}
                 </Button>
               </div>
+
+              {physicalPaymentEnabled && (
+                <>
+                  <Separator />
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-muted-foreground">Pago Físico Disponible</p>
+                    <Button 
+                      variant="secondary" 
+                      className="w-full"
+                      onClick={handlePhysicalPaymentRequest}
+                    >
+                      <HandCoins className="h-4 w-4 mr-2" />
+                      Solicitar Pago en Efectivo/Tarjeta
+                    </Button>
+                    <p className="text-xs text-muted-foreground">
+                      Contacta a nuestro equipo para realizar el pago presencialmente
+                    </p>
+                  </div>
+                </>
+              )}
             </div>
           ) : (
             <div className="text-center space-y-4">
@@ -273,6 +322,22 @@ export function SubscriptionStatus() {
                   Para acceder a todas las funciones de la plataforma, necesitas una suscripción activa.
                 </p>
               </div>
+
+              {physicalPaymentEnabled && (
+                <div className="mt-4">
+                  <Button 
+                    variant="secondary" 
+                    className="w-full"
+                    onClick={handlePhysicalPaymentRequest}
+                  >
+                    <HandCoins className="h-4 w-4 mr-2" />
+                    Solicitar Pago en Efectivo/Tarjeta
+                  </Button>
+                  <p className="text-xs text-muted-foreground text-center mt-2">
+                    Contacta a nuestro equipo para realizar el pago presencialmente
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </CardContent>
