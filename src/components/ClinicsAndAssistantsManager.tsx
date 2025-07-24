@@ -136,7 +136,11 @@ export function ClinicsAndAssistantsManager({ doctorUserId, onClinicsChange }: C
 
     // Seleccionar primera clínica por defecto para asistentes
     if (clinicsData && clinicsData.length > 0 && !selectedClinicForAssistant) {
-      setSelectedClinicForAssistant(clinicsData[0].id);
+      // Asegurar que el ID de la clínica no sea vacío o undefined
+      const firstValidClinic = clinicsData.find(clinic => clinic.id && clinic.id.trim() !== '');
+      if (firstValidClinic) {
+        setSelectedClinicForAssistant(firstValidClinic.id);
+      }
     }
   };
 
@@ -799,21 +803,26 @@ export function ClinicsAndAssistantsManager({ doctorUserId, onClinicsChange }: C
                 <CardContent className="space-y-4">
                   <div>
                     <Label>Consultorio</Label>
-                    <Select value={selectedClinicForAssistant} onValueChange={setSelectedClinicForAssistant}>
+                    <Select 
+                      value={selectedClinicForAssistant || undefined} 
+                      onValueChange={setSelectedClinicForAssistant}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Selecciona un consultorio" />
                       </SelectTrigger>
                       <SelectContent>
-                        {clinics.map((clinic) => (
-                          <SelectItem key={clinic.id} value={clinic.id}>
-                            <div className="flex flex-col items-start">
-                              <span className="font-medium">{clinic.name}</span>
-                              <span className="text-sm text-muted-foreground">
-                                {clinic.address && `${clinic.address}, `}{clinic.city}
-                              </span>
-                            </div>
-                          </SelectItem>
-                        ))}
+                        {clinics
+                          .filter(clinic => clinic.id && clinic.id.trim() !== '')
+                          .map((clinic) => (
+                            <SelectItem key={clinic.id} value={clinic.id}>
+                              <div className="flex flex-col items-start">
+                                <span className="font-medium">{clinic.name}</span>
+                                <span className="text-sm text-muted-foreground">
+                                  {clinic.address && `${clinic.address}, `}{clinic.city}
+                                </span>
+                              </div>
+                            </SelectItem>
+                          ))}
                       </SelectContent>
                     </Select>
                   </div>
