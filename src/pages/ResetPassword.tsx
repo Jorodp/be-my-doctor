@@ -27,23 +27,75 @@ export default function ResetPassword() {
     console.log('Type:', type);
     console.log('Search params:', searchParams.toString());
     console.log('Full URL:', window.location.href);
+    console.log('Hash:', window.location.hash);
     
-    // Verificar si Supabase puede manejar la sesión automáticamente
-    const handleSession = async () => {
+    // Parse hash fragment for Supabase tokens
+    const parseHashParams = () => {
+      const hash = window.location.hash.substring(1); // Remove the #
+      const params = new URLSearchParams(hash);
+      return {
+        access_token: params.get('access_token'),
+        refresh_token: params.get('refresh_token'),
+        type: params.get('type'),
+        error: params.get('error'),
+        error_description: params.get('error_description')
+      };
+    };
+
+    const handlePasswordReset = async () => {
       try {
-        // Intentar obtener la sesión actual
+        // First check if we have tokens in the hash (from email link)
+        const hashParams = parseHashParams();
+        console.log('Hash params:', hashParams);
+        
+        if (hashParams.error) {
+          console.error('Auth error from hash:', hashParams.error, hashParams.error_description);
+          toast({
+            variant: "destructive",
+            title: "Error de autenticación",
+            description: hashParams.error_description || "Error en el enlace de recuperación."
+          });
+          navigate('/auth');
+          return;
+        }
+
+        if (hashParams.access_token && hashParams.type === 'recovery') {
+          console.log('Recovery tokens found in hash, setting session');
+          // Set the session with the tokens from the URL
+          const { data, error } = await supabase.auth.setSession({
+            access_token: hashParams.access_token,
+            refresh_token: hashParams.refresh_token || ''
+          });
+          
+          if (error) {
+            console.error('Error setting session:', error);
+            toast({
+              variant: "destructive",
+              title: "Error",
+              description: "No se pudo validar el enlace de recuperación."
+            });
+            navigate('/auth');
+            return;
+          }
+          
+          console.log('Session set successfully:', data.session);
+          // Clean the URL hash after successful session setup
+          window.history.replaceState(null, '', '/reset-password');
+          return;
+        }
+
+        // Check if we already have a valid session
         const { data: { session }, error } = await supabase.auth.getSession();
         console.log('Current session:', session);
-        console.log('Session error:', error);
         
         if (session) {
           console.log('User is authenticated, ready to reset password');
-          return; // Usuario autenticado, puede proceder
+          return;
         }
-        
-        // Si no hay sesión pero hay parámetros de recovery, verificar
-        if (!token && !type) {
-          console.log('No token or type found in URL');
+
+        // If no session and no valid tokens in URL
+        if (!hashParams.access_token && !token && !type) {
+          console.log('No valid recovery data found');
           toast({
             variant: "destructive",
             title: "Enlace inválido",
@@ -52,17 +104,17 @@ export default function ResetPassword() {
           navigate('/auth');
         }
       } catch (error) {
-        console.error('Error handling session:', error);
+        console.error('Error in password reset flow:', error);
         toast({
           variant: "destructive",
           title: "Error",
-          description: "Hubo un problema al verificar la sesión. Intenta de nuevo."
+          description: "Hubo un problema al procesar el enlace de recuperación."
         });
         navigate('/auth');
       }
     };
 
-    handleSession();
+    handlePasswordReset();
   }, [token, type, navigate, toast, searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
