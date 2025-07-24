@@ -5,13 +5,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, UserCheck, Clock, Shield, Star, Calendar, Activity, CreditCard, FileText, DollarSign } from 'lucide-react';
+import { Users, UserCheck, Clock, Shield, Star, Calendar, Activity, CreditCard, FileText, DollarSign, UserPlus } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
 import { DoctorListComponent } from '@/components/admin/DoctorListComponent';
 import { PatientsList } from '@/components/admin/PatientsList';
 import { AdminAppointments } from '@/components/admin/AdminAppointments';
 import { PaymentSettings } from '@/components/admin/PaymentSettings';
+import DoctorRegistrationRequests from '@/components/admin/DoctorRegistrationRequests';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { DashboardLayout } from '@/components/ui/DashboardLayout';
@@ -370,8 +371,9 @@ export const AdminDashboard = () => {
 
         {/* Main Management Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="overview">Resumen</TabsTrigger>
+            <TabsTrigger value="requests">Solicitudes</TabsTrigger>
             <TabsTrigger value="doctors">Doctores</TabsTrigger>
             <TabsTrigger value="patients">Pacientes</TabsTrigger>
             <TabsTrigger value="pricing">Precios</TabsTrigger>
@@ -426,7 +428,11 @@ export const AdminDashboard = () => {
                     <CardTitle>Acciones Rápidas</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      <Button variant="outline" className="h-20 flex flex-col gap-2" onClick={() => setActiveTab('requests')}>
+                        <UserPlus className="h-6 w-6" />
+                        Nuevas Solicitudes
+                      </Button>
                       <Button className="h-20 flex flex-col gap-2" onClick={() => setActiveTab('doctors')}>
                         <UserCheck className="h-6 w-6" />
                         Gestionar Doctores
@@ -444,6 +450,10 @@ export const AdminDashboard = () => {
                 </Card>
               </div>
             </div>
+          </TabsContent>
+
+          <TabsContent value="requests">
+            <DoctorRegistrationRequests />
           </TabsContent>
 
           <TabsContent value="doctors">

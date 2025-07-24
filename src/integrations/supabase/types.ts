@@ -1244,6 +1244,72 @@ export type Database = {
         }
         Relationships: []
       }
+      doctor_registration_requests: {
+        Row: {
+          additional_notes: string | null
+          admin_notes: string | null
+          clinic_address: string | null
+          clinic_city: string | null
+          clinic_state: string | null
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          phone: string
+          preferred_contact_method: string | null
+          preferred_contact_time: string | null
+          professional_license: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          specialty: string
+          status: string
+          updated_at: string
+          years_experience: number
+        }
+        Insert: {
+          additional_notes?: string | null
+          admin_notes?: string | null
+          clinic_address?: string | null
+          clinic_city?: string | null
+          clinic_state?: string | null
+          created_at?: string
+          email: string
+          full_name: string
+          id?: string
+          phone: string
+          preferred_contact_method?: string | null
+          preferred_contact_time?: string | null
+          professional_license: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          specialty: string
+          status?: string
+          updated_at?: string
+          years_experience: number
+        }
+        Update: {
+          additional_notes?: string | null
+          admin_notes?: string | null
+          clinic_address?: string | null
+          clinic_city?: string | null
+          clinic_state?: string | null
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          phone?: string
+          preferred_contact_method?: string | null
+          preferred_contact_time?: string | null
+          professional_license?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          specialty?: string
+          status?: string
+          updated_at?: string
+          years_experience?: number
+        }
+        Relationships: []
+      }
       job_runs: {
         Row: {
           details: Json | null
@@ -2670,6 +2736,18 @@ export type Database = {
           consultation_ended_at: string
           consultation_duration_minutes: number
           total_clinic_time_minutes: number
+        }[]
+      }
+      create_doctor_from_request: {
+        Args: {
+          p_request_id: string
+          p_admin_id: string
+          p_temp_password?: string
+        }
+        Returns: {
+          doctor_user_id: string
+          doctor_profile_id: string
+          temp_password: string
         }[]
       }
       create_prescription: {
