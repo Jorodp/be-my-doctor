@@ -26,7 +26,7 @@ const Index = () => {
           </div>
         </section>
         
-        <Testimonials />
+        {/* <Testimonials /> */}
       </main>
       <Footer />
     </div>

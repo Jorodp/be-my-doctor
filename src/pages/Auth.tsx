@@ -307,73 +307,17 @@ export default function Auth() {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="role">Tipo de usuario</Label>
-                  <Select value={role} onValueChange={(value: UserRole) => setRole(value)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="patient">Paciente</SelectItem>
-                      <SelectItem value="doctor">Médico</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <div className="bg-muted/50 border border-border rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <UserCircle className="h-5 w-5 text-primary" />
+                      <Label className="text-sm font-medium">Registro de pacientes</Label>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Este formulario es exclusivamente para el registro de pacientes. 
+                      Si eres un profesional de la salud, utiliza el formulario de solicitud en la página principal.
+                    </p>
+                  </div>
                 </div>
-
-                {role === 'doctor' && (
-                  <>
-                    <div className="space-y-2">
-                      <Label htmlFor="license">Cédula Profesional</Label>
-                      <Input
-                        id="license"
-                        value={professionalLicense}
-                        onChange={(e) => setProfessionalLicense(e.target.value)}
-                        required
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="specialty">Especialidad</Label>
-                      <Input
-                        id="specialty"
-                        value={specialty}
-                        onChange={(e) => setSpecialty(e.target.value)}
-                        required
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="biography">Biografía</Label>
-                      <Textarea
-                        id="biography"
-                        value={biography}
-                        onChange={(e) => setBiography(e.target.value)}
-                        placeholder="Cuéntanos sobre tu experiencia profesional..."
-                      />
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="experience">Años de experiencia</Label>
-                        <Input
-                          id="experience"
-                          type="number"
-                          value={yearsExperience}
-                          onChange={(e) => setYearsExperience(e.target.value)}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="fee">Consulta (MXN)</Label>
-                        <Input
-                          id="fee"
-                          type="number"
-                          step="0.01"
-                          value={consultationFee}
-                          onChange={(e) => setConsultationFee(e.target.value)}
-                        />
-                      </div>
-                    </div>
-                  </>
-                )}
                 
                 <div className="space-y-2">
                   <Label htmlFor="signup-password">Contraseña</Label>
