@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, MapPin, Trash2, Star, Building2 } from 'lucide-react';
+import { Plus, MapPin, Trash2, Star, Building2, Users } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 interface Clinic {
@@ -21,6 +21,19 @@ interface Clinic {
   is_primary?: boolean;
 }
 
+interface Assistant {
+  id: string;
+  user_id: string;
+  full_name: string;
+}
+
+interface ClinicAssistant {
+  id: string;
+  clinic_id: string;
+  assistant_id: string;
+  full_name: string;
+}
+
 interface DoctorClinicsManagerProps {
   doctorUserId: string;
   onClinicsChange?: () => void;
@@ -28,6 +41,8 @@ interface DoctorClinicsManagerProps {
 
 export function DoctorClinicsManager({ doctorUserId, onClinicsChange }: DoctorClinicsManagerProps) {
   const [clinics, setClinics] = useState<Clinic[]>([]);
+  const [assistants, setAssistants] = useState<Assistant[]>([]);
+  const [clinicAssistants, setClinicAssistants] = useState<ClinicAssistant[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editingClinic, setEditingClinic] = useState<Clinic | null>(null);
@@ -40,11 +55,13 @@ export function DoctorClinicsManager({ doctorUserId, onClinicsChange }: DoctorCl
     city: '',
     state: '',
     country: 'México',
-    consultation_fee: ''
+    consultation_fee: '',
+    selectedAssistants: [] as string[]
   });
 
   useEffect(() => {
     loadClinics();
+    loadAssistants();
   }, [doctorUserId]);
 
   const loadClinics = async () => {
@@ -71,6 +88,9 @@ export function DoctorClinicsManager({ doctorUserId, onClinicsChange }: DoctorCl
       if (clinicsError) throw clinicsError;
 
       setClinics(clinicsData || []);
+      
+      // Cargar asistentes de las clínicas
+      await loadClinicAssistants();
     } catch (error) {
       console.error('Error loading clinics:', error);
       toast({
@@ -80,6 +100,47 @@ export function DoctorClinicsManager({ doctorUserId, onClinicsChange }: DoctorCl
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadAssistants = async () => {
+    try {
+      const { data: assistantsData, error } = await supabase
+        .from('profiles')
+        .select('id, user_id, full_name')
+        .eq('role', 'assistant')
+        .order('full_name');
+
+      if (error) throw error;
+      setAssistants(assistantsData || []);
+    } catch (error) {
+      console.error('Error loading assistants:', error);
+    }
+  };
+
+  const loadClinicAssistants = async () => {
+    try {
+      const { data: clinicAssistantsData, error } = await supabase
+        .from('clinic_assistants')
+        .select(`
+          id,
+          clinic_id,
+          assistant_id,
+          profiles!inner(full_name)
+        `);
+
+      if (error) throw error;
+
+      const formattedData = clinicAssistantsData?.map((item: any) => ({
+        id: item.id,
+        clinic_id: item.clinic_id,
+        assistant_id: item.assistant_id,
+        full_name: item.profiles?.full_name || 'Sin nombre'
+      })) || [];
+
+      setClinicAssistants(formattedData);
+    } catch (error) {
+      console.error('Error loading clinic assistants:', error);
     }
   };
 
@@ -97,7 +158,8 @@ export function DoctorClinicsManager({ doctorUserId, onClinicsChange }: DoctorCl
       city: '',
       state: '',
       country: 'México',
-      consultation_fee: ''
+      consultation_fee: '',
+      selectedAssistants: []
     });
     setEditingClinic(null);
     setIsAddingNew(false);
@@ -105,15 +167,48 @@ export function DoctorClinicsManager({ doctorUserId, onClinicsChange }: DoctorCl
 
   const handleEdit = (clinic: Clinic) => {
     setEditingClinic(clinic);
+    
+    // Obtener asistentes de esta clínica
+    const assistantsForClinic = clinicAssistants
+      .filter(ca => ca.clinic_id === clinic.id)
+      .map(ca => ca.assistant_id);
+
     setFormData({
       name: clinic.name,
       address: clinic.address || '',
       city: clinic.city || '',
       state: clinic.state || '',
       country: clinic.country || 'México',
-      consultation_fee: clinic.consultation_fee?.toString() || ''
+      consultation_fee: clinic.consultation_fee?.toString() || '',
+      selectedAssistants: assistantsForClinic
     });
     setIsAddingNew(false);
+  };
+
+  const assignAssistantsToClinic = async (clinicId: string, assistantIds: string[]) => {
+    if (assistantIds.length === 0) return;
+
+    const assignments = assistantIds.map(assistantId => ({
+      clinic_id: clinicId,
+      assistant_id: assistantId
+    }));
+
+    const { error } = await supabase
+      .from('clinic_assistants')
+      .insert(assignments);
+
+    if (error) throw error;
+  };
+
+  const updateClinicAssistants = async (clinicId: string, assistantIds: string[]) => {
+    // Primero eliminar asignaciones existentes
+    await supabase
+      .from('clinic_assistants')
+      .delete()
+      .eq('clinic_id', clinicId);
+
+    // Luego agregar las nuevas asignaciones
+    await assignAssistantsToClinic(clinicId, assistantIds);
   };
 
   const handleSave = async () => {
@@ -158,17 +253,27 @@ export function DoctorClinicsManager({ doctorUserId, onClinicsChange }: DoctorCl
 
         if (error) throw error;
 
+        // Actualizar asistentes de la clínica
+        await updateClinicAssistants(editingClinic.id, formData.selectedAssistants);
+
         toast({
           title: 'Éxito',
           description: 'Clínica actualizada correctamente'
         });
       } else {
         // Crear nueva clínica
-        const { error } = await supabase
+        const { data: newClinic, error } = await supabase
           .from('clinics')
-          .insert(clinicData);
+          .insert(clinicData)
+          .select()
+          .single();
 
         if (error) throw error;
+
+        // Asignar asistentes a la nueva clínica
+        if (formData.selectedAssistants.length > 0) {
+          await assignAssistantsToClinic(newClinic.id, formData.selectedAssistants);
+        }
 
         toast({
           title: 'Éxito',
@@ -178,6 +283,7 @@ export function DoctorClinicsManager({ doctorUserId, onClinicsChange }: DoctorCl
 
       resetForm();
       await loadClinics();
+      await loadClinicAssistants();
       onClinicsChange?.();
 
     } catch (error) {
@@ -193,13 +299,38 @@ export function DoctorClinicsManager({ doctorUserId, onClinicsChange }: DoctorCl
   };
 
   const handleDelete = async (clinicId: string) => {
-    if (!confirm('¿Está seguro de que desea eliminar esta clínica?')) {
-      return;
-    }
-
     try {
+      // Verificar si hay citas asociadas a esta clínica
+      const { data: appointments, error: appointmentsError } = await supabase
+        .from('appointments')
+        .select('id')
+        .eq('clinic_id', clinicId)
+        .limit(1);
+
+      if (appointmentsError) throw appointmentsError;
+
+      if (appointments && appointments.length > 0) {
+        toast({
+          title: 'No se puede eliminar',
+          description: 'Esta clínica tiene citas asociadas. No se puede eliminar.',
+          variant: 'destructive'
+        });
+        return;
+      }
+
+      if (!confirm('¿Está seguro de que desea eliminar esta clínica?')) {
+        return;
+      }
+
       setSaving(true);
 
+      // Primero eliminar asistentes asignados
+      await supabase
+        .from('clinic_assistants')
+        .delete()
+        .eq('clinic_id', clinicId);
+
+      // Luego eliminar la clínica
       const { error } = await supabase
         .from('clinics')
         .delete()
@@ -213,6 +344,7 @@ export function DoctorClinicsManager({ doctorUserId, onClinicsChange }: DoctorCl
       });
 
       await loadClinics();
+      await loadClinicAssistants();
       onClinicsChange?.();
 
     } catch (error) {
@@ -251,6 +383,7 @@ export function DoctorClinicsManager({ doctorUserId, onClinicsChange }: DoctorCl
       });
 
       await loadClinics();
+      await loadClinicAssistants();
       onClinicsChange?.();
 
     } catch (error) {
@@ -291,7 +424,7 @@ export function DoctorClinicsManager({ doctorUserId, onClinicsChange }: DoctorCl
                 className="border rounded-lg p-4 space-y-2"
               >
                 <div className="flex items-start justify-between">
-                  <div className="space-y-1">
+                  <div className="space-y-2">
                     <div className="flex items-center gap-2">
                       <h4 className="font-medium">{clinic.name}</h4>
                       {clinic.is_primary && (
@@ -313,6 +446,17 @@ export function DoctorClinicsManager({ doctorUserId, onClinicsChange }: DoctorCl
                       <p className="text-sm font-medium text-primary">
                         Consulta: ${clinic.consultation_fee.toLocaleString()} MXN
                       </p>
+                    )}
+                    {/* Mostrar asistentes asignados */}
+                    {clinicAssistants.filter(ca => ca.clinic_id === clinic.id).length > 0 && (
+                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                        <Users className="h-3 w-3" />
+                        Asistentes: {clinicAssistants
+                          .filter(ca => ca.clinic_id === clinic.id)
+                          .map(ca => ca.full_name)
+                          .join(', ')
+                        }
+                      </div>
                     )}
                   </div>
                   <div className="flex gap-2">
@@ -416,6 +560,46 @@ export function DoctorClinicsManager({ doctorUserId, onClinicsChange }: DoctorCl
                 />
               </div>
             </div>
+            
+            {/* Sección de asistentes */}
+            <div className="space-y-2 mt-4">
+              <Label>Asistentes del consultorio</Label>
+              <div className="space-y-2 max-h-40 overflow-y-auto border rounded p-2">
+                {assistants.map((assistant) => (
+                  <div key={assistant.id} className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id={assistant.id}
+                      checked={formData.selectedAssistants.includes(assistant.id)}
+                      onChange={(e) => {
+                        const assistantId = assistant.id;
+                        if (e.target.checked) {
+                          setFormData(prev => ({
+                            ...prev,
+                            selectedAssistants: [...prev.selectedAssistants, assistantId]
+                          }));
+                        } else {
+                          setFormData(prev => ({
+                            ...prev,
+                            selectedAssistants: prev.selectedAssistants.filter(id => id !== assistantId)
+                          }));
+                        }
+                      }}
+                      className="rounded border-gray-300"
+                    />
+                    <label htmlFor={assistant.id} className="text-sm">
+                      {assistant.full_name}
+                    </label>
+                  </div>
+                ))}
+                {assistants.length === 0 && (
+                  <p className="text-sm text-muted-foreground">
+                    No hay asistentes disponibles
+                  </p>
+                )}
+              </div>
+            </div>
+
             <div className="flex gap-2 mt-4">
               <Button
                 onClick={handleSave}

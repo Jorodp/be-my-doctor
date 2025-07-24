@@ -394,16 +394,19 @@ export type Database = {
           assistant_id: string
           clinic_id: string
           created_at: string
+          id: string | null
         }
         Insert: {
           assistant_id: string
           clinic_id: string
           created_at?: string
+          id?: string | null
         }
         Update: {
           assistant_id?: string
           clinic_id?: string
           created_at?: string
+          id?: string | null
         }
         Relationships: [
           {
