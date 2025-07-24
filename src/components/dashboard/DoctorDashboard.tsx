@@ -42,6 +42,7 @@ import { DoctorChatManager } from '@/components/doctor/DoctorChatManager';
 import { DoctorAppointmentHistory } from '@/components/doctor/DoctorAppointmentHistory';
 import { AppointmentActionsExtended } from '@/components/AppointmentActionsExtended';
 import { ClinicsAndAssistantsManager } from '@/components/ClinicsAndAssistantsManager';
+import { ConsultationNotesForm } from '@/components/ConsultationNotesForm';
 
 interface DoctorProfile {
   id: string;
@@ -553,46 +554,61 @@ const DoctorDashboardContent = () => {
 
         {/* Main Content Tabs */}
         <Tabs defaultValue="consultas" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-10">
-            <TabsTrigger value="consultas" className="flex items-center gap-2">
-              <Timer className="h-4 w-4" />
-              Flujo de Consultas
+          <TabsList className="grid w-full grid-cols-11 text-xs">
+            <TabsTrigger value="consultas" className="flex items-center gap-1">
+              <Timer className="h-3 w-3" />
+              <span className="hidden sm:inline">Flujo de Consultas</span>
+              <span className="sm:hidden">Consultas</span>
             </TabsTrigger>
-            <TabsTrigger value="schedule" className="flex items-center gap-2">
-              <Settings className="h-4 w-4" />
-              Agenda
+            <TabsTrigger value="notas" className="flex items-center gap-1">
+              <FileText className="h-3 w-3" />
+              <span className="hidden sm:inline">Notas Médicas</span>
+              <span className="sm:hidden">Notas</span>
             </TabsTrigger>
-            <TabsTrigger value="clinics" className="flex items-center gap-2">
-              <Building2 className="h-4 w-4" />
-              Consultorios
+            <TabsTrigger value="schedule" className="flex items-center gap-1">
+              <Settings className="h-3 w-3" />
+              <span className="hidden sm:inline">Agenda</span>
+              <span className="sm:hidden">Agenda</span>
             </TabsTrigger>
-            <TabsTrigger value="today" className="flex items-center gap-2">
-              <Clock className="h-4 w-4" />
-              Citas de Hoy
+            <TabsTrigger value="clinics" className="flex items-center gap-1">
+              <Building2 className="h-3 w-3" />
+              <span className="hidden sm:inline">Consultorios</span>
+              <span className="sm:hidden">Clinicas</span>
             </TabsTrigger>
-            <TabsTrigger value="week" className="flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              Esta Semana
+            <TabsTrigger value="today" className="flex items-center gap-1">
+              <Clock className="h-3 w-3" />
+              <span className="hidden sm:inline">Citas de Hoy</span>
+              <span className="sm:hidden">Hoy</span>
             </TabsTrigger>
-            <TabsTrigger value="ratings" className="flex items-center gap-2">
-              <Star className="h-4 w-4" />
-              Calificaciones
+            <TabsTrigger value="week" className="flex items-center gap-1">
+              <Calendar className="h-3 w-3" />
+              <span className="hidden sm:inline">Esta Semana</span>
+              <span className="sm:hidden">Semana</span>
             </TabsTrigger>
-            <TabsTrigger value="income" className="flex items-center gap-2">
-              <DollarSign className="h-4 w-4" />
-              Ingresos
+            <TabsTrigger value="ratings" className="flex items-center gap-1">
+              <Star className="h-3 w-3" />
+              <span className="hidden sm:inline">Calificaciones</span>
+              <span className="sm:hidden">Rating</span>
             </TabsTrigger>
-            <TabsTrigger value="subscription" className="flex items-center gap-2">
-              <CreditCard className="h-4 w-4" />
-              Suscripción
+            <TabsTrigger value="income" className="flex items-center gap-1">
+              <DollarSign className="h-3 w-3" />
+              <span className="hidden sm:inline">Ingresos</span>
+              <span className="sm:hidden">$$$</span>
             </TabsTrigger>
-            <TabsTrigger value="chat" className="flex items-center gap-2">
-              <MessageSquare className="h-4 w-4" />
-              Chat
+            <TabsTrigger value="subscription" className="flex items-center gap-1">
+              <CreditCard className="h-3 w-3" />
+              <span className="hidden sm:inline">Suscripción</span>
+              <span className="sm:hidden">Subs</span>
             </TabsTrigger>
-            <TabsTrigger value="history" className="flex items-center gap-2">
-              <History className="h-4 w-4" />
-              Historial
+            <TabsTrigger value="chat" className="flex items-center gap-1">
+              <MessageSquare className="h-3 w-3" />
+              <span className="hidden sm:inline">Chat</span>
+              <span className="sm:hidden">Chat</span>
+            </TabsTrigger>
+            <TabsTrigger value="history" className="flex items-center gap-1">
+              <History className="h-3 w-3" />
+              <span className="hidden sm:inline">Historial</span>
+              <span className="sm:hidden">Hist</span>
             </TabsTrigger>
           </TabsList>
 
@@ -602,6 +618,62 @@ const DoctorDashboardContent = () => {
               userRole="doctor"
               onAppointmentUpdate={fetchAllData}
             />
+          </TabsContent>
+
+          <TabsContent value="notas">
+            <Card>
+              <CardHeader>
+                <CardTitle>Notas Médicas de Citas</CardTitle>
+                <CardDescription>
+                  Completa las notas médicas para cada cita. Selecciona una cita para agregar diagnóstico, prescripción y recomendaciones.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {todayAppointments.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <FileText className="h-12 w-12 mx-auto mb-4" />
+                    <p>No hay citas para hoy</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {todayAppointments
+                      .filter(apt => apt.status === 'scheduled' || apt.consultation_status === 'in_progress')
+                      .map((appointment) => (
+                        <div key={appointment.id}>
+                          <Card className="mb-4">
+                            <CardHeader className="pb-3">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                  <User className="h-4 w-4 text-muted-foreground" />
+                                  <div>
+                                    <h3 className="font-medium">
+                                      {appointment.patient_profile?.full_name || 'Paciente'}
+                                    </h3>
+                                    <p className="text-sm text-muted-foreground">
+                                      {formatTime(appointment.starts_at)} - {formatTime(appointment.ends_at)}
+                                    </p>
+                                  </div>
+                                </div>
+                                <Badge variant={appointment.consultation_status === 'in_progress' ? 'default' : 'secondary'}>
+                                  {appointment.consultation_status === 'in_progress' ? 'En consulta' : 'Programada'}
+                                </Badge>
+                              </div>
+                            </CardHeader>
+                          </Card>
+                          
+                          {appointment.consultation_status === 'in_progress' && (
+                            <ConsultationNotesForm
+                              appointmentId={appointment.id}
+                              patientName={appointment.patient_profile?.full_name || 'Paciente'}
+                              onSave={() => fetchAllData()}
+                            />
+                          )}
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="schedule">

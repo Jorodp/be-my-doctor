@@ -114,6 +114,31 @@ export function AssistantUpcomingAppointments({ doctorId }: AssistantUpcomingApp
     }
   };
 
+  const markPatientArrived = async (appointmentId: string) => {
+    try {
+      const { error } = await supabase.rpc('mark_patient_arrived', {
+        p_appointment_id: appointmentId,
+        p_actor_user_id: user?.id
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Paciente marcado como llegado",
+        description: "El estado de la cita ha sido actualizado"
+      });
+
+      fetchUpcomingAppointments();
+    } catch (error) {
+      console.error('Error marking patient arrived:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo marcar la llegada del paciente",
+        variant: "destructive"
+      });
+    }
+  };
+
   const markIdentityVerified = async (appointmentId: string) => {
     try {
       // Add verification note to appointment
@@ -281,6 +306,18 @@ export function AssistantUpcomingAppointments({ doctorId }: AssistantUpcomingApp
                       <Eye className="h-4 w-4 mr-1" />
                       Ver Detalles
                     </Button>
+
+                    {/* Mark Patient Arrived Button */}
+                    {appointment.status === 'scheduled' && (
+                      <Button 
+                        variant="secondary" 
+                        size="sm"
+                        onClick={() => markPatientArrived(appointment.id)}
+                      >
+                        <CheckCircle className="h-4 w-4 mr-1" />
+                        Paciente Llegó
+                      </Button>
+                    )}
 
                     {/* Identity Verification Button */}
                     {appointment.status === 'scheduled' && hasRequiredDocuments(appointment.patient_profile) && (
