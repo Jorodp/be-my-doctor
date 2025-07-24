@@ -928,6 +928,7 @@ export type Database = {
           consultation_fee: number | null
           consultorios: Json | null
           created_at: string
+          created_by_admin: string | null
           curp_document_url: string | null
           default_slot_duration_minutes: number
           experience_years: number | null
@@ -967,6 +968,7 @@ export type Database = {
           consultation_fee?: number | null
           consultorios?: Json | null
           created_at?: string
+          created_by_admin?: string | null
           curp_document_url?: string | null
           default_slot_duration_minutes?: number
           experience_years?: number | null
@@ -1006,6 +1008,7 @@ export type Database = {
           consultation_fee?: number | null
           consultorios?: Json | null
           created_at?: string
+          created_by_admin?: string | null
           curp_document_url?: string | null
           default_slot_duration_minutes?: number
           experience_years?: number | null
