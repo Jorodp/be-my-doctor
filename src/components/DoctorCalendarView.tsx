@@ -20,10 +20,10 @@ export function DoctorCalendarView({ doctorId }: DoctorCalendarViewProps) {
   const { user } = useAuth();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
-  const [selectedClinic, setSelectedClinic] = useState<string>('');
+  const [selectedClinic, setSelectedClinic] = useState<string>('all');
 
   const { data: clinics = [], isLoading: clinicsLoading } = useDoctorClinics(doctorId || '');
-  const { data: slots = [], isLoading, error } = useDoctorSlots(doctorId || '', selectedDate, selectedClinic || undefined);
+  const { data: slots = [], isLoading, error } = useDoctorSlots(doctorId || '', selectedDate, selectedClinic === 'all' ? undefined : selectedClinic);
   const bookAppointment = useBookAppointment();
 
   const hasAvailabilityForDate = (date: Date) => {
@@ -122,7 +122,7 @@ export function DoctorCalendarView({ doctorId }: DoctorCalendarViewProps) {
               <SelectValue placeholder="Selecciona un consultorio" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todos los consultorios</SelectItem>
+              <SelectItem value="all">Todos los consultorios</SelectItem>
               {clinics.map((clinic) => (
                 <SelectItem key={clinic.id} value={clinic.id}>
                   {clinic.name} - {clinic.address}

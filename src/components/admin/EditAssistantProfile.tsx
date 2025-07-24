@@ -60,7 +60,7 @@ export const EditAssistantProfile = ({
       setProfileData({
         full_name: assistantProfile.full_name || '',
         phone: assistantProfile.phone || '',
-        assigned_doctor_id: assistantProfile.assigned_doctor_id || ''
+        assigned_doctor_id: assistantProfile.assigned_doctor_id || 'none'
       });
     }
   }, [assistantProfile]);
@@ -139,7 +139,7 @@ export const EditAssistantProfile = ({
             action: 'update-assistant-doctor',
             userId: assistantProfile.user_id,
             profileData: {
-              assigned_doctor_id: profileData.assigned_doctor_id || null
+              assigned_doctor_id: profileData.assigned_doctor_id === 'none' ? null : profileData.assigned_doctor_id || null
             }
           }
         });
@@ -420,7 +420,7 @@ export const EditAssistantProfile = ({
                       <SelectValue placeholder="Seleccionar doctor" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Sin asignar</SelectItem>
+                      <SelectItem value="none">Sin asignar</SelectItem>
                       {doctors.map((doctor) => (
                         <SelectItem key={doctor.user_id} value={doctor.user_id}>
                           {doctor.full_name} - {doctor.specialty}
@@ -430,7 +430,7 @@ export const EditAssistantProfile = ({
                   </Select>
                 </div>
 
-                {profileData.assigned_doctor_id && (
+                {profileData.assigned_doctor_id && profileData.assigned_doctor_id !== 'none' && (
                   <div className="p-4 bg-muted rounded-lg">
                     <p className="text-sm">
                       <strong>Doctor actual:</strong> {doctors.find(d => d.user_id === profileData.assigned_doctor_id)?.full_name}

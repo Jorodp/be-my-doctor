@@ -131,7 +131,7 @@ export const ChatInterface = ({ defaultConversationId }: ChatInterfaceProps) => 
                         </SelectTrigger>
                         <SelectContent>
                           {/* This would be populated with actual assistants */}
-                          <SelectItem value="">Sin asistente</SelectItem>
+                          <SelectItem value="none">Sin asistente</SelectItem>
                           <SelectItem value="assistant1">Asistente Demo</SelectItem>
                         </SelectContent>
                       </Select>
