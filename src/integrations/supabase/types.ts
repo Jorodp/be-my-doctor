@@ -918,6 +918,36 @@ export type Database = {
         }
         Relationships: []
       }
+      doctor_physical_payments: {
+        Row: {
+          created_at: string
+          doctor_user_id: string
+          enabled: boolean
+          enabled_at: string | null
+          enabled_by: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          doctor_user_id: string
+          enabled?: boolean
+          enabled_at?: string | null
+          enabled_by?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          doctor_user_id?: string
+          enabled?: boolean
+          enabled_at?: string | null
+          enabled_by?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       doctor_profiles: {
         Row: {
           additional_certifications_urls: string[] | null
