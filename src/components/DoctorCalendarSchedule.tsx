@@ -13,7 +13,8 @@ import {
   CalendarX, 
   Plus,
   Trash2,
-  Settings
+  Settings,
+  Building
 } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { 
@@ -31,13 +32,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useDoctorClinics, DoctorClinic } from '@/hooks/useDoctorClinics';
 
 interface Availability {
   id: string;
-  date: string;
+  clinic_id: string;
+  weekday: number;
   start_time: string;
   end_time: string;
-  is_available: boolean;
+  is_active: boolean;
 }
 
 interface DoctorCalendarScheduleProps {
@@ -55,51 +58,43 @@ export const DoctorCalendarSchedule = ({ doctorId }: DoctorCalendarScheduleProps
   const [loading, setLoading] = useState(true);
   const [availability, setAvailability] = useState<Availability[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [selectedClinic, setSelectedClinic] = useState<string>('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [newStartTime, setNewStartTime] = useState('');
   const [newEndTime, setNewEndTime] = useState('');
   const { toast } = useToast();
+  
+  // Obtener clínicas del doctor
+  const { data: clinics = [], isLoading: clinicsLoading } = useDoctorClinics(doctorId);
 
   useEffect(() => {
-    fetchAvailability();
-  }, [doctorId]);
+    if (clinics.length > 0 && !selectedClinic) {
+      setSelectedClinic(clinics[0].id);
+    }
+  }, [clinics, selectedClinic]);
+
+  useEffect(() => {
+    if (selectedClinic) {
+      fetchAvailability();
+    }
+  }, [selectedClinic]);
 
   const fetchAvailability = async () => {
+    if (!selectedClinic) return;
+    
     setLoading(true);
     try {
       const { data, error } = await supabase
-        .from('doctor_availability')
+        .from('availabilities')
         .select('*')
-        .eq('doctor_user_id', doctorId)
-        .order('day_of_week')
+        .eq('clinic_id', selectedClinic)
+        .eq('is_active', true)
+        .order('weekday')
         .order('start_time');
 
       if (error) throw error;
 
-      // Convert day_of_week based availability to date-based for the next 3 months
-      const dateAvailability: Availability[] = [];
-      const today = new Date();
-      
-      for (let i = 0; i < 90; i++) {
-        const currentDate = addDays(today, i);
-        const dayOfWeek = currentDate.getDay();
-        
-        const dayAvailability = data?.filter(slot => 
-          slot.day_of_week === dayOfWeek && slot.is_available
-        ) || [];
-
-        dayAvailability.forEach(slot => {
-          dateAvailability.push({
-            id: `${currentDate.toISOString().split('T')[0]}-${slot.id}`,
-            date: currentDate.toISOString().split('T')[0],
-            start_time: slot.start_time,
-            end_time: slot.end_time,
-            is_available: slot.is_available
-          });
-        });
-      }
-
-      setAvailability(dateAvailability);
+      setAvailability(data || []);
     } catch (error) {
       console.error('Error fetching availability:', error);
       toast({
@@ -118,6 +113,15 @@ export const DoctorCalendarSchedule = ({ doctorId }: DoctorCalendarScheduleProps
       toast({
         title: "Error",
         description: "Selecciona una fecha en el calendario",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!selectedClinic) {
+      toast({
+        title: "Error",
+        description: "Selecciona un consultorio",
         variant: "destructive"
       });
       return;
@@ -151,16 +155,18 @@ export const DoctorCalendarSchedule = ({ doctorId }: DoctorCalendarScheduleProps
     }
 
     try {
-      const dayOfWeek = selectedDate.getDay();
+      // Convertir día de la semana (0=domingo, 1=lunes) a formato interno (0=lunes, 6=domingo)
+      const jsDay = selectedDate.getDay();
+      const weekday = jsDay === 0 ? 6 : jsDay - 1;
 
       const { error } = await supabase
-        .from('doctor_availability')
+        .from('availabilities')
         .insert({
-          doctor_user_id: doctorId,
-          day_of_week: dayOfWeek,
+          clinic_id: selectedClinic,
+          weekday: weekday,
           start_time: newStartTime,
           end_time: newEndTime,
-          is_available: true
+          is_active: true
         });
 
       if (error) throw error;
@@ -186,13 +192,10 @@ export const DoctorCalendarSchedule = ({ doctorId }: DoctorCalendarScheduleProps
 
   const toggleAvailability = async (availabilityId: string, currentStatus: boolean) => {
     try {
-      const slotIdParts = availabilityId.split('-');
-      const originalId = slotIdParts[slotIdParts.length - 1];
-
       const { error } = await supabase
-        .from('doctor_availability')
-        .update({ is_available: !currentStatus })
-        .eq('id', originalId);
+        .from('availabilities')
+        .update({ is_active: !currentStatus })
+        .eq('id', availabilityId);
 
       if (error) throw error;
 
@@ -213,8 +216,14 @@ export const DoctorCalendarSchedule = ({ doctorId }: DoctorCalendarScheduleProps
   };
 
   const getDateAvailability = (date: Date) => {
-    const dateStr = date.toISOString().split('T')[0];
-    return availability.filter(slot => slot.date === dateStr);
+    if (!selectedClinic) return [];
+    // Convertir día de la semana (0=domingo, 1=lunes) a formato interno (0=lunes, 6=domingo)
+    const jsDay = date.getDay();
+    const weekday = jsDay === 0 ? 6 : jsDay - 1;
+    
+    return availability.filter(slot => 
+      slot.clinic_id === selectedClinic && slot.weekday === weekday && slot.is_active
+    );
   };
 
   const hasAvailability = (date: Date) => {
@@ -226,7 +235,7 @@ export const DoctorCalendarSchedule = ({ doctorId }: DoctorCalendarScheduleProps
     return getDateAvailability(selectedDate);
   };
 
-  if (loading) {
+  if (loading || clinicsLoading) {
     return (
       <div className="flex justify-center items-center min-h-64">
         <LoadingSpinner />
@@ -234,8 +243,56 @@ export const DoctorCalendarSchedule = ({ doctorId }: DoctorCalendarScheduleProps
     );
   }
 
+  if (clinics.length === 0) {
+    return (
+      <Card>
+        <CardContent className="text-center py-8">
+          <Building className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+          <p className="text-lg font-semibold mb-2">No tienes consultorios registrados</p>
+          <p className="text-muted-foreground">
+            Necesitas tener al menos un consultorio para configurar horarios.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const selectedClinicInfo = clinics.find(c => c.id === selectedClinic);
+
   return (
     <div className="space-y-6">
+      {/* Selector de consultorio */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Building className="h-5 w-5" />
+            Seleccionar Consultorio
+          </CardTitle>
+          <CardDescription>
+            Cada consultorio tiene su propia agenda independiente
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Select value={selectedClinic} onValueChange={setSelectedClinic}>
+            <SelectTrigger>
+              <SelectValue placeholder="Selecciona un consultorio" />
+            </SelectTrigger>
+            <SelectContent>
+              {clinics.map((clinic) => (
+                <SelectItem key={clinic.id} value={clinic.id}>
+                  <div className="flex flex-col items-start">
+                    <span className="font-medium">{clinic.name}</span>
+                    <span className="text-sm text-muted-foreground">
+                      {clinic.address}, {clinic.city}
+                    </span>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </CardContent>
+      </Card>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Calendar */}
         <Card>
@@ -243,9 +300,14 @@ export const DoctorCalendarSchedule = ({ doctorId }: DoctorCalendarScheduleProps
             <CardTitle className="flex items-center gap-2">
               <CalendarCheck className="h-5 w-5" />
               Calendario de Disponibilidad
+              {selectedClinicInfo && (
+                <Badge variant="outline" className="ml-2">
+                  {selectedClinicInfo.name}
+                </Badge>
+              )}
             </CardTitle>
             <CardDescription>
-              Selecciona una fecha para ver y gestionar tus horarios
+              Selecciona una fecha para ver y gestionar los horarios de {selectedClinicInfo?.name}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -293,16 +355,21 @@ export const DoctorCalendarSchedule = ({ doctorId }: DoctorCalendarScheduleProps
               <div className="flex items-center gap-2">
                 <Clock className="h-5 w-5" />
                 Horarios del {selectedDate ? format(selectedDate, "d 'de' MMMM", { locale: es }) : 'día seleccionado'}
+                {selectedClinicInfo && (
+                  <Badge variant="secondary" className="ml-2">
+                    {selectedClinicInfo.name}
+                  </Badge>
+                )}
               </div>
               <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
                 <DialogTrigger asChild>
                   <Button 
                     size="sm" 
                     className="flex items-center gap-2"
-                    disabled={!selectedDate}
+                    disabled={!selectedDate || !selectedClinic}
                   >
                     <Plus className="h-4 w-4" />
-                    {selectedDate ? 'Agregar' : 'Selecciona fecha'}
+                    {!selectedClinic ? 'Selecciona consultorio' : !selectedDate ? 'Selecciona fecha' : 'Agregar'}
                   </Button>
                 </DialogTrigger>
                   <DialogContent>
@@ -406,17 +473,17 @@ export const DoctorCalendarSchedule = ({ doctorId }: DoctorCalendarScheduleProps
                         <span className="font-medium">
                           {slot.start_time} - {slot.end_time}
                         </span>
-                        <Badge variant={slot.is_available ? "default" : "secondary"}>
-                          {slot.is_available ? "Disponible" : "No disponible"}
+                        <Badge variant={slot.is_active ? "default" : "secondary"}>
+                          {slot.is_active ? "Disponible" : "No disponible"}
                         </Badge>
                       </div>
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => toggleAvailability(slot.id, slot.is_available)}
+                        onClick={() => toggleAvailability(slot.id, slot.is_active)}
                         className="flex items-center gap-2"
                       >
-                        {slot.is_available ? (
+                        {slot.is_active ? (
                           <>
                             <CalendarX className="h-4 w-4" />
                             Deshabilitar

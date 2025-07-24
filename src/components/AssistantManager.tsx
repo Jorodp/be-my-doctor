@@ -15,10 +15,19 @@ import {
   CheckCircle, 
   AlertCircle,
   Clock,
-  Phone
+  Phone,
+  Building
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { useDoctorClinics, DoctorClinic } from '@/hooks/useDoctorClinics';
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface Assistant {
   id: string;
@@ -28,36 +37,57 @@ interface Assistant {
   profile_image_url: string | null;
   email?: string;
   created_at: string;
+  clinic_name?: string;
+}
+
+interface ClinicAssistant {
+  id: string;
+  clinic_id: string;
+  assistant_id: string;
+  clinic_name: string;
+  assistant: Assistant;
 }
 
 export const AssistantManager = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   
-  const [assistants, setAssistants] = useState<Assistant[]>([]);
+  const [clinicAssistants, setClinicAssistants] = useState<ClinicAssistant[]>([]);
   const [loading, setLoading] = useState(true);
   const [inviteEmail, setInviteEmail] = useState('');
+  const [selectedClinic, setSelectedClinic] = useState<string>('');
   const [inviting, setInviting] = useState(false);
+  
+  // Obtener clínicas del doctor
+  const { data: clinics = [], isLoading: clinicsLoading } = useDoctorClinics(user?.id || '');
+
+  useEffect(() => {
+    if (clinics.length > 0 && !selectedClinic) {
+      setSelectedClinic(clinics[0].id);
+    }
+  }, [clinics, selectedClinic]);
 
   useEffect(() => {
     if (user) {
-      fetchAssistants();
+      fetchClinicAssistants();
     }
   }, [user]);
 
-  const fetchAssistants = async () => {
+  const fetchClinicAssistants = async () => {
     if (!user) return;
     
     try {
       setLoading(true);
       
-      // Obtener asistentes asignados usando la nueva estructura
-      const { data: assistantAssignments, error } = await supabase
-        .from('doctor_assistants')
+      // Obtener asistentes por consultorio
+      const { data: clinicAssignments, error } = await supabase
+        .from('clinic_assistants')
         .select(`
+          id,
+          clinic_id,
           assistant_id,
-          assigned_at,
-          profiles!doctor_assistants_assistant_id_fkey(
+          clinics!inner(name),
+          profiles!clinic_assistants_assistant_id_fkey(
             id,
             user_id,
             full_name,
@@ -66,15 +96,15 @@ export const AssistantManager = () => {
             created_at
           )
         `)
-        .eq('doctor_id', user.id);
+        .eq('clinics.doctor_id', user.id);
 
       if (error) throw error;
 
       // Obtener emails de auth.users para cada asistente
       const assistantsWithEmails = await Promise.all(
-        (assistantAssignments || []).map(async (assignment: any) => {
+        (clinicAssignments || []).map(async (assignment: any) => {
           const assistant = assignment.profiles;
-          if (!assistant) return null;
+          if (!assistant || !assignment.clinics) return null;
           
           try {
             // Usar edge function para obtener información del usuario
@@ -84,14 +114,26 @@ export const AssistantManager = () => {
             );
             
             return {
-              ...assistant,
-              email: userInfo?.email || 'Email no disponible'
+              id: assignment.id,
+              clinic_id: assignment.clinic_id,
+              assistant_id: assignment.assistant_id,
+              clinic_name: assignment.clinics.name,
+              assistant: {
+                ...assistant,
+                email: userInfo?.email || 'Email no disponible'
+              }
             };
           } catch (error) {
             console.error('Error fetching user email:', error);
             return {
-              ...assistant,
-              email: 'Email no disponible'
+              id: assignment.id,
+              clinic_id: assignment.clinic_id,
+              assistant_id: assignment.assistant_id,
+              clinic_name: assignment.clinics.name,
+              assistant: {
+                ...assistant,
+                email: 'Email no disponible'
+              }
             };
           }
         })
@@ -99,9 +141,9 @@ export const AssistantManager = () => {
 
       // Filtrar valores nulos
       const validAssistants = assistantsWithEmails.filter(Boolean);
-      setAssistants(validAssistants);
+      setClinicAssistants(validAssistants);
     } catch (error) {
-      console.error('Error fetching assistants:', error);
+      console.error('Error fetching clinic assistants:', error);
       toast({
         title: "Error",
         description: "No se pudieron cargar los asistentes",
@@ -122,12 +164,21 @@ export const AssistantManager = () => {
       return;
     }
 
+    if (!selectedClinic) {
+      toast({
+        title: "Error",
+        description: "Por favor selecciona un consultorio",
+        variant: "destructive"
+      });
+      return;
+    }
+
     if (!user) return;
 
     try {
       setInviting(true);
       
-      // Simplified approach: Only use the edge function but with better error handling
+      // Primero crear/asignar el asistente al doctor
       const { data, error } = await supabase.functions.invoke('assign-assistant-by-email', {
         body: { 
           email: inviteEmail.trim(),
@@ -144,22 +195,33 @@ export const AssistantManager = () => {
         throw new Error(data?.error || 'Error desconocido del servidor');
       }
 
+      // Luego asignar al consultorio específico
+      const { error: clinicAssignError } = await supabase
+        .from('clinic_assistants')
+        .insert({
+          clinic_id: selectedClinic,
+          assistant_id: data.assistant_profile_id
+        });
+
+      if (clinicAssignError) {
+        console.error('Error assigning to clinic:', clinicAssignError);
+        // Si el asistente ya está asignado a este consultorio, está bien
+        if (!clinicAssignError.message.includes('duplicate') && !clinicAssignError.message.includes('unique')) {
+          throw clinicAssignError;
+        }
+      }
+
       toast({
         title: "¡Éxito!",
-        description: data.message || "Asistente asignado correctamente",
+        description: `Asistente asignado al consultorio ${clinics.find(c => c.id === selectedClinic)?.name}`,
         variant: "default"
       });
 
       setInviteEmail('');
-      fetchAssistants();
+      fetchClinicAssistants();
       
     } catch (error: any) {
       console.error('Error inviting assistant:', error);
-      console.error('Error details:', {
-        message: error.message,
-        stack: error.stack,
-        context: error.context
-      });
       
       toast({
         title: "Error",
@@ -171,26 +233,25 @@ export const AssistantManager = () => {
     }
   };
 
-  const handleRemoveAssistant = async (assistantId: string) => {
+  const handleRemoveAssistant = async (clinicAssistantId: string, clinicName: string) => {
     if (!user) return;
 
     try {
-      // Remover la asignación del asistente desde doctor_assistants
+      // Remover la asignación del asistente desde clinic_assistants
       const { error } = await supabase
-        .from('doctor_assistants')
+        .from('clinic_assistants')
         .delete()
-        .eq('doctor_id', user.id)
-        .eq('assistant_id', assistantId);
+        .eq('id', clinicAssistantId);
 
       if (error) throw error;
 
       toast({
         title: "Asistente removido",
-        description: "El asistente ha sido removido exitosamente",
+        description: `El asistente ha sido removido del consultorio ${clinicName}`,
         variant: "default"
       });
 
-      fetchAssistants(); // Recargar la lista
+      fetchClinicAssistants(); // Recargar la lista
     } catch (error) {
       console.error('Error removing assistant:', error);
       toast({
@@ -220,7 +281,7 @@ export const AssistantManager = () => {
         variant: "default"
       });
 
-      fetchAssistants();
+      fetchClinicAssistants();
       
     } catch (error: any) {
       console.error('Error updating assistant:', error);
@@ -232,7 +293,7 @@ export const AssistantManager = () => {
     }
   };
 
-  if (loading) {
+  if (loading || clinicsLoading) {
     return (
       <div className="flex justify-center items-center py-8">
         <LoadingSpinner />
@@ -240,17 +301,68 @@ export const AssistantManager = () => {
     );
   }
 
+  if (clinics.length === 0) {
+    return (
+      <Card>
+        <CardContent className="text-center py-8">
+          <Building className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+          <p className="text-lg font-semibold mb-2">No tienes consultorios registrados</p>
+          <p className="text-muted-foreground">
+            Necesitas tener al menos un consultorio para asignar asistentes.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <div className="space-y-6">
+      {/* Selector de consultorio */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Building className="h-5 w-5" />
+            Seleccionar Consultorio
+          </CardTitle>
+          <CardDescription>
+            Cada consultorio puede tener sus propios asistentes
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Select value={selectedClinic} onValueChange={setSelectedClinic}>
+            <SelectTrigger>
+              <SelectValue placeholder="Selecciona un consultorio" />
+            </SelectTrigger>
+            <SelectContent>
+              {clinics.map((clinic) => (
+                <SelectItem key={clinic.id} value={clinic.id}>
+                  <div className="flex flex-col items-start">
+                    <span className="font-medium">{clinic.name}</span>
+                    <span className="text-sm text-muted-foreground">
+                      {clinic.address}, {clinic.city}
+                    </span>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </CardContent>
+      </Card>
+
       {/* Formulario para agregar asistente */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <UserPlus className="h-5 w-5" />
             Asignar Nuevo Asistente
+            {selectedClinic && clinics.find(c => c.id === selectedClinic) && (
+              <Badge variant="outline" className="ml-2">
+                {clinics.find(c => c.id === selectedClinic)?.name}
+              </Badge>
+            )}
           </CardTitle>
           <CardDescription>
-            Ingresa el email del asistente. Si no tiene cuenta, se creará automáticamente.
+            Ingresa el email del asistente para el consultorio seleccionado. Si no tiene cuenta, se creará automáticamente.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -264,7 +376,7 @@ export const AssistantManager = () => {
             />
             <Button 
               onClick={handleInviteAssistant}
-              disabled={inviting || !inviteEmail.trim()}
+              disabled={inviting || !inviteEmail.trim() || !selectedClinic}
             >
               {inviting ? (
                 <>
@@ -274,31 +386,24 @@ export const AssistantManager = () => {
               ) : (
                 <>
                   <Mail className="h-4 w-4 mr-2" />
-                  Asignar
+                  {!selectedClinic ? 'Selecciona consultorio' : 'Asignar'}
                 </>
               )}
-            </Button>
-            <Button 
-              onClick={handleUpdateExistingAssistant}
-              variant="secondary"
-              size="sm"
-            >
-              Corregir Asistente Existente
             </Button>
           </div>
         </CardContent>
       </Card>
 
-      {/* Lista de asistentes */}
+      {/* Lista de asistentes por consultorio */}
       <Card>
         <CardHeader>
-          <CardTitle>Asistentes Asignados</CardTitle>
+          <CardTitle>Asistentes por Consultorio</CardTitle>
           <CardDescription>
-            {assistants.length} asistente(s) asignado(s) a tu consulta
+            {clinicAssistants.length} asistente(s) asignado(s) a tus consultorios
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {assistants.length === 0 ? (
+          {clinicAssistants.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <User className="h-12 w-12 mx-auto mb-4" />
               <p>No tienes asistentes asignados</p>
@@ -306,12 +411,12 @@ export const AssistantManager = () => {
             </div>
           ) : (
             <div className="space-y-4">
-              {assistants.map((assistant, index) => (
-                <div key={assistant.id}>
+              {clinicAssistants.map((clinicAssistant, index) => (
+                <div key={clinicAssistant.id}>
                   <div className="flex items-center justify-between p-4 border rounded-lg">
                     <div className="flex items-center gap-3">
                       <Avatar>
-                        <AvatarImage src={assistant.profile_image_url || ''} />
+                        <AvatarImage src={clinicAssistant.assistant.profile_image_url || ''} />
                         <AvatarFallback>
                           <User className="h-5 w-5" />
                         </AvatarFallback>
@@ -319,18 +424,22 @@ export const AssistantManager = () => {
                       
                       <div>
                         <h4 className="font-medium">
-                          {assistant.full_name || 'Nombre no disponible'}
+                          {clinicAssistant.assistant.full_name || 'Nombre no disponible'}
                         </h4>
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <Mail className="h-3 w-3" />
-                          <span>{assistant.email}</span>
+                          <span>{clinicAssistant.assistant.email}</span>
                         </div>
-                        {assistant.phone && (
+                        {clinicAssistant.assistant.phone && (
                           <div className="flex items-center gap-2 text-sm text-muted-foreground">
                             <Phone className="h-3 w-3" />
-                            <span>{assistant.phone}</span>
+                            <span>{clinicAssistant.assistant.phone}</span>
                           </div>
                         )}
+                        <div className="flex items-center gap-2 text-sm text-blue-600">
+                          <Building className="h-3 w-3" />
+                          <span>{clinicAssistant.clinic_name}</span>
+                        </div>
                       </div>
                     </div>
 
@@ -343,7 +452,7 @@ export const AssistantManager = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleRemoveAssistant(assistant.user_id)}
+                        onClick={() => handleRemoveAssistant(clinicAssistant.id, clinicAssistant.clinic_name)}
                         className="text-red-600 hover:text-red-700"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -351,7 +460,7 @@ export const AssistantManager = () => {
                     </div>
                   </div>
                   
-                  {index < assistants.length - 1 && <Separator className="my-4" />}
+                  {index < clinicAssistants.length - 1 && <Separator className="my-4" />}
                 </div>
               ))}
             </div>
@@ -367,9 +476,10 @@ export const AssistantManager = () => {
             <div className="text-sm text-blue-800">
               <p className="font-medium mb-1">¿Cómo funciona?</p>
               <ul className="space-y-1 text-blue-700">
-                <li>• Si el email ya existe en el sistema, se asignará inmediatamente como tu asistente</li>
+                <li>• Cada consultorio puede tener sus propios asistentes independientes</li>
+                <li>• Si el email ya existe en el sistema, se asignará inmediatamente al consultorio seleccionado</li>
                 <li>• Si no existe, se creará una cuenta automáticamente con rol de asistente</li>
-                <li>• Los asistentes pueden gestionar citas y pacientes asignados a ti</li>
+                <li>• Los asistentes pueden gestionar citas y pacientes del consultorio asignado</li>
                 <li>• Pueden acceder al dashboard desde el panel de asistentes</li>
               </ul>
             </div>
