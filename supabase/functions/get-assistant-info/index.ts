@@ -43,35 +43,28 @@ serve(async (req) => {
       auth: { persistSession: false }
     });
 
-    // Get user info from auth.users
-    const { data: userInfo, error: userError } = await adminClient.auth.admin.getUserById(user_id);
-
+    // Get user information from auth.users
+    const { data: { user }, error: userError } = await adminClient.auth.admin.getUserById(user_id);
+    
     if (userError) {
-      console.error("Error fetching user info:", userError);
+      console.error("Error fetching user:", userError);
       throw userError;
-    }
-
-    if (!userInfo.user) {
-      return new Response(
-        JSON.stringify({ error: "User not found" }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
     }
 
     return new Response(
       JSON.stringify({ 
-        email: userInfo.user.email,
-        created_at: userInfo.user.created_at,
-        last_sign_in_at: userInfo.user.last_sign_in_at
+        email: user?.email || null,
+        phone: user?.phone || null 
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 
   } catch (error) {
     console.error("Error in get-assistant-info:", error);
+    
     return new Response(
       JSON.stringify({ 
-        error: error.message || "Internal server error"
+        error: error.message || "Internal server error" 
       }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

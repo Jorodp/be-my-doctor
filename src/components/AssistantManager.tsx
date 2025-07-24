@@ -57,7 +57,7 @@ export const AssistantManager = () => {
         .select(`
           assistant_id,
           assigned_at,
-          profiles:assistant_id (
+          profiles!inner(
             id,
             user_id,
             full_name,

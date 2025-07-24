@@ -60,5 +60,8 @@ verify_jwt = false
 [functions.test-function]
 verify_jwt = false
 
+[functions.get-assistant-info]
+verify_jwt = false
+
 [functions.assign-assistant-by-email]
 verify_jwt = false
