@@ -77,7 +77,7 @@ export default function DoctorSearch() {
     if (user) {
       navigate(path);
     } else {
-      navigate("/auth", { state: { from: path } });
+      navigate("/auth", { state: { from: { pathname: path } } });
     }
   };
 

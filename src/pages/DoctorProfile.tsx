@@ -43,7 +43,11 @@ export default function DoctorProfile() {
   const [loading, setLoading] = useState(true);
 
   if (authLoading) return <LoadingSpinner size="lg" />;
-  if (!user) return <Navigate to="/auth" replace />;
+  if (!user) {
+    // Guardar la ruta actual para redirigir después del login
+    const currentPath = `/doctor/${doctorId}`;
+    return <Navigate to="/auth" state={{ from: currentPath }} replace />;
+  }
 
   useEffect(() => {
     async function fetchDoctor() {
@@ -58,6 +62,8 @@ export default function DoctorProfile() {
             specialty,
             biography,
             professional_license,
+            professional_license_document_url,
+            university_degree_document_url,
             experience_years,
             practice_locations,
             consultation_fee,
@@ -66,7 +72,7 @@ export default function DoctorProfile() {
             rating_count
           `
         )
-        .eq("id", doctorId)
+        .eq("user_id", doctorId)
         .limit(1)
         .maybeSingle();
 
@@ -89,8 +95,11 @@ export default function DoctorProfile() {
 
       // documents stored in doctor_profiles or separate table
       const documents = [];
-      if (dp?.professional_license) {
-        documents.push({ label: "Cédula Profesional", url: dp.professional_license });
+      if (dp?.professional_license_document_url) {
+        documents.push({ label: "Cédula Profesional", url: dp.professional_license_document_url });
+      }
+      if (dp?.university_degree_document_url) {
+        documents.push({ label: "Título Universitario", url: dp.university_degree_document_url });
       }
 
       if (dp && pr) {
