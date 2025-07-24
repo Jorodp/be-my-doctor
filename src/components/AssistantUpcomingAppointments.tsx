@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AppointmentActions } from '@/components/AppointmentActions';
+import { AppointmentDetailModal } from '@/components/AppointmentDetailModal';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
@@ -17,7 +18,8 @@ import {
   FileText,
   AlertTriangle,
   CheckCircle,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Eye
 } from 'lucide-react';
 import { PatientIdDocument } from './PatientIdDocument';
 
@@ -48,6 +50,8 @@ export function AssistantUpcomingAppointments({ doctorId }: AssistantUpcomingApp
   const [loading, setLoading] = useState(true);
   const [selectedPatient, setSelectedPatient] = useState<Appointment | null>(null);
   const [identityVerificationModal, setIdentityVerificationModal] = useState(false);
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
 
   useEffect(() => {
     if (doctorId) {
@@ -247,6 +251,19 @@ export function AssistantUpcomingAppointments({ doctorId }: AssistantUpcomingApp
                   </div>
 
                   <div className="flex flex-col gap-2">
+                    {/* Ver Detalles Button */}
+                    <Button 
+                      variant="default" 
+                      size="sm"
+                      onClick={() => {
+                        setSelectedAppointment(appointment);
+                        setDetailModalOpen(true);
+                      }}
+                    >
+                      <Eye className="h-4 w-4 mr-1" />
+                      Ver Detalles
+                    </Button>
+
                     {/* Identity Verification Button */}
                     {appointment.status === 'scheduled' && hasRequiredDocuments(appointment.patient_profile) && (
                       <Dialog open={identityVerificationModal} onOpenChange={setIdentityVerificationModal}>
@@ -341,6 +358,17 @@ export function AssistantUpcomingAppointments({ doctorId }: AssistantUpcomingApp
           </div>
         )}
       </CardContent>
+
+      {/* Appointment Detail Modal */}
+      <AppointmentDetailModal
+        appointment={selectedAppointment}
+        isOpen={detailModalOpen}
+        onClose={() => {
+          setDetailModalOpen(false);
+          setSelectedAppointment(null);
+        }}
+        userRole="assistant"
+      />
     </Card>
   );
 }

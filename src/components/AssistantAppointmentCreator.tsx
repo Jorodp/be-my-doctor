@@ -202,34 +202,25 @@ export function AssistantAppointmentCreator({ doctorId }: AssistantAppointmentCr
 
   const createNewPatient = async () => {
     try {
-      // Create user in auth
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: newPatient.email,
-        email_confirm: true,
-        user_metadata: {
-          full_name: newPatient.full_name,
-          role: 'patient'
-        }
-      });
-
-      if (authError) throw authError;
-
-      // Create profile
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          user_id: authData.user.id,
+      // Use edge function to create patient (avoiding admin API issues)
+      const { data: response, error } = await supabase.functions.invoke('admin-user-management', {
+        body: {
+          action: 'create_patient',
+          email: newPatient.email,
           full_name: newPatient.full_name,
           phone: newPatient.phone,
           address: newPatient.address,
-          date_of_birth: newPatient.date_of_birth,
-          role: 'patient'
-        });
+          date_of_birth: newPatient.date_of_birth
+        }
+      });
 
-      if (profileError) throw profileError;
+      if (error) throw error;
+      
+      const userId = response?.user_id;
+      if (!userId) throw new Error('No se recibió ID de usuario');
 
       const createdPatient: Patient = {
-        user_id: authData.user.id,
+        user_id: userId,
         full_name: newPatient.full_name,
         phone: newPatient.phone,
         email: newPatient.email,

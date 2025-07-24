@@ -67,9 +67,11 @@ serve(async (req) => {
       .eq('user_id', user.id)
       .single();
 
-    if (profileError || profile?.role !== 'admin') {
+    // Allow admin and assistant roles for certain actions
+    const allowedRoles = ['admin', 'assistant'];
+    if (profileError || !allowedRoles.includes(profile?.role)) {
       return new Response(
-        JSON.stringify({ success: false, error: 'Access denied: Admin role required' }),
+        JSON.stringify({ success: false, error: 'Access denied: Admin or Assistant role required' }),
         {
           status: 403,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -242,6 +244,78 @@ serve(async (req) => {
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
+
+      case 'create_patient': {
+        const { email, full_name, phone, address, date_of_birth } = body;
+        
+        if (!email || !full_name) {
+          return new Response(
+            JSON.stringify({ success: false, error: 'Email y nombre completo son requeridos' }),
+            { 
+              status: 400,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            }
+          );
+        }
+
+        // Create user in auth
+        const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+          email: email,
+          email_confirm: true,
+          user_metadata: {
+            full_name: full_name,
+            role: 'patient'
+          }
+        });
+
+        if (authError) {
+          console.error('Auth error:', authError);
+          return new Response(
+            JSON.stringify({ success: false, error: 'Error creando usuario en auth', details: authError.message }),
+            { 
+              status: 400,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            }
+          );
+        }
+
+        // Create profile
+        const { error: profileError } = await supabaseAdmin
+          .from('profiles')
+          .insert({
+            user_id: authData.user.id,
+            full_name: full_name,
+            phone: phone || null,
+            address: address || null,
+            date_of_birth: date_of_birth || null,
+            role: 'patient'
+          });
+
+        if (profileError) {
+          console.error('Profile error:', profileError);
+          // Clean up auth user if profile creation fails
+          await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
+          return new Response(
+            JSON.stringify({ success: false, error: 'Error creando perfil', details: profileError.message }),
+            { 
+              status: 400,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            }
+          );
+        }
+
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            user_id: authData.user.id,
+            message: 'Paciente creado exitosamente'
+          }),
+          { 
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
+      }
 
       default:
         return new Response(

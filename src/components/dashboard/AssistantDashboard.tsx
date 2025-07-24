@@ -39,7 +39,7 @@ export const AssistantDashboard = () => {
 };
 
 const AssistantDashboardContent = () => {
-  const { user, signOut } = useAuth();
+  const { user, signOut, profile } = useAuth();
   const { toast } = useToast();
   const [todayAppointments, setTodayAppointments] = useState<Appointment[]>([]);
   const [doctorId, setDoctorId] = useState<string | null>(null);
@@ -47,9 +47,10 @@ const AssistantDashboardContent = () => {
   const [appointmentPatients, setAppointmentPatients] = useState<string[]>([]);
 
   useEffect(() => {
-    if (user) {
-      // Get assigned doctor ID from user metadata
-      const assignedDoctorId = user.user_metadata?.assigned_doctor_id;
+    if (user && profile) {
+      // Get assigned doctor ID from profile table, not user metadata
+      const assignedDoctorId = (profile as any).assigned_doctor_id;
+      console.log('Assistant assigned doctor ID:', assignedDoctorId);
       setDoctorId(assignedDoctorId);
       
       if (assignedDoctorId) {
@@ -58,7 +59,7 @@ const AssistantDashboardContent = () => {
         setLoading(false);
       }
     }
-  }, [user]);
+  }, [user, profile]);
 
   const fetchTodayAppointments = async (doctorUserId: string) => {
     try {
