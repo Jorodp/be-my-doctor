@@ -235,7 +235,7 @@ export const DoctorCalendarSchedule = ({ doctorId }: DoctorCalendarScheduleProps
     return getDateAvailability(selectedDate);
   };
 
-  if (loading || clinicsLoading) {
+  if (clinicsLoading) {
     return (
       <div className="flex justify-center items-center min-h-64">
         <LoadingSpinner />
