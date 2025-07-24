@@ -127,14 +127,22 @@ export const AssistantManager = () => {
     try {
       setInviting(true);
       
+      // Simplified approach: Only use the edge function but with better error handling
       const { data, error } = await supabase.functions.invoke('assign-assistant-by-email', {
         body: { 
           email: inviteEmail.trim(),
-          doctor_id: user.id // Este es el user_id del doctor autenticado
+          doctor_id: user.id
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Edge function error:', error);
+        throw new Error(error.message || 'Error de conexión con el servidor');
+      }
+
+      if (!data || data.error) {
+        throw new Error(data?.error || 'Error desconocido del servidor');
+      }
 
       toast({
         title: "¡Éxito!",
@@ -143,7 +151,7 @@ export const AssistantManager = () => {
       });
 
       setInviteEmail('');
-      fetchAssistants(); // Recargar la lista de asistentes
+      fetchAssistants();
       
     } catch (error: any) {
       console.error('Error inviting assistant:', error);
