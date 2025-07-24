@@ -60,7 +60,7 @@ serve(async (req) => {
     console.log('Checking if doctor exists...');
     const { data: doctorProfile, error: doctorError } = await adminClient
       .from("profiles")
-      .select("id, role")
+      .select("user_id, role")
       .eq("user_id", doctor_id)
       .single();
 
@@ -80,7 +80,7 @@ serve(async (req) => {
       );
     }
 
-    console.log('Doctor verified:', doctorProfile.id);
+    console.log('Doctor verified with user_id:', doctorProfile.user_id);
 
     // Check if user with email exists
     console.log('Searching for existing user...');
@@ -106,7 +106,7 @@ serve(async (req) => {
       // Check if user already has a profile
       const { data: existingProfile, error: profileError } = await adminClient
         .from("profiles")
-        .select("id, role")
+        .select("user_id, role, assigned_doctor_id")
         .eq("user_id", existingUser.id)
         .single();
 
@@ -136,7 +136,7 @@ serve(async (req) => {
             role: "assistant",
             assigned_doctor_id: doctor_id
           })
-          .select("id")
+          .select("user_id")
           .single();
 
         if (profileInsertError) {
@@ -147,11 +147,11 @@ serve(async (req) => {
           );
         }
 
-        assistantProfileId = newProfile.id;
-        console.log('Profile created for existing user:', assistantProfileId);
+        assistantProfileId = newProfile.user_id;
+        console.log('Profile created for existing user with user_id:', assistantProfileId);
       } else {
-        assistantProfileId = existingProfile.id;
-        console.log('Using existing profile:', assistantProfileId);
+        assistantProfileId = existingProfile.user_id;
+        console.log('Using existing profile with user_id:', assistantProfileId);
         
         // Update existing profile to assign doctor if needed
         if (existingProfile.assigned_doctor_id !== doctor_id) {
@@ -217,7 +217,7 @@ serve(async (req) => {
           role: "assistant",
           assigned_doctor_id: doctor_id
         })
-        .select("id")
+        .select("user_id")
         .single();
 
       if (profileCreateError) {
@@ -228,8 +228,8 @@ serve(async (req) => {
         );
       }
 
-      assistantProfileId = newProfile.id;
-      console.log('Profile created for new user:', assistantProfileId);
+      assistantProfileId = newProfile.user_id;
+      console.log('Profile created for new user with user_id:', assistantProfileId);
 
       message = `Nuevo asistente creado. Email: ${email}, Contraseña temporal: ${tempPassword}`;
     }
@@ -239,7 +239,7 @@ serve(async (req) => {
     const { data: existingAssignment, error: assignmentCheckError } = await adminClient
       .from("doctor_assistants")
       .select("id")
-      .eq("doctor_id", doctorProfile.id)
+      .eq("doctor_id", doctorProfile.user_id)
       .eq("assistant_id", assistantProfileId)
       .single();
 
@@ -268,7 +268,7 @@ serve(async (req) => {
     const { error: assignmentError } = await adminClient
       .from("doctor_assistants")
       .insert({
-        doctor_id: doctorProfile.id,
+        doctor_id: doctorProfile.user_id,
         assistant_id: assistantProfileId
       });
 
