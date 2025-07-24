@@ -25,9 +25,12 @@ serve(async (req) => {
   try {
     // Parse request body
     const { email, doctor_id } = await req.json();
-    console.log('Request data:', { email, doctor_id });
+    console.log('=== ASSIGN ASSISTANT REQUEST ===');
+    console.log('Email:', email);
+    console.log('Doctor ID:', doctor_id);
 
     if (!email || !doctor_id) {
+      console.log('Missing required fields');
       return new Response(
         JSON.stringify({ error: "Email and doctor_id are required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -51,50 +54,72 @@ serve(async (req) => {
       auth: { persistSession: false }
     });
 
-    console.log(`Searching for user with email: ${email}`);
+    console.log('Admin client created');
 
-    // Check if user already exists
+    // First, verify the doctor exists
+    console.log('Checking if doctor exists...');
+    const { data: doctorProfile, error: doctorError } = await adminClient
+      .from("profiles")
+      .select("id, role")
+      .eq("user_id", doctor_id)
+      .single();
+
+    if (doctorError || !doctorProfile) {
+      console.error('Doctor not found:', doctorError);
+      return new Response(
+        JSON.stringify({ error: "Doctor no encontrado" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (doctorProfile.role !== 'doctor') {
+      console.error('User is not a doctor:', doctorProfile.role);
+      return new Response(
+        JSON.stringify({ error: "El usuario no es un doctor" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    console.log('Doctor verified:', doctorProfile.id);
+
+    // Check if user with email exists
+    console.log('Searching for existing user...');
     const { data: existingUsers, error: searchError } = await adminClient.auth.admin.listUsers();
     
     if (searchError) {
       console.error("Error searching users:", searchError);
       return new Response(
-        JSON.stringify({ error: "Error searching for user" }),
+        JSON.stringify({ error: "Error buscando usuario: " + searchError.message }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     const existingUser = existingUsers.users.find(user => user.email === email);
     let assistantUserId: string;
+    let assistantProfileId: string;
     let message: string;
 
-    // Obtener el ID interno del profile del doctor al inicio
-    const { data: doctorProfile, error: doctorProfileError } = await adminClient
-      .from("profiles")
-      .select("id")
-      .eq("user_id", doctor_id)
-      .single();
-
-    if (doctorProfileError) {
-      console.error("Error getting doctor profile:", doctorProfileError);
-      return new Response(
-        JSON.stringify({ error: "Error obteniendo perfil del doctor" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
     if (existingUser) {
-      console.log(`Found existing user: ${existingUser.id}`);
+      console.log('Found existing user:', existingUser.id);
       assistantUserId = existingUser.id;
 
       // Check if user already has a profile
-      const { data: existingProfile } = await adminClient
+      const { data: existingProfile, error: profileError } = await adminClient
         .from("profiles")
-        .select("*")
+        .select("id, role")
         .eq("user_id", existingUser.id)
         .single();
 
+      if (profileError && profileError.code !== 'PGRST116') { // PGRST116 = no rows found
+        console.error('Error checking profile:', profileError);
+        return new Response(
+          JSON.stringify({ error: "Error verificando perfil: " + profileError.message }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
       if (existingProfile && existingProfile.role !== 'assistant') {
+        console.log('User has different role:', existingProfile.role);
         return new Response(
           JSON.stringify({ error: `Este correo ya está en uso por una cuenta de tipo ${existingProfile.role}` }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -102,43 +127,55 @@ serve(async (req) => {
       }
 
       if (!existingProfile) {
+        console.log('Creating profile for existing user...');
         // Create profile for existing user
-        const { error: profileInsertError } = await adminClient
+        const { data: newProfile, error: profileInsertError } = await adminClient
           .from("profiles")
           .insert({
             user_id: existingUser.id,
             role: "assistant",
             assigned_doctor_id: doctor_id
-          });
+          })
+          .select("id")
+          .single();
 
         if (profileInsertError) {
           console.error("Error creating profile:", profileInsertError);
           return new Response(
-            JSON.stringify({ error: "Error creando perfil del asistente: " + profileInsertError.message }),
+            JSON.stringify({ error: "Error creando perfil: " + profileInsertError.message }),
             { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }
-      } else {
-        // Update existing profile to assign doctor
-        const { error: profileUpdateError } = await adminClient
-          .from("profiles")
-          .update({
-            assigned_doctor_id: doctor_id
-          })
-          .eq("user_id", existingUser.id);
 
-        if (profileUpdateError) {
-          console.error("Error updating profile:", profileUpdateError);
-          return new Response(
-            JSON.stringify({ error: "Error actualizando perfil del asistente: " + profileUpdateError.message }),
-            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
+        assistantProfileId = newProfile.id;
+        console.log('Profile created for existing user:', assistantProfileId);
+      } else {
+        assistantProfileId = existingProfile.id;
+        console.log('Using existing profile:', assistantProfileId);
+        
+        // Update existing profile to assign doctor if needed
+        if (existingProfile.assigned_doctor_id !== doctor_id) {
+          const { error: profileUpdateError } = await adminClient
+            .from("profiles")
+            .update({
+              assigned_doctor_id: doctor_id
+            })
+            .eq("user_id", existingUser.id);
+
+          if (profileUpdateError) {
+            console.error("Error updating profile:", profileUpdateError);
+            return new Response(
+              JSON.stringify({ error: "Error actualizando perfil: " + profileUpdateError.message }),
+              { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+          }
+          console.log('Profile updated with doctor assignment');
         }
       }
 
       message = "Usuario existente asignado como asistente exitosamente";
     } else {
-      console.log(`Creating new user for email: ${email}`);
+      console.log('Creating new user...');
       
       // Generate a temporary password
       const tempPassword = Math.random().toString(36).slice(-12) + "Aa1!";
@@ -156,88 +193,95 @@ serve(async (req) => {
       if (createUserError) {
         console.error("Error creating user:", createUserError);
         return new Response(
-          JSON.stringify({ error: "Error creating user: " + createUserError.message }),
+          JSON.stringify({ error: "Error creando usuario: " + createUserError.message }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
       if (!newUser.user) {
+        console.error("No user returned from creation");
         return new Response(
-          JSON.stringify({ error: "Failed to create user" }),
+          JSON.stringify({ error: "Error: no se pudo crear el usuario" }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
       assistantUserId = newUser.user.id;
-      console.log(`New user created: ${assistantUserId}`);
+      console.log('New user created:', assistantUserId);
 
       // Create profile for new user
-      const { error: profileCreateError } = await adminClient
+      const { data: newProfile, error: profileCreateError } = await adminClient
         .from("profiles")
         .insert({
           user_id: newUser.user.id,
           role: "assistant",
           assigned_doctor_id: doctor_id
-        });
+        })
+        .select("id")
+        .single();
 
       if (profileCreateError) {
         console.error("Error creating profile for new user:", profileCreateError);
         return new Response(
-          JSON.stringify({ error: "Error creando perfil del asistente: " + profileCreateError.message }),
+          JSON.stringify({ error: "Error creando perfil: " + profileCreateError.message }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
+      assistantProfileId = newProfile.id;
+      console.log('Profile created for new user:', assistantProfileId);
+
       message = `Nuevo asistente creado. Email: ${email}, Contraseña temporal: ${tempPassword}`;
     }
 
-    // Obtener el ID interno del profile del asistente
-    const { data: assistantProfile, error: assistantProfileError } = await adminClient
-      .from("profiles")
+    // Check if assignment already exists in doctor_assistants
+    console.log('Checking existing doctor-assistant assignment...');
+    const { data: existingAssignment, error: assignmentCheckError } = await adminClient
+      .from("doctor_assistants")
       .select("id")
-      .eq("user_id", assistantUserId)
+      .eq("doctor_id", doctorProfile.id)
+      .eq("assistant_id", assistantProfileId)
       .single();
 
-    if (assistantProfileError) {
-      console.error("Error getting assistant profile:", assistantProfileError);
+    if (assignmentCheckError && assignmentCheckError.code !== 'PGRST116') {
+      console.error('Error checking assignment:', assignmentCheckError);
       return new Response(
-        JSON.stringify({ error: "Error obteniendo perfil del asistente" }),
+        JSON.stringify({ error: "Error verificando asignación: " + assignmentCheckError.message }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Check if assignment already exists
-    const { data: existingAssignment } = await adminClient
-      .from("doctor_assistants")
-      .select("id")
-      .eq("doctor_id", doctorProfile.id)
-      .eq("assistant_id", assistantProfile.id)
-      .single();
-
     if (existingAssignment) {
+      console.log('Assignment already exists');
       return new Response(
-        JSON.stringify({ error: "Este asistente ya está asignado a este doctor" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ 
+          success: true, 
+          message: "El asistente ya está asignado a este doctor",
+          assistant_user_id: assistantUserId
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     // Create the assignment
+    console.log('Creating doctor-assistant assignment...');
     const { error: assignmentError } = await adminClient
       .from("doctor_assistants")
       .insert({
         doctor_id: doctorProfile.id,
-        assistant_id: assistantProfile.id
+        assistant_id: assistantProfileId
       });
 
     if (assignmentError) {
       console.error("Error creating assignment:", assignmentError);
       return new Response(
-        JSON.stringify({ error: "Error al asignar el asistente: " + assignmentError.message }),
+        JSON.stringify({ error: "Error creando asignación: " + assignmentError.message }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log(`Assistant ${assistantUserId} assigned to doctor ${doctor_id}`);
+    console.log('Assignment created successfully');
+    console.log('=== SUCCESS ===');
 
     return new Response(
       JSON.stringify({ 
@@ -249,12 +293,16 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error("=== ERROR IN ASSIGN ASSISTANT ===");
+    console.error("=== UNEXPECTED ERROR ===");
     console.error("Error details:", error);
+    console.error("Error name:", error.name);
+    console.error("Error message:", error.message);
+    console.error("Error stack:", error.stack);
     
     return new Response(
       JSON.stringify({ 
-        error: error.message || "Internal server error"
+        error: `Error interno del servidor: ${error.message}`,
+        details: error.stack
       }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
