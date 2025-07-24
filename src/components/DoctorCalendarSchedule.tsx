@@ -113,13 +113,29 @@ export const DoctorCalendarSchedule = ({ doctorId }: DoctorCalendarScheduleProps
   };
 
   const addTimeSlot = async () => {
-    console.log('Adding time slot:', { selectedDate, newStartTime, newEndTime });
-    
-    if (!selectedDate || !newStartTime || !newEndTime) {
-      console.log('Missing data:', { selectedDate: !!selectedDate, newStartTime: !!newStartTime, newEndTime: !!newEndTime });
+    // Validación más estricta y clara
+    if (!selectedDate) {
       toast({
         title: "Error",
-        description: "Selecciona fecha, hora de inicio y fin",
+        description: "Selecciona una fecha en el calendario",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!newStartTime) {
+      toast({
+        title: "Error", 
+        description: "Selecciona la hora de inicio",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!newEndTime) {
+      toast({
+        title: "Error",
+        description: "Selecciona la hora de fin", 
         variant: "destructive"
       });
       return;
@@ -280,58 +296,95 @@ export const DoctorCalendarSchedule = ({ doctorId }: DoctorCalendarScheduleProps
               </div>
               <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button size="sm" className="flex items-center gap-2">
+                  <Button 
+                    size="sm" 
+                    className="flex items-center gap-2"
+                    disabled={!selectedDate}
+                  >
                     <Plus className="h-4 w-4" />
-                    Agregar
+                    {selectedDate ? 'Agregar' : 'Selecciona fecha'}
                   </Button>
                 </DialogTrigger>
-                <DialogContent>
+                  <DialogContent>
                   <DialogHeader>
                     <DialogTitle>Agregar Horario</DialogTitle>
                     <DialogDescription>
-                      Configura un nuevo horario para {selectedDate ? format(selectedDate, "d 'de' MMMM", { locale: es }) : 'el día seleccionado'}
+                      {selectedDate ? (
+                        <>Configura un nuevo horario para {format(selectedDate, "EEEE d 'de' MMMM", { locale: es })}</>
+                      ) : (
+                        'Selecciona primero una fecha en el calendario'
+                      )}
                     </DialogDescription>
                   </DialogHeader>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="text-sm font-medium">Hora de inicio</label>
-                      <Select value={newStartTime} onValueChange={setNewStartTime}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Seleccionar hora de inicio" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {timeSlots.map((time) => (
-                            <SelectItem key={time} value={time}>
-                              {time}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                  
+                  {!selectedDate ? (
+                    <div className="text-center py-6">
+                      <CalendarX className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                      <p className="text-muted-foreground">Selecciona una fecha en el calendario para continuar</p>
                     </div>
-                    <div>
-                      <label className="text-sm font-medium">Hora de fin</label>
-                      <Select value={newEndTime} onValueChange={setNewEndTime}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Seleccionar hora de fin" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {timeSlots.map((time) => (
-                            <SelectItem key={time} value={time}>
-                              {time}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="p-3 bg-accent/20 rounded-lg">
+                        <p className="text-sm font-medium text-accent-foreground">
+                          📅 {format(selectedDate, "EEEE d 'de' MMMM", { locale: es })}
+                        </p>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-sm font-medium mb-2 block">Hora de inicio</label>
+                          <Select value={newStartTime} onValueChange={setNewStartTime}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="08:00" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {timeSlots.slice(16, 40).map((time) => ( // 08:00 to 19:30
+                                <SelectItem key={time} value={time}>
+                                  {time}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        <div>
+                          <label className="text-sm font-medium mb-2 block">Hora de fin</label>
+                          <Select value={newEndTime} onValueChange={setNewEndTime}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="18:00" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {timeSlots.slice(17, 48).map((time) => ( // 08:30 to 23:30
+                                <SelectItem key={time} value={time}>
+                                  {time}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-2 pt-4">
+                        <Button 
+                          onClick={addTimeSlot} 
+                          className="flex-1"
+                          disabled={!newStartTime || !newEndTime}
+                        >
+                          {!newStartTime || !newEndTime ? 'Completa los horarios' : 'Agregar Horario'}
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          onClick={() => {
+                            setDialogOpen(false);
+                            setNewStartTime('');
+                            setNewEndTime('');
+                          }}
+                        >
+                          Cancelar
+                        </Button>
+                      </div>
                     </div>
-                    <div className="flex gap-2 pt-4">
-                      <Button onClick={addTimeSlot} className="flex-1">
-                        Agregar Horario
-                      </Button>
-                      <Button variant="outline" onClick={() => setDialogOpen(false)}>
-                        Cancelar
-                      </Button>
-                    </div>
-                  </div>
+                  )}
                 </DialogContent>
               </Dialog>
             </CardTitle>
