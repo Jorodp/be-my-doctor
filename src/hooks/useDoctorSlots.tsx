@@ -158,7 +158,11 @@ export function useBookAppointment() {
       notes?: string;
     }) => {
       // Check for conflicts first
-      const appointmentDateTime = `${date}T${startTime}:00.000Z`;
+      // Validate and ensure correct format: startTime should be like "14:00" or "14:00:00"
+      const normalizedStartTime = startTime.includes(':00:00') ? startTime.substring(0, 5) : 
+                                  startTime.length === 5 ? startTime : `${startTime}:00`;
+      const appointmentDateTime = `${date}T${normalizedStartTime}:00.000Z`;
+      console.log('Creating appointment with:', { date, startTime, normalizedStartTime, appointmentDateTime });
       
       const { data: existingAppointments, error: checkError } = await supabase
         .from('appointments')
@@ -175,7 +179,9 @@ export function useBookAppointment() {
       }
 
       // Create the appointment
-      const endDateTime = new Date(new Date(appointmentDateTime).getTime() + 60 * 60000); // 1 hour
+      // Ensure consistent datetime format using the normalized start time
+      const startDateTime = new Date(`${date}T${normalizedStartTime}:00.000Z`);
+      const endDateTime = new Date(startDateTime.getTime() + 60 * 60000); // 1 hour
 
       const { data, error } = await supabase
         .from('appointments')
@@ -183,7 +189,7 @@ export function useBookAppointment() {
           doctor_user_id: doctorUserId,
           patient_user_id: patientUserId,
           clinic_id: clinicId,
-          starts_at: appointmentDateTime,
+          starts_at: startDateTime.toISOString(),
           ends_at: endDateTime.toISOString(),
           status: 'scheduled',
           notes: notes || null

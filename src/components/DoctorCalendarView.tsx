@@ -183,13 +183,20 @@ export function DoctorCalendarView({ doctorId }: DoctorCalendarViewProps) {
           <h3 className="font-semibold mb-4 flex items-center gap-2">
             <Clock className="w-4 h-4" />
               {selectedDate ? (
-                <>Horarios para {format(selectedDate, "EEEE d 'de' MMMM", { locale: es })}
-                {selectedClinic && (
-                  <div className="text-sm text-muted-foreground">
-                    Consultorio: {clinics.find(c => c.id === selectedClinic)?.name}
-                  </div>
-                )}
-                </>
+                <div className="flex flex-col gap-1">
+                  <span>Horarios para {format(selectedDate, "EEEE d 'de' MMMM", { locale: es })}</span>
+                  {selectedClinic !== 'all' && (
+                    <div className="text-sm font-normal text-muted-foreground flex items-center gap-1">
+                      <div className="w-2 h-2 bg-primary rounded-full"></div>
+                      Consultorio: {clinics.find(c => c.id === selectedClinic)?.name}
+                    </div>
+                  )}
+                  {selectedClinic === 'all' && (
+                    <div className="text-sm font-normal text-muted-foreground">
+                      Mostrando horarios de todos los consultorios
+                    </div>
+                  )}
+                </div>
               ) : (
                 'Selecciona una fecha'
               )}
@@ -229,9 +236,10 @@ export function DoctorCalendarView({ doctorId }: DoctorCalendarViewProps) {
                             >
                               {formatTime(slot.start_time)} - {formatTime(slot.end_time)}
                             </Badge>
-                            <span className="text-xs text-muted-foreground mt-1">
-                              {slot.clinic_name}
-                            </span>
+                            <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                              <div className="w-1.5 h-1.5 bg-primary/60 rounded-full"></div>
+                              <span className="font-medium">{slot.clinic_name}</span>
+                            </div>
                           </div>
                           {isBooked && (
                             <span className="text-xs text-muted-foreground">Ocupado</span>
@@ -252,16 +260,29 @@ export function DoctorCalendarView({ doctorId }: DoctorCalendarViewProps) {
                   
                   {/* Book Appointment Button */}
                   <div className="pt-4 border-t">
+                    {selectedSlot && selectedClinic && selectedClinic !== 'all' && (
+                      <div className="mb-3 p-3 bg-primary/5 rounded-lg border border-primary/20">
+                        <div className="flex items-center gap-2 text-sm">
+                          <div className="w-2 h-2 bg-primary rounded-full"></div>
+                          <span className="font-medium">Cita seleccionada:</span>
+                        </div>
+                        <div className="text-sm text-muted-foreground mt-1 ml-4">
+                          {formatTime(selectedSlot)} en {clinics.find(c => c.id === selectedClinic)?.name}
+                        </div>
+                      </div>
+                    )}
                     <Button 
                       onClick={handleBookAppointment}
-                      disabled={!selectedSlot || bookAppointment.isPending}
+                      disabled={!selectedSlot || bookAppointment.isPending || selectedClinic === 'all'}
                       className="w-full"
                       size="lg"
                     >
                       {bookAppointment.isPending ? (
                         <LoadingSpinner size="sm" />
-                      ) : selectedSlot ? (
-                        `Agendar para ${formatTime(selectedSlot)}`
+                      ) : selectedSlot && selectedClinic !== 'all' ? (
+                        `Confirmar cita para ${formatTime(selectedSlot)}`
+                      ) : selectedClinic === 'all' ? (
+                        'Selecciona un consultorio específico'
                       ) : (
                         'Selecciona una hora para agendar'
                       )}
