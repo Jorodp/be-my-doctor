@@ -207,8 +207,8 @@ serve(async (req) => {
       throw new Error("Este asistente ya está asignado a este doctor");
     }
 
-    // Create the assignment in doctor_assistants usando el cliente autenticado
-    const authClient = createClient(supabaseUrl, anonKey, {
+    // Create the assignment in doctor_assistants using the authenticated client
+    const authenticatedClient = createClient(supabaseUrl, anonKey, {
       global: {
         headers: {
           Authorization: authHeader
@@ -216,7 +216,7 @@ serve(async (req) => {
       }
     });
     
-    const { error: assignmentError } = await authClient
+    const { error: assignmentError } = await authenticatedClient
       .from("doctor_assistants")
       .insert({
         doctor_id: doctor_id,
