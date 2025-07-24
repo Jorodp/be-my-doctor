@@ -5,11 +5,12 @@ import { DashboardLayout } from "@/components/ui/DashboardLayout";
 import { PendingRatingValidator } from "@/components/PendingRatingValidator";
 import { PatientProfileEditor } from "@/components/patient/PatientProfileEditor";
 import { PatientDocuments } from "@/components/patient/PatientDocuments";
+import { ConsultationNotesViewer } from "@/components/patient/ConsultationNotesViewer";
 import { AppointmentChatButton } from "@/components/patient/AppointmentChatButton";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-import { Calendar, FileText, User, Clock, CheckCircle } from "lucide-react";
+import { Calendar, FileText, User, Clock, CheckCircle, Stethoscope } from "lucide-react";
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -162,10 +163,14 @@ export const PatientDashboard = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         <Tabs defaultValue="citas" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="citas" className="flex items-center gap-2">
               <Calendar className="h-4 w-4" />
               Citas
+            </TabsTrigger>
+            <TabsTrigger value="notas" className="flex items-center gap-2">
+              <Stethoscope className="h-4 w-4" />
+              Notas Médicas
             </TabsTrigger>
             <TabsTrigger value="perfil" className="flex items-center gap-2">
               <User className="h-4 w-4" />
@@ -290,6 +295,10 @@ export const PatientDashboard = () => {
               isOpen={validatorOpen}
               onClose={() => setValidatorOpen(false)}
             />
+          </TabsContent>
+
+          <TabsContent value="notas">
+            <ConsultationNotesViewer showAll={true} />
           </TabsContent>
 
           <TabsContent value="perfil">

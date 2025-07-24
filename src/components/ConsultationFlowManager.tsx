@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ConsultationProgress } from '@/components/ConsultationProgress';
-import { 
+import { ConsultationNotesForm } from '@/components/ConsultationNotesForm';
+import {
   Users, 
   Clock, 
   Calendar,
@@ -376,108 +377,120 @@ export const ConsultationFlowManager: React.FC<ConsultationFlowManagerProps> = (
             {sortedAppointments.map((appointment) => {
               const timelineSteps = getTimelineSteps(appointment);
               const waitingTime = getWaitingTime(appointment);
+              const isInProgress = appointment.consultation_status === 'in_progress';
 
               return (
-                <Card key={appointment.id} className="transition-all duration-200 hover:shadow-md">
-                  <CardContent className="p-6">
-                    {/* Header with patient info */}
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-12 w-12">
-                          <AvatarImage 
-                            src={appointment.patient_profile?.profile_image_url} 
-                            alt={appointment.patient_profile?.full_name || 'Paciente'} 
-                          />
-                          <AvatarFallback>
-                            {appointment.patient_profile?.full_name?.charAt(0) || 'P'}
-                          </AvatarFallback>
-                        </Avatar>
-                        
-                        <div>
-                          <h4 className="font-semibold text-lg">
-                            {appointment.patient_profile?.full_name || 'Paciente'}
-                          </h4>
-                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                            <span className="flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
-                              Programada: {formatTime(appointment.starts_at)}
-                            </span>
-                            {appointment.patient_profile?.phone && (
+                <div key={appointment.id} className="space-y-4">
+                  <Card className="transition-all duration-200 hover:shadow-md">
+                    <CardContent className="p-6">
+                      {/* Header with patient info */}
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-12 w-12">
+                            <AvatarImage 
+                              src={appointment.patient_profile?.profile_image_url} 
+                              alt={appointment.patient_profile?.full_name || 'Paciente'} 
+                            />
+                            <AvatarFallback>
+                              {appointment.patient_profile?.full_name?.charAt(0) || 'P'}
+                            </AvatarFallback>
+                          </Avatar>
+                          
+                          <div>
+                            <h4 className="font-semibold text-lg">
+                              {appointment.patient_profile?.full_name || 'Paciente'}
+                            </h4>
+                            <div className="flex items-center gap-4 text-sm text-muted-foreground">
                               <span className="flex items-center gap-1">
-                                <Phone className="h-3 w-3" />
-                                {appointment.patient_profile.phone}
+                                <Clock className="h-3 w-3" />
+                                Programada: {formatTime(appointment.starts_at)}
                               </span>
-                            )}
+                              {appointment.patient_profile?.phone && (
+                                <span className="flex items-center gap-1">
+                                  <Phone className="h-3 w-3" />
+                                  {appointment.patient_profile.phone}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
+                        
+                        <div className="flex items-center gap-3">
+                          {getActionButton(appointment)}
+                        </div>
                       </div>
-                      
-                      <div className="flex items-center gap-3">
-                        {getActionButton(appointment)}
-                      </div>
-                    </div>
 
-                    {/* Timeline */}
-                    <div className="grid grid-cols-4 gap-2 mb-4">
-                      {timelineSteps.map((step, index) => {
-                        const Icon = step.icon;
-                        return (
-                          <div 
-                            key={step.label}
-                            className={`text-center p-3 rounded-lg transition-all duration-300 ${
-                              step.active ? 'bg-blue-50 border-2 border-blue-200 animate-pulse' : 
-                              step.completed ? 'bg-green-50 border border-green-200' : 
-                              'bg-gray-50 border border-gray-200'
-                            }`}
-                          >
-                            <Icon className={`h-6 w-6 mx-auto mb-1 transition-colors ${
-                              step.completed ? 'text-green-600' : 
-                              step.active ? 'text-blue-600' : 'text-gray-400'
-                            }`} />
-                            <p className="text-xs font-medium">{step.label}</p>
-                            <p className="text-xs text-muted-foreground">{step.time}</p>
-                          </div>
-                        );
-                      })}
-                    </div>
-
-                    {/* Time information */}
-                    {(appointment.waiting_time_minutes || appointment.consultation_duration_minutes || waitingTime) && (
-                      <div className="flex gap-4 p-3 bg-muted rounded-lg">
-                        {waitingTime && (
-                          <div className="flex items-center gap-2">
-                            <Timer className="h-4 w-4 text-yellow-600" />
-                            <span className="text-sm text-yellow-600 font-medium">{waitingTime}</span>
-                          </div>
-                        )}
-                        {appointment.waiting_time_minutes && (
-                          <div className="flex items-center gap-2">
-                            <Timer className="h-4 w-4 text-blue-600" />
-                            <span className="text-sm">
-                              Esperó: <strong>{appointment.waiting_time_minutes} min</strong>
-                            </span>
-                          </div>
-                        )}
-                        {appointment.consultation_duration_minutes && (
-                          <div className="flex items-center gap-2">
-                            <Stethoscope className="h-4 w-4 text-green-600" />
-                            <span className="text-sm">
-                              Consulta: <strong>{appointment.consultation_duration_minutes} min</strong>
-                            </span>
-                          </div>
-                        )}
-                        {appointment.total_clinic_time_minutes && (
-                          <div className="flex items-center gap-2">
-                            <Clock className="h-4 w-4 text-purple-600" />
-                            <span className="text-sm">
-                              Total: <strong>{appointment.total_clinic_time_minutes} min</strong>
-                            </span>
-                          </div>
-                        )}
+                      {/* Timeline */}
+                      <div className="grid grid-cols-4 gap-2 mb-4">
+                        {timelineSteps.map((step, index) => {
+                          const Icon = step.icon;
+                          return (
+                            <div 
+                              key={step.label}
+                              className={`text-center p-3 rounded-lg transition-all duration-300 ${
+                                step.active ? 'bg-blue-50 border-2 border-blue-200 animate-pulse' : 
+                                step.completed ? 'bg-green-50 border border-green-200' : 
+                                'bg-gray-50 border border-gray-200'
+                              }`}
+                            >
+                              <Icon className={`h-6 w-6 mx-auto mb-1 transition-colors ${
+                                step.completed ? 'text-green-600' : 
+                                step.active ? 'text-blue-600' : 'text-gray-400'
+                              }`} />
+                              <p className="text-xs font-medium">{step.label}</p>
+                              <p className="text-xs text-muted-foreground">{step.time}</p>
+                            </div>
+                          );
+                        })}
                       </div>
-                    )}
-                  </CardContent>
-                </Card>
+
+                      {/* Time information */}
+                      {(appointment.waiting_time_minutes || appointment.consultation_duration_minutes || waitingTime) && (
+                        <div className="flex gap-4 p-3 bg-muted rounded-lg">
+                          {waitingTime && (
+                            <div className="flex items-center gap-2">
+                              <Timer className="h-4 w-4 text-yellow-600" />
+                              <span className="text-sm text-yellow-600 font-medium">{waitingTime}</span>
+                            </div>
+                          )}
+                          {appointment.waiting_time_minutes && (
+                            <div className="flex items-center gap-2">
+                              <Timer className="h-4 w-4 text-blue-600" />
+                              <span className="text-sm">
+                                Esperó: <strong>{appointment.waiting_time_minutes} min</strong>
+                              </span>
+                            </div>
+                          )}
+                          {appointment.consultation_duration_minutes && (
+                            <div className="flex items-center gap-2">
+                              <Stethoscope className="h-4 w-4 text-green-600" />
+                              <span className="text-sm">
+                                Consulta: <strong>{appointment.consultation_duration_minutes} min</strong>
+                              </span>
+                            </div>
+                          )}
+                          {appointment.total_clinic_time_minutes && (
+                            <div className="flex items-center gap-2">
+                              <Clock className="h-4 w-4 text-purple-600" />
+                              <span className="text-sm">
+                                Total: <strong>{appointment.total_clinic_time_minutes} min</strong>
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* Consultation Notes Form - Only show when consultation is in progress and user is doctor */}
+                  {isInProgress && userRole === 'doctor' && (
+                    <ConsultationNotesForm
+                      appointmentId={appointment.id}
+                      patientName={appointment.patient_profile?.full_name || 'Paciente'}
+                      onSave={onAppointmentUpdate}
+                    />
+                  )}
+                </div>
               );
             })}
           </div>
