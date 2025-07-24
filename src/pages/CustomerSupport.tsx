@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { CustomerSupportChat } from '@/components/CustomerSupportChat';
+import { PhysicalPaymentRequestForm } from '@/components/PhysicalPaymentRequestForm';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, CreditCard, MessageCircle, HelpCircle } from 'lucide-react';
@@ -135,7 +136,17 @@ export default function CustomerSupport() {
           </div>
         </div>
 
-        <CustomerSupportChat reason={reason} />
+        {reason === 'physical_payment' ? (
+          <PhysicalPaymentRequestForm 
+            onSuccess={() => {
+              setTimeout(() => {
+                navigate('/dashboard');
+              }, 2000);
+            }}
+          />
+        ) : (
+          <CustomerSupportChat reason={reason} />
+        )}
       </div>
     </DashboardLayout>
   );

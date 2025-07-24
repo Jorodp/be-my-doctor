@@ -1487,6 +1487,63 @@ export type Database = {
         }
         Relationships: []
       }
+      physical_payment_requests: {
+        Row: {
+          admin_notes: string | null
+          amount: number
+          created_at: string
+          doctor_email: string
+          doctor_name: string
+          doctor_user_id: string
+          id: string
+          notes: string | null
+          phone: string | null
+          preferred_location: string | null
+          preferred_payment_method: string
+          processed_at: string | null
+          processed_by: string | null
+          status: string
+          subscription_type: string
+          updated_at: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          amount: number
+          created_at?: string
+          doctor_email: string
+          doctor_name: string
+          doctor_user_id: string
+          id?: string
+          notes?: string | null
+          phone?: string | null
+          preferred_location?: string | null
+          preferred_payment_method: string
+          processed_at?: string | null
+          processed_by?: string | null
+          status?: string
+          subscription_type: string
+          updated_at?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          amount?: number
+          created_at?: string
+          doctor_email?: string
+          doctor_name?: string
+          doctor_user_id?: string
+          id?: string
+          notes?: string | null
+          phone?: string | null
+          preferred_location?: string | null
+          preferred_payment_method?: string
+          processed_at?: string | null
+          processed_by?: string | null
+          status?: string
+          subscription_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       prescription_access_logs: {
         Row: {
           access_type: string

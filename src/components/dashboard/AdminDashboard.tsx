@@ -13,6 +13,7 @@ import { PatientsList } from '@/components/admin/PatientsList';
 import { AdminAppointments } from '@/components/admin/AdminAppointments';
 import { PaymentSettings } from '@/components/admin/PaymentSettings';
 import DoctorRegistrationRequests from '@/components/admin/DoctorRegistrationRequests';
+import PhysicalPaymentRequests from '@/components/admin/PhysicalPaymentRequests';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { DashboardLayout } from '@/components/ui/DashboardLayout';
@@ -371,9 +372,10 @@ export const AdminDashboard = () => {
 
         {/* Main Management Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="overview">Resumen</TabsTrigger>
             <TabsTrigger value="requests">Solicitudes</TabsTrigger>
+            <TabsTrigger value="payments">Pagos Físicos</TabsTrigger>
             <TabsTrigger value="doctors">Doctores</TabsTrigger>
             <TabsTrigger value="patients">Pacientes</TabsTrigger>
             <TabsTrigger value="pricing">Precios</TabsTrigger>
@@ -454,6 +456,10 @@ export const AdminDashboard = () => {
 
           <TabsContent value="requests">
             <DoctorRegistrationRequests />
+          </TabsContent>
+
+          <TabsContent value="payments">
+            <PhysicalPaymentRequests />
           </TabsContent>
 
           <TabsContent value="doctors">
