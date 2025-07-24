@@ -39,6 +39,7 @@ All colors MUST be HSL.
     /* Custom design tokens */
     --primary-light: 197 100% 85%;
     --primary-dark: 197 100% 35%;
+    --search-button: 194 100% 44%; /* #00a0df */
     --gradient-hero: linear-gradient(135deg, hsl(197 100% 44%), hsl(210 100% 50%));
     --gradient-section: linear-gradient(180deg, hsl(0 0% 98%), hsl(0 0% 100%));
     --shadow-soft: 0 2px 20px hsl(197 100% 44% / 0.1);

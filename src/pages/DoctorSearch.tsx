@@ -139,7 +139,7 @@ export default function DoctorSearch() {
             {/* Botón Buscar */}
             <Button
               onClick={fetchDoctors}
-              className="w-full bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90"
+              className="w-full bg-search-button hover:bg-search-button/90 text-primary-foreground"
               disabled={loading}
             >
               <Search className="mr-2 h-4 w-4" />
