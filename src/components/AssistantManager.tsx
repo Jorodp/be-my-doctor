@@ -79,16 +79,15 @@ export const AssistantManager = () => {
     try {
       setLoading(true);
       
-      // Obtener asistentes por consultorio
-      const { data: clinicAssignments, error } = await supabase
-        .from('clinic_assistants')
+      // Obtener asistentes del doctor desde doctor_assistants
+      const { data: doctorAssignments, error } = await supabase
+        .from('doctor_assistants')
         .select(`
           id,
-          clinic_id,
+          doctor_id,
           assistant_id,
-          clinics!inner(name),
-          profiles!clinic_assistants_assistant_id_fkey(
-            id,
+          assigned_at,
+          profiles!doctor_assistants_assistant_id_fkey(
             user_id,
             full_name,
             phone,
@@ -96,15 +95,15 @@ export const AssistantManager = () => {
             created_at
           )
         `)
-        .eq('clinics.doctor_id', user.id);
+        .eq('doctor_id', user.id);
 
       if (error) throw error;
 
       // Obtener emails de auth.users para cada asistente
       const assistantsWithEmails = await Promise.all(
-        (clinicAssignments || []).map(async (assignment: any) => {
+        (doctorAssignments || []).map(async (assignment: any) => {
           const assistant = assignment.profiles;
-          if (!assistant || !assignment.clinics) return null;
+          if (!assistant) return null;
           
           try {
             // Usar edge function para obtener información del usuario
@@ -115,9 +114,9 @@ export const AssistantManager = () => {
             
             return {
               id: assignment.id,
-              clinic_id: assignment.clinic_id,
+              clinic_id: null, // Los asistentes están asignados al doctor, no a clínicas específicas
               assistant_id: assignment.assistant_id,
-              clinic_name: assignment.clinics.name,
+              clinic_name: 'Todos los consultorios', // Texto por defecto
               assistant: {
                 ...assistant,
                 email: userInfo?.email || 'Email no disponible'
@@ -127,9 +126,9 @@ export const AssistantManager = () => {
             console.error('Error fetching user email:', error);
             return {
               id: assignment.id,
-              clinic_id: assignment.clinic_id,
+              clinic_id: null,
               assistant_id: assignment.assistant_id,
-              clinic_name: assignment.clinics.name,
+              clinic_name: 'Todos los consultorios',
               assistant: {
                 ...assistant,
                 email: 'Email no disponible'
@@ -143,7 +142,7 @@ export const AssistantManager = () => {
       const validAssistants = assistantsWithEmails.filter(Boolean);
       setClinicAssistants(validAssistants);
     } catch (error) {
-      console.error('Error fetching clinic assistants:', error);
+      console.error('Error fetching doctor assistants:', error);
       toast({
         title: "Error",
         description: "No se pudieron cargar los asistentes",
@@ -245,21 +244,21 @@ export const AssistantManager = () => {
     }
   };
 
-  const handleRemoveAssistant = async (clinicAssistantId: string, clinicName: string) => {
+  const handleRemoveAssistant = async (doctorAssistantId: string, assistantName: string) => {
     if (!user) return;
 
     try {
-      // Remover la asignación del asistente desde clinic_assistants
+      // Remover la asignación del asistente desde doctor_assistants
       const { error } = await supabase
-        .from('clinic_assistants')
+        .from('doctor_assistants')
         .delete()
-        .eq('id', clinicAssistantId);
+        .eq('id', doctorAssistantId);
 
       if (error) throw error;
 
       toast({
         title: "Asistente removido",
-        description: `El asistente ha sido removido del consultorio ${clinicName}`,
+        description: `El asistente ${assistantName} ha sido removido`,
         variant: "default"
       });
 
@@ -464,7 +463,7 @@ export const AssistantManager = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleRemoveAssistant(clinicAssistant.id, clinicAssistant.clinic_name)}
+                        onClick={() => handleRemoveAssistant(clinicAssistant.id, clinicAssistant.assistant.full_name || 'Asistente')}
                         className="text-red-600 hover:text-red-700"
                       >
                         <Trash2 className="h-4 w-4" />
