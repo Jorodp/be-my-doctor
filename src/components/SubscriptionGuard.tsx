@@ -3,6 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { CheckCircle, Clock, CreditCard } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
@@ -228,8 +229,128 @@ export function SubscriptionGuard({ children }: SubscriptionGuardProps) {
     return <>{children}</>;
   }
   
-  // Temporary: Allow verified doctors to access dashboard without subscription for testing
-  // Remove this after subscription flow is working
-  console.log("SubscriptionGuard: Temporarily allowing access for testing purposes");
-  return <>{children}</>;
+  // If no active subscription, show subscription prompt
+  console.log("SubscriptionGuard: No active subscription found, showing subscription prompt");
+  
+  if (!paymentSettings) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <LoadingSpinner />
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-4xl mx-auto p-6 space-y-6">
+      <Card>
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl">Suscripción Requerida</CardTitle>
+          <CardDescription>
+            Para acceder al dashboard médico, necesitas una suscripción activa.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Monthly Plan */}
+            <div className="border rounded-lg p-6 space-y-4">
+              <div className="text-center">
+                <h3 className="font-semibold text-lg">Plan Mensual</h3>
+                <div className="mt-2">
+                  <span className="text-3xl font-bold">${paymentSettings.monthly_price.toLocaleString()}</span>
+                  <span className="text-muted-foreground"> MXN/mes</span>
+                </div>
+              </div>
+              
+              <ul className="space-y-2 text-sm">
+                <li className="flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  Acceso completo a la plataforma
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  Gestión ilimitada de citas
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  Soporte técnico
+                </li>
+              </ul>
+              
+              <Button 
+                className="w-full" 
+                onClick={() => handleSubscribe('monthly')}
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <Clock className="h-4 w-4 mr-2 animate-spin" />
+                    Procesando...
+                  </>
+                ) : (
+                  <>
+                    <CreditCard className="h-4 w-4 mr-2" />
+                    Suscribirse Mensual
+                  </>
+                )}
+              </Button>
+            </div>
+
+            {/* Annual Plan */}
+            <div className="border rounded-lg p-6 space-y-4 bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <Badge variant="default" className="bg-blue-600">Recomendado</Badge>
+                </div>
+                <h3 className="font-semibold text-lg">Plan Anual</h3>
+                <div className="mt-2">
+                  <span className="text-3xl font-bold">${paymentSettings.annual_price.toLocaleString()}</span>
+                  <span className="text-muted-foreground"> MXN/año</span>
+                </div>
+                <p className="text-sm text-green-600 font-medium mt-1">
+                  Ahorra ${((paymentSettings.monthly_price * 12) - paymentSettings.annual_price).toLocaleString()} MXN
+                </p>
+              </div>
+              
+              <ul className="space-y-2 text-sm">
+                <li className="flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  Acceso completo a la plataforma
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  Gestión ilimitada de citas
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  Soporte técnico prioritario
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  2 meses gratis incluidos
+                </li>
+              </ul>
+              
+              <Button 
+                className="w-full bg-blue-600 hover:bg-blue-700" 
+                onClick={() => handleSubscribe('annual')}
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <Clock className="h-4 w-4 mr-2 animate-spin" />
+                    Procesando...
+                  </>
+                ) : (
+                  <>
+                    <CreditCard className="h-4 w-4 mr-2" />
+                    Suscribirse Anual
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
 }

@@ -363,11 +363,26 @@ const DoctorDashboardContent = () => {
 
       const uniquePatients = new Set(appointmentData?.map(a => a.patient_user_id));
 
+      // Calculate monthly revenue from consultation payments
+      const currentMonth = new Date();
+      const firstDayOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+      const lastDayOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
+
+      const { data: payments } = await supabase
+        .from('consultation_payments')
+        .select('amount')
+        .eq('doctor_user_id', user.id)
+        .eq('status', 'paid')
+        .gte('paid_at', firstDayOfMonth.toISOString())
+        .lte('paid_at', lastDayOfMonth.toISOString());
+
+      const monthlyRevenue = payments?.reduce((total, payment) => total + (payment.amount || 0), 0) || 0;
+
       setStats({
         totalAppointments: totalAppointments || 0,
         completedAppointments: completedAppointments || 0,
         totalPatients: uniquePatients.size,
-        monthlyRevenue: 0 // Placeholder for now
+        monthlyRevenue: monthlyRevenue
       });
     } catch (error) {
       console.error('Error fetching stats:', error);
@@ -453,7 +468,7 @@ const DoctorDashboardContent = () => {
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <h2 className="text-2xl font-bold">Dr. {profile.full_name}</h2>
+                  <h2 className="text-2xl font-bold">{profile.full_name}</h2>
                   <p className="text-muted-foreground">{profile.specialty}</p>
                   <div className="flex items-center gap-2 mt-1">
                     <Badge variant={profile.verification_status === 'verified' ? 'default' : 'secondary'}>
@@ -488,14 +503,6 @@ const DoctorDashboardContent = () => {
                   </div>
                 )}
               </div>
-              {profile.consultation_fee && (
-                <div className="mt-4 p-3 bg-muted rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <DollarSign className="h-4 w-4 text-green-600" />
-                    <span className="font-medium">Tarifa de consulta: ${profile.consultation_fee} MXN</span>
-                  </div>
-                </div>
-              )}
             </CardContent>
           </Card>
         )}
@@ -534,18 +541,19 @@ const DoctorDashboardContent = () => {
           
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Calificación</CardTitle>
-              <Star className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">Ingresos del Mes</CardTitle>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{averageRating > 0 ? averageRating : 'N/A'}</div>
+              <div className="text-2xl font-bold">${stats.monthlyRevenue.toLocaleString()}</div>
+              <p className="text-xs text-muted-foreground">MXN</p>
             </CardContent>
           </Card>
         </div>
 
         {/* Main Content Tabs */}
         <Tabs defaultValue="consultas" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-9">
+          <TabsList className="grid w-full grid-cols-10">
             <TabsTrigger value="consultas" className="flex items-center gap-2">
               <Timer className="h-4 w-4" />
               Flujo de Consultas
@@ -569,6 +577,10 @@ const DoctorDashboardContent = () => {
             <TabsTrigger value="ratings" className="flex items-center gap-2">
               <Star className="h-4 w-4" />
               Calificaciones
+            </TabsTrigger>
+            <TabsTrigger value="income" className="flex items-center gap-2">
+              <DollarSign className="h-4 w-4" />
+              Ingresos
             </TabsTrigger>
             <TabsTrigger value="subscription" className="flex items-center gap-2">
               <CreditCard className="h-4 w-4" />
@@ -811,6 +823,70 @@ const DoctorDashboardContent = () => {
 
           <TabsContent value="chat">
             <DoctorChatManager />
+          </TabsContent>
+
+          <TabsContent value="income">
+            <Card>
+              <CardHeader>
+                <CardTitle>Resumen de Ingresos</CardTitle>
+                <CardDescription>
+                  Ingresos detallados por citas y consultas
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-lg">Este Mes</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-3xl font-bold text-green-600">
+                        ${stats.monthlyRevenue.toLocaleString()} MXN
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {stats.completedAppointments} consultas completadas
+                      </p>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-lg">Promedio por Consulta</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-3xl font-bold">
+                        ${stats.completedAppointments > 0 ? Math.round(stats.monthlyRevenue / stats.completedAppointments).toLocaleString() : '0'} MXN
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Ingreso promedio
+                      </p>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-lg">Pacientes Únicos</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-3xl font-bold">
+                        {stats.totalPatients}
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Pacientes diferentes atendidos
+                      </p>
+                    </CardContent>
+                  </Card>
+                </div>
+                
+                <div className="mt-6 p-4 bg-muted/50 rounded-lg">
+                  <h3 className="font-medium mb-2">Información sobre ingresos</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Los ingresos mostrados corresponden únicamente a los pagos confirmados de este mes. 
+                    Para un análisis más detallado, contacta con tu administrador.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="history">
