@@ -466,7 +466,8 @@ export function ClinicsAndAssistantsManager({ doctorUserId, onClinicsChange }: C
         const { data, error } = await supabase.functions.invoke('assign-assistant-by-email', {
           body: { 
             email: inviteEmail.trim(),
-            doctor_id: doctorUserId
+            doctor_id: doctorUserId,
+            clinic_id: selectedClinicForAssistant
           }
         });
 
