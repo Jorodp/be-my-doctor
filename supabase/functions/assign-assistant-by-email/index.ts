@@ -92,8 +92,17 @@ serve(async (req) => {
           .from("profiles")
           .insert({
             user_id: existingUser.id,
-            role: "assistant"
+            role: "assistant",
+            assigned_doctor_id: doctor_id
           });
+      } else {
+        // Update existing profile to assign doctor
+        await adminClient
+          .from("profiles")
+          .update({
+            assigned_doctor_id: doctor_id
+          })
+          .eq("user_id", existingUser.id);
       }
 
       message = "Usuario existente asignado como asistente exitosamente";
@@ -136,7 +145,8 @@ serve(async (req) => {
         .from("profiles")
         .insert({
           user_id: newUser.user.id,
-          role: "assistant"
+          role: "assistant",
+          assigned_doctor_id: doctor_id
         });
 
       message = `Nuevo asistente creado. Email: ${email}, Contraseña temporal: ${tempPassword}`;
