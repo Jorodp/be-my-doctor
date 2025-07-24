@@ -14,6 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { format, addDays, setHours, setMinutes, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { useDoctorClinics } from '@/hooks/useDoctorClinics';
 import {
   CalendarIcon,
   Plus,
@@ -38,6 +39,8 @@ interface Patient {
 interface TimeSlot {
   time: string;
   available: boolean;
+  clinic_id: string;
+  clinic_name: string;
 }
 
 interface AssistantAppointmentCreatorProps {
@@ -52,10 +55,13 @@ export function AssistantAppointmentCreator({ doctorId }: AssistantAppointmentCr
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
   const [selectedTime, setSelectedTime] = useState<string>('');
+  const [selectedClinic, setSelectedClinic] = useState<string>('');
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const [creatingAppointment, setCreatingAppointment] = useState(false);
   const [showNewPatientForm, setShowNewPatientForm] = useState(false);
+
+  const { data: clinics = [] } = useDoctorClinics(doctorId);
   
   // New patient form
   const [newPatient, setNewPatient] = useState({
@@ -74,7 +80,7 @@ export function AssistantAppointmentCreator({ doctorId }: AssistantAppointmentCr
     if (selectedDate && doctorId) {
       fetchAvailableSlots();
     }
-  }, [selectedDate, doctorId]);
+  }, [selectedDate, doctorId, selectedClinic]);
 
   const fetchPatients = async () => {
     try {
@@ -122,22 +128,78 @@ export function AssistantAppointmentCreator({ doctorId }: AssistantAppointmentCr
       setLoading(true);
       const dayOfWeek = selectedDate.getDay();
       
-      // Get doctor's availability for the selected day
-      const { data: availability, error } = await supabase
-        .from('doctor_availability')
-        .select('start_time, end_time')
-        .eq('doctor_user_id', doctorId)
-        .eq('day_of_week', dayOfWeek)
-        .eq('is_available', true);
+      // Get doctor's profile to get internal ID
+      const { data: doctorProfile, error: profileError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', doctorId)
+        .single();
 
-      if (error) throw error;
+      if (profileError) throw profileError;
 
-      if (!availability || availability.length === 0) {
+      // Get clinics for this doctor
+      let clinicsQuery = supabase
+        .from('clinics')
+        .select('id, name')
+        .eq('doctor_id', doctorProfile.id);
+
+      if (selectedClinic) {
+        clinicsQuery = clinicsQuery.eq('id', selectedClinic);
+      }
+
+      const { data: doctorClinics, error: clinicsError } = await clinicsQuery;
+      if (clinicsError) throw clinicsError;
+
+      if (!doctorClinics || doctorClinics.length === 0) {
         setAvailableSlots([]);
         return;
       }
 
-      // Get existing appointments for the selected date
+      const slots: TimeSlot[] = [];
+
+      // For each clinic, get availability and generate slots
+      for (const clinic of doctorClinics) {
+        const { data: availability, error: availError } = await supabase
+          .from('availabilities')
+          .select('start_time, end_time, slot_duration_minutes')
+          .eq('clinic_id', clinic.id)
+          .eq('weekday', dayOfWeek)
+          .eq('is_active', true);
+
+        if (availError) throw availError;
+
+        if (availability && availability.length > 0) {
+          for (const avail of availability) {
+            const startHour = parseInt(avail.start_time.split(':')[0]);
+            const startMinute = parseInt(avail.start_time.split(':')[1]);
+            const endHour = parseInt(avail.end_time.split(':')[0]);
+            const endMinute = parseInt(avail.end_time.split(':')[1]);
+            
+            for (let hour = startHour; hour < endHour || (hour === endHour && startMinute < endMinute); hour++) {
+              for (let minute = (hour === startHour ? startMinute : 0); minute < 60; minute += 60) { // 1 hour slots
+                if (hour === endHour && minute >= endMinute) break;
+                
+                const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+                const slotDateTime = setMinutes(setHours(selectedDate, hour), minute);
+                
+                // Check if slot is in the past
+                const isPast = slotDateTime < new Date();
+                
+                if (!isPast) {
+                  slots.push({
+                    time: timeString,
+                    available: true, // We'll check availability below
+                    clinic_id: clinic.id,
+                    clinic_name: clinic.name
+                  });
+                }
+              }
+            }
+          }
+        }
+      }
+
+      // Check existing appointments for the selected date
       const startOfDay = new Date(selectedDate);
       startOfDay.setHours(0, 0, 0, 0);
       const endOfDay = new Date(selectedDate);
@@ -145,49 +207,29 @@ export function AssistantAppointmentCreator({ doctorId }: AssistantAppointmentCr
 
       const { data: appointments, error: appointmentsError } = await supabase
         .from('appointments')
-        .select('starts_at, ends_at')
+        .select('starts_at, clinic_id')
         .eq('doctor_user_id', doctorId)
         .gte('starts_at', startOfDay.toISOString())
         .lte('starts_at', endOfDay.toISOString())
-        .neq('status', 'cancelled');
+        .in('status', ['scheduled', 'completed']);
 
       if (appointmentsError) throw appointmentsError;
 
-      // Generate time slots
-      const slots: TimeSlot[] = [];
-      
-      availability.forEach(({ start_time, end_time }) => {
-        const startHour = parseInt(start_time.split(':')[0]);
-        const startMinute = parseInt(start_time.split(':')[1]);
-        const endHour = parseInt(end_time.split(':')[0]);
-        const endMinute = parseInt(end_time.split(':')[1]);
-        
-        for (let hour = startHour; hour < endHour || (hour === endHour && startMinute < endMinute); hour++) {
-          for (let minute = (hour === startHour ? startMinute : 0); minute < 60; minute += 30) {
-            if (hour === endHour && minute >= endMinute) break;
-            
-            const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-            const slotDateTime = setMinutes(setHours(selectedDate, hour), minute);
-            
-            // Check if this slot is already booked
-            const isBooked = appointments?.some(apt => {
-              const appointmentStart = parseISO(apt.starts_at);
-              const appointmentEnd = parseISO(apt.ends_at);
-              return slotDateTime >= appointmentStart && slotDateTime < appointmentEnd;
-            });
+      // Mark occupied slots per clinic
+      const occupiedSlots = new Set(
+        appointments?.map(apt => {
+          const time = new Date(apt.starts_at);
+          return `${apt.clinic_id}-${format(time, 'HH:mm')}`;
+        }) || []
+      );
 
-            // Check if slot is in the past
-            const isPast = slotDateTime < new Date();
-            
-            slots.push({
-              time: timeString,
-              available: !isBooked && !isPast
-            });
-          }
-        }
-      });
+      // Update availability
+      const updatedSlots = slots.map(slot => ({
+        ...slot,
+        available: !occupiedSlots.has(`${slot.clinic_id}-${slot.time}`)
+      }));
 
-      setAvailableSlots(slots);
+      setAvailableSlots(updatedSlots);
     } catch (error) {
       console.error('Error fetching available slots:', error);
       toast({
@@ -257,10 +299,10 @@ export function AssistantAppointmentCreator({ doctorId }: AssistantAppointmentCr
   };
 
   const createAppointment = async () => {
-    if (!selectedPatient || !selectedDate || !selectedTime) {
+    if (!selectedPatient || !selectedDate || !selectedTime || !selectedClinic) {
       toast({
         title: "Campos requeridos",
-        description: "Selecciona paciente, fecha y hora",
+        description: "Selecciona paciente, fecha, hora y consultorio",
         variant: "destructive"
       });
       return;
@@ -271,13 +313,29 @@ export function AssistantAppointmentCreator({ doctorId }: AssistantAppointmentCr
       
       const [hour, minute] = selectedTime.split(':').map(Number);
       const startDateTime = setMinutes(setHours(selectedDate, hour), minute);
-      const endDateTime = new Date(startDateTime.getTime() + 30 * 60000); // 30 minutes
+      const endDateTime = new Date(startDateTime.getTime() + 60 * 60000); // 1 hour
+
+      // Check for conflicts first
+      const { data: existingAppointments, error: checkError } = await supabase
+        .from('appointments')
+        .select('id')
+        .eq('doctor_user_id', doctorId)
+        .eq('clinic_id', selectedClinic)
+        .eq('starts_at', startDateTime.toISOString())
+        .in('status', ['scheduled', 'completed']);
+
+      if (checkError) throw checkError;
+
+      if (existingAppointments && existingAppointments.length > 0) {
+        throw new Error('Este horario ya está ocupado en este consultorio');
+      }
 
       const { error } = await supabase
         .from('appointments')
         .insert({
           doctor_user_id: doctorId,
           patient_user_id: selectedPatient.user_id,
+          clinic_id: selectedClinic,
           starts_at: startDateTime.toISOString(),
           ends_at: endDateTime.toISOString(),
           status: 'scheduled',
@@ -295,6 +353,7 @@ export function AssistantAppointmentCreator({ doctorId }: AssistantAppointmentCr
       setSelectedPatient(null);
       setSelectedDate(undefined);
       setSelectedTime('');
+      setSelectedClinic('');
       setNotes('');
       setSearchTerm('');
       
@@ -303,11 +362,11 @@ export function AssistantAppointmentCreator({ doctorId }: AssistantAppointmentCr
         fetchAvailableSlots();
       }
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating appointment:', error);
       toast({
         title: "Error",
-        description: "No se pudo crear la cita",
+        description: error.message || "No se pudo crear la cita",
         variant: "destructive"
       });
     } finally {
@@ -417,6 +476,31 @@ export function AssistantAppointmentCreator({ doctorId }: AssistantAppointmentCr
           )}
         </div>
 
+        {/* Clinic Selection */}
+        {clinics.length > 0 && (
+          <div className="space-y-2">
+            <Label>Consultorio</Label>
+            <Select value={selectedClinic} onValueChange={setSelectedClinic}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecciona un consultorio" />
+              </SelectTrigger>
+              <SelectContent>
+                {clinics.map((clinic) => (
+                  <SelectItem key={clinic.id} value={clinic.id}>
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4" />
+                      <div>
+                        <p className="font-medium">{clinic.name}</p>
+                        <p className="text-xs text-muted-foreground">{clinic.address}</p>
+                      </div>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
         {/* Date Selection */}
         <div className="space-y-4">
           <Label>Fecha de la Cita</Label>
@@ -469,25 +553,50 @@ export function AssistantAppointmentCreator({ doctorId }: AssistantAppointmentCr
                 <p className="text-muted-foreground">No hay horarios disponibles para esta fecha</p>
               </div>
             ) : (
-              <div className="grid grid-cols-4 gap-2">
-                {availableSlots.map((slot) => (
-                  <Button
-                    key={slot.time}
-                    variant={selectedTime === slot.time ? "default" : "outline"}
-                    size="sm"
-                    disabled={!slot.available}
-                    onClick={() => setSelectedTime(slot.time)}
-                    className={cn(
-                      "relative",
-                      !slot.available && "opacity-50 cursor-not-allowed"
-                    )}
-                  >
-                    <Clock className="h-3 w-3 mr-1" />
-                    {slot.time}
-                    {!slot.available && (
-                      <div className="absolute inset-0 bg-red-500/10 rounded" />
-                    )}
-                  </Button>
+              <div className="space-y-4">
+                {/* Group slots by clinic */}
+                {Object.entries(
+                  availableSlots.reduce((acc, slot) => {
+                    if (!acc[slot.clinic_id]) {
+                      acc[slot.clinic_id] = {
+                        clinic_name: slot.clinic_name,
+                        slots: []
+                      };
+                    }
+                    acc[slot.clinic_id].slots.push(slot);
+                    return acc;
+                  }, {} as Record<string, { clinic_name: string; slots: TimeSlot[] }>)
+                ).map(([clinicId, { clinic_name, slots }]) => (
+                  <div key={clinicId} className="space-y-2">
+                    <h4 className="font-medium text-sm flex items-center gap-2">
+                      <MapPin className="h-4 w-4" />
+                      {clinic_name}
+                    </h4>
+                    <div className="grid grid-cols-4 gap-2">
+                      {slots.map((slot) => (
+                        <Button
+                          key={`${slot.clinic_id}-${slot.time}`}
+                          variant={selectedTime === slot.time && selectedClinic === slot.clinic_id ? "default" : "outline"}
+                          size="sm"
+                          disabled={!slot.available}
+                          onClick={() => {
+                            setSelectedTime(slot.time);
+                            setSelectedClinic(slot.clinic_id);
+                          }}
+                          className={cn(
+                            "relative",
+                            !slot.available && "opacity-50 cursor-not-allowed"
+                          )}
+                        >
+                          <Clock className="h-3 w-3 mr-1" />
+                          {slot.time}
+                          {!slot.available && (
+                            <div className="absolute inset-0 bg-red-500/10 rounded" />
+                          )}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
                 ))}
               </div>
             )}
@@ -508,7 +617,7 @@ export function AssistantAppointmentCreator({ doctorId }: AssistantAppointmentCr
         {/* Create Button */}
         <Button 
           onClick={createAppointment}
-          disabled={!selectedPatient || !selectedDate || !selectedTime || creatingAppointment}
+          disabled={!selectedPatient || !selectedDate || !selectedTime || !selectedClinic || creatingAppointment}
           className="w-full"
         >
           {creatingAppointment ? (

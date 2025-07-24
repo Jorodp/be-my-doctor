@@ -7,8 +7,10 @@ import { Clock, Calendar as CalendarIcon } from "lucide-react";
 import { format, startOfDay, isSameDay, isToday } from "date-fns";
 import { es } from "date-fns/locale";
 import { useDoctorSlots, useBookAppointment } from "@/hooks/useDoctorSlots";
+import { useDoctorClinics } from "@/hooks/useDoctorClinics";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface DoctorCalendarViewProps {
   doctorId?: string;
@@ -18,8 +20,10 @@ export function DoctorCalendarView({ doctorId }: DoctorCalendarViewProps) {
   const { user } = useAuth();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
+  const [selectedClinic, setSelectedClinic] = useState<string>('');
 
-  const { data: slots = [], isLoading, error } = useDoctorSlots(doctorId || '', selectedDate);
+  const { data: clinics = [], isLoading: clinicsLoading } = useDoctorClinics(doctorId || '');
+  const { data: slots = [], isLoading, error } = useDoctorSlots(doctorId || '', selectedDate, selectedClinic || undefined);
   const bookAppointment = useBookAppointment();
 
   const hasAvailabilityForDate = (date: Date) => {
@@ -33,15 +37,31 @@ export function DoctorCalendarView({ doctorId }: DoctorCalendarViewProps) {
     return time.slice(0, 5); // HH:mm
   };
 
-  const handleSlotSelect = (slotTime: string) => {
+  const handleSlotSelect = (slotTime: string, clinicId: string) => {
     setSelectedSlot(slotTime);
+    if (!selectedClinic) {
+      setSelectedClinic(clinicId);
+    }
   };
 
   const handleBookAppointment = async () => {
-    if (!selectedDate || !selectedSlot || !user) {
+    if (!selectedDate || !selectedSlot || !user || !selectedClinic) {
       toast({
         title: "Error",
-        description: "Por favor selecciona una fecha y hora",
+        description: "Por favor selecciona una fecha, hora y consultorio",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const selectedSlotData = slots.find(slot => 
+      slot.start_time === selectedSlot && slot.clinic_id === selectedClinic
+    );
+
+    if (!selectedSlotData) {
+      toast({
+        title: "Error",
+        description: "El slot seleccionado no está disponible",
         variant: "destructive",
       });
       return;
@@ -50,6 +70,7 @@ export function DoctorCalendarView({ doctorId }: DoctorCalendarViewProps) {
     try {
       await bookAppointment.mutateAsync({
         doctorUserId: doctorId || '',
+        clinicId: selectedSlotData.clinic_id,
         date: format(selectedDate, 'yyyy-MM-dd'),
         startTime: selectedSlot,
         patientUserId: user.id,
@@ -57,14 +78,14 @@ export function DoctorCalendarView({ doctorId }: DoctorCalendarViewProps) {
 
       toast({
         title: "¡Cita agendada!",
-        description: "Tu cita ha sido programada exitosamente",
+        description: `Tu cita ha sido programada exitosamente en ${selectedSlotData.clinic_name}`,
       });
 
       setSelectedSlot(null);
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "No se pudo agendar la cita. Intenta de nuevo.",
+        description: error.message || "No se pudo agendar la cita. Intenta de nuevo.",
         variant: "destructive",
       });
     }
@@ -92,6 +113,26 @@ export function DoctorCalendarView({ doctorId }: DoctorCalendarViewProps) {
 
   return (
     <div className="space-y-6">
+      {/* Clinic Selection */}
+      {clinics.length > 1 && (
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Consultorio</label>
+          <Select value={selectedClinic} onValueChange={setSelectedClinic}>
+            <SelectTrigger>
+              <SelectValue placeholder="Selecciona un consultorio" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">Todos los consultorios</SelectItem>
+              {clinics.map((clinic) => (
+                <SelectItem key={clinic.id} value={clinic.id}>
+                  {clinic.name} - {clinic.address}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Calendar */}
         <div>
@@ -141,11 +182,17 @@ export function DoctorCalendarView({ doctorId }: DoctorCalendarViewProps) {
         <div>
           <h3 className="font-semibold mb-4 flex items-center gap-2">
             <Clock className="w-4 h-4" />
-            {selectedDate ? (
-              <>Horarios para {format(selectedDate, "EEEE d 'de' MMMM", { locale: es })}</>
-            ) : (
-              'Selecciona una fecha'
-            )}
+              {selectedDate ? (
+                <>Horarios para {format(selectedDate, "EEEE d 'de' MMMM", { locale: es })}
+                {selectedClinic && (
+                  <div className="text-sm text-muted-foreground">
+                    Consultorio: {clinics.find(c => c.id === selectedClinic)?.name}
+                  </div>
+                )}
+                </>
+              ) : (
+                'Selecciona una fecha'
+              )}
           </h3>
           
           {selectedDate && (
@@ -153,13 +200,13 @@ export function DoctorCalendarView({ doctorId }: DoctorCalendarViewProps) {
               {slots.length > 0 ? (
                 <>
                   {slots.map((slot, index) => {
-                    const slotId = `${slot.start_time}-${slot.end_time}`;
-                    const isSelected = selectedSlot === slot.start_time;
+                    const slotId = `${slot.clinic_id}-${slot.start_time}-${slot.end_time}`;
+                    const isSelected = selectedSlot === slot.start_time && selectedClinic === slot.clinic_id;
                     const isBooked = !slot.available;
                     
                     return (
                       <div
-                        key={index}
+                        key={slotId}
                         className={`flex items-center justify-between p-3 rounded-lg border transition-all ${
                           isBooked 
                             ? 'bg-muted/50 border-muted' 
@@ -169,18 +216,23 @@ export function DoctorCalendarView({ doctorId }: DoctorCalendarViewProps) {
                         }`}
                       >
                         <div className="flex items-center gap-2">
-                          <Badge 
-                            variant={isBooked ? "secondary" : isSelected ? "default" : "outline"} 
-                            className={
-                              isBooked 
-                                ? "text-muted-foreground" 
-                                : isSelected 
-                                ? "bg-primary text-primary-foreground"
-                                : "border-primary text-primary"
-                            }
-                          >
-                            {formatTime(slot.start_time)} - {formatTime(slot.end_time)}
-                          </Badge>
+                          <div className="flex flex-col">
+                            <Badge 
+                              variant={isBooked ? "secondary" : isSelected ? "default" : "outline"} 
+                              className={
+                                isBooked 
+                                  ? "text-muted-foreground" 
+                                  : isSelected 
+                                  ? "bg-primary text-primary-foreground"
+                                  : "border-primary text-primary"
+                              }
+                            >
+                              {formatTime(slot.start_time)} - {formatTime(slot.end_time)}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground mt-1">
+                              {slot.clinic_name}
+                            </span>
+                          </div>
                           {isBooked && (
                             <span className="text-xs text-muted-foreground">Ocupado</span>
                           )}
@@ -190,7 +242,7 @@ export function DoctorCalendarView({ doctorId }: DoctorCalendarViewProps) {
                           className="px-6"
                           variant={isSelected ? "default" : "outline"}
                           disabled={isBooked}
-                          onClick={() => handleSlotSelect(slot.start_time)}
+                          onClick={() => handleSlotSelect(slot.start_time, slot.clinic_id)}
                         >
                           {isSelected ? "Seleccionado" : "Seleccionar"}
                         </Button>

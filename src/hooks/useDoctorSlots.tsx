@@ -13,6 +13,8 @@ export interface DoctorSlot {
   start_time: string;
   end_time: string;
   available: boolean;
+  clinic_id: string;
+  clinic_name: string;
 }
 
 function generateHourlySlots(startTime: string, endTime: string): TimeSlot[] {
@@ -41,49 +43,77 @@ function generateHourlySlots(startTime: string, endTime: string): TimeSlot[] {
   }
 }
 
-export function useDoctorSlots(doctorUserId: string, selectedDate: Date | undefined) {
+export function useDoctorSlots(doctorUserId: string, selectedDate: Date | undefined, clinicId?: string) {
   return useQuery({
-    queryKey: ["doctor-slots", doctorUserId, selectedDate?.toISOString()],
+    queryKey: ["doctor-slots", doctorUserId, selectedDate?.toISOString(), clinicId],
     queryFn: async (): Promise<DoctorSlot[]> => {
       if (!selectedDate) return [];
 
       const dayOfWeek = selectedDate.getDay();
       
-      // Obtener disponibilidad base del doctor
-      const { data: availability, error } = await supabase
-        .from('doctor_availability')
-        .select('*')
-        .eq('doctor_user_id', doctorUserId)
-        .eq('day_of_week', dayOfWeek)
-        .eq('is_available', true);
+      // First, get doctor's profile to get internal ID
+      const { data: doctorProfile, error: profileError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', doctorUserId)
+        .single();
 
-      if (error) throw error;
+      if (profileError) throw profileError;
 
-      if (!availability || availability.length === 0) {
+      // Get clinics for this doctor
+      let clinicsQuery = supabase
+        .from('clinics')
+        .select('id, name, address')
+        .eq('doctor_id', doctorProfile.id);
+
+      if (clinicId) {
+        clinicsQuery = clinicsQuery.eq('id', clinicId);
+      }
+
+      const { data: clinics, error: clinicsError } = await clinicsQuery;
+      if (clinicsError) throw clinicsError;
+
+      if (!clinics || clinics.length === 0) {
         return [];
       }
 
-      // Generar slots de 1 hora para cada período de disponibilidad
       const slots: DoctorSlot[] = [];
       const dateStr = format(selectedDate, 'yyyy-MM-dd');
 
-      for (const avail of availability) {
-        const hourlySlots = generateHourlySlots(avail.start_time, avail.end_time);
-        
-        for (const slot of hourlySlots) {
-          slots.push({
-            date: dateStr,
-            start_time: slot.start_time,
-            end_time: slot.end_time,
-            available: true
-          });
+      // For each clinic, get availability and generate slots
+      for (const clinic of clinics) {
+        const { data: availability, error: availError } = await supabase
+          .from('availabilities')
+          .select('start_time, end_time, slot_duration_minutes')
+          .eq('clinic_id', clinic.id)
+          .eq('weekday', dayOfWeek)
+          .eq('is_active', true);
+
+        if (availError) throw availError;
+
+        if (availability && availability.length > 0) {
+          for (const avail of availability) {
+            const slotDuration = avail.slot_duration_minutes || 60;
+            const hourlySlots = generateHourlySlots(avail.start_time, avail.end_time);
+            
+            for (const slot of hourlySlots) {
+              slots.push({
+                date: dateStr,
+                start_time: slot.start_time,
+                end_time: slot.end_time,
+                available: true,
+                clinic_id: clinic.id,
+                clinic_name: clinic.name
+              });
+            }
+          }
         }
       }
 
-      // Verificar citas existentes para marcar slots como no disponibles
+      // Check existing appointments for each clinic
       const { data: appointments, error: apptError } = await supabase
         .from('appointments')
-        .select('starts_at')
+        .select('starts_at, clinic_id')
         .eq('doctor_user_id', doctorUserId)
         .gte('starts_at', startOfDay(selectedDate).toISOString())
         .lt('starts_at', startOfDay(addHours(selectedDate, 24)).toISOString())
@@ -91,17 +121,17 @@ export function useDoctorSlots(doctorUserId: string, selectedDate: Date | undefi
 
       if (apptError) throw apptError;
 
-      // Marcar slots ocupados
-      const occupiedTimes = new Set(
+      // Mark occupied slots per clinic
+      const occupiedSlots = new Set(
         appointments?.map(apt => {
           const time = new Date(apt.starts_at);
-          return format(time, 'HH:mm:ss');
+          return `${apt.clinic_id}-${format(time, 'HH:mm:ss')}`;
         }) || []
       );
 
       return slots.map(slot => ({
         ...slot,
-        available: !occupiedTimes.has(slot.start_time)
+        available: !occupiedSlots.has(`${slot.clinic_id}-${slot.start_time}`)
       }));
     },
     enabled: !!doctorUserId && !!selectedDate,
@@ -114,31 +144,56 @@ export function useBookAppointment() {
   return useMutation({
     mutationFn: async ({ 
       doctorUserId, 
+      clinicId,
       date, 
       startTime, 
       patientUserId,
       notes 
     }: {
       doctorUserId: string;
+      clinicId: string;
       date: string;
       startTime: string;
       patientUserId: string;
       notes?: string;
     }) => {
-      // Aquí iría la lógica para crear la cita
-      // Por ahora solo simulo la creación
-      const appointmentData = {
-        doctor_user_id: doctorUserId,
-        patient_user_id: patientUserId,
-        starts_at: `${date}T${startTime}`,
-        status: 'scheduled',
-        notes: notes || ''
-      };
-
-      console.log('Booking appointment:', appointmentData);
+      // Check for conflicts first
+      const appointmentDateTime = `${date}T${startTime}:00.000Z`;
       
-      // Simulamos una respuesta exitosa
-      return { success: true, appointment_id: 'temp-id' };
+      const { data: existingAppointments, error: checkError } = await supabase
+        .from('appointments')
+        .select('id')
+        .eq('doctor_user_id', doctorUserId)
+        .eq('clinic_id', clinicId)
+        .eq('starts_at', appointmentDateTime)
+        .in('status', ['scheduled', 'completed']);
+
+      if (checkError) throw checkError;
+
+      if (existingAppointments && existingAppointments.length > 0) {
+        throw new Error('Este horario ya está ocupado en este consultorio');
+      }
+
+      // Create the appointment
+      const endDateTime = new Date(new Date(appointmentDateTime).getTime() + 60 * 60000); // 1 hour
+
+      const { data, error } = await supabase
+        .from('appointments')
+        .insert({
+          doctor_user_id: doctorUserId,
+          patient_user_id: patientUserId,
+          clinic_id: clinicId,
+          starts_at: appointmentDateTime,
+          ends_at: endDateTime.toISOString(),
+          status: 'scheduled',
+          notes: notes || null
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      return { success: true, appointment_id: data.id };
     },
     onSuccess: (data, variables) => {
       // Invalidar queries relacionadas

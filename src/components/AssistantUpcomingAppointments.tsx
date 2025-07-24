@@ -20,7 +20,8 @@ import {
   AlertTriangle,
   CheckCircle,
   Image as ImageIcon,
-  Eye
+  Eye,
+  MapPin
 } from 'lucide-react';
 import { PatientIdDocument } from './PatientIdDocument';
 
@@ -37,6 +38,10 @@ interface Appointment {
     phone: string;
     profile_image_url?: string;
     id_document_url?: string;
+  };
+  clinics?: {
+    name: string;
+    address: string;
   };
 }
 
@@ -67,7 +72,13 @@ export function AssistantUpcomingAppointments({ doctorId }: AssistantUpcomingApp
       // Fetch upcoming appointments for the assigned doctor
       const { data: appointmentsData, error } = await supabase
         .from('appointments')
-        .select('*')
+        .select(`
+          *,
+          clinics (
+            name,
+            address
+          )
+        `)
         .eq('doctor_user_id', doctorId)
         .gte('starts_at', new Date().toISOString())
         .order('starts_at', { ascending: true });
@@ -227,6 +238,12 @@ export function AssistantUpcomingAppointments({ doctorId }: AssistantUpcomingApp
                         <Clock className="h-3 w-3" />
                         {format(new Date(appointment.starts_at), 'HH:mm')} - {format(new Date(appointment.ends_at), 'HH:mm')}
                       </div>
+                      {appointment.clinics && (
+                        <div className="flex items-center gap-1">
+                          <MapPin className="h-3 w-3" />
+                          {appointment.clinics.name}
+                        </div>
+                      )}
                     </div>
 
                     {appointment.patient_profile?.phone && (
