@@ -51,13 +51,13 @@ export const AssistantManager = () => {
     try {
       setLoading(true);
       
-      // Obtener asistentes asignados a este doctor usando la tabla doctor_assistants
+      // Obtener asistentes asignados usando la nueva estructura
       const { data: assistantAssignments, error } = await supabase
         .from('doctor_assistants')
         .select(`
           assistant_id,
           assigned_at,
-          profiles!inner(
+          profiles!doctor_assistants_assistant_id_fkey(
             id,
             user_id,
             full_name,

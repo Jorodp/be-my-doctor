@@ -747,7 +747,134 @@ export type Database = {
           doctor_id?: string
           id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "doctor_assistants_assistant_id_fkey"
+            columns: ["assistant_id"]
+            isOneToOne: false
+            referencedRelation: "admin_doctors_overview"
+            referencedColumns: ["doctor_user_id"]
+          },
+          {
+            foreignKeyName: "doctor_assistants_assistant_id_fkey"
+            columns: ["assistant_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "doctor_assistants_assistant_id_fkey"
+            columns: ["assistant_id"]
+            isOneToOne: false
+            referencedRelation: "public_doctor_directory"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "doctor_assistants_assistant_id_fkey"
+            columns: ["assistant_id"]
+            isOneToOne: false
+            referencedRelation: "public_doctors_directory"
+            referencedColumns: ["doctor_user_id"]
+          },
+          {
+            foreignKeyName: "doctor_assistants_assistant_id_fkey"
+            columns: ["assistant_id"]
+            isOneToOne: false
+            referencedRelation: "public_doctors_public"
+            referencedColumns: ["doctor_user_id"]
+          },
+          {
+            foreignKeyName: "doctor_assistants_assistant_id_fkey"
+            columns: ["assistant_id"]
+            isOneToOne: false
+            referencedRelation: "user_roles_view"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "doctor_assistants_assistant_id_fkey"
+            columns: ["assistant_id"]
+            isOneToOne: false
+            referencedRelation: "v_admin_users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "doctor_assistants_assistant_id_fkey"
+            columns: ["assistant_id"]
+            isOneToOne: false
+            referencedRelation: "v_doctor_clinic_info"
+            referencedColumns: ["doctor_user_id"]
+          },
+          {
+            foreignKeyName: "doctor_assistants_assistant_id_fkey"
+            columns: ["assistant_id"]
+            isOneToOne: false
+            referencedRelation: "v_user_roles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "doctor_assistants_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "admin_doctors_overview"
+            referencedColumns: ["doctor_user_id"]
+          },
+          {
+            foreignKeyName: "doctor_assistants_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "doctor_assistants_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "public_doctor_directory"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "doctor_assistants_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "public_doctors_directory"
+            referencedColumns: ["doctor_user_id"]
+          },
+          {
+            foreignKeyName: "doctor_assistants_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "public_doctors_public"
+            referencedColumns: ["doctor_user_id"]
+          },
+          {
+            foreignKeyName: "doctor_assistants_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "user_roles_view"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "doctor_assistants_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "v_admin_users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "doctor_assistants_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "v_doctor_clinic_info"
+            referencedColumns: ["doctor_user_id"]
+          },
+          {
+            foreignKeyName: "doctor_assistants_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "v_user_roles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       doctor_availability: {
         Row: {
