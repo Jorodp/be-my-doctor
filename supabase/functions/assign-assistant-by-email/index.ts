@@ -152,12 +152,42 @@ serve(async (req) => {
       message = `Nuevo asistente creado. Email: ${email}, Contraseña temporal: ${tempPassword}`;
     }
 
+    // Obtener el ID interno del profile del doctor
+    const { data: doctorProfile, error: doctorProfileError } = await adminClient
+      .from("profiles")
+      .select("id")
+      .eq("user_id", doctor_id)
+      .single();
+
+    if (doctorProfileError) {
+      console.error("Error getting doctor profile:", doctorProfileError);
+      return new Response(
+        JSON.stringify({ error: "Error obteniendo perfil del doctor" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Obtener el ID interno del profile del asistente
+    const { data: assistantProfile, error: assistantProfileError } = await adminClient
+      .from("profiles")
+      .select("id")
+      .eq("user_id", assistantUserId)
+      .single();
+
+    if (assistantProfileError) {
+      console.error("Error getting assistant profile:", assistantProfileError);
+      return new Response(
+        JSON.stringify({ error: "Error obteniendo perfil del asistente" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Check if assignment already exists
     const { data: existingAssignment } = await adminClient
       .from("doctor_assistants")
       .select("id")
-      .eq("doctor_id", doctor_id)
-      .eq("assistant_id", assistantUserId)
+      .eq("doctor_id", doctorProfile.id)
+      .eq("assistant_id", assistantProfile.id)
       .single();
 
     if (existingAssignment) {
@@ -171,8 +201,8 @@ serve(async (req) => {
     const { error: assignmentError } = await adminClient
       .from("doctor_assistants")
       .insert({
-        doctor_id: doctor_id,
-        assistant_id: assistantUserId
+        doctor_id: doctorProfile.id,
+        assistant_id: assistantProfile.id
       });
 
     if (assignmentError) {
