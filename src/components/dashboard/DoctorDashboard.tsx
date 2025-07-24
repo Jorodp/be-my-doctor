@@ -25,7 +25,8 @@ import {
   CreditCard,
   UserCheck,
   MessageSquare,
-  History
+  History,
+  Building2
 } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
@@ -40,6 +41,7 @@ import { AssistantManager } from '@/components/AssistantManager';
 import { DoctorChatManager } from '@/components/doctor/DoctorChatManager';
 import { DoctorAppointmentHistory } from '@/components/doctor/DoctorAppointmentHistory';
 import { AppointmentActionsExtended } from '@/components/AppointmentActionsExtended';
+import { ClinicsAndAssistantsManager } from '@/components/ClinicsAndAssistantsManager';
 
 interface DoctorProfile {
   id: string;
@@ -543,7 +545,7 @@ const DoctorDashboardContent = () => {
 
         {/* Main Content Tabs */}
         <Tabs defaultValue="consultas" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-9">
+          <TabsList className="grid w-full grid-cols-10">
             <TabsTrigger value="consultas" className="flex items-center gap-2">
               <Timer className="h-4 w-4" />
               Flujo de Consultas
@@ -551,6 +553,10 @@ const DoctorDashboardContent = () => {
             <TabsTrigger value="schedule" className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
               Agenda
+            </TabsTrigger>
+            <TabsTrigger value="clinics" className="flex items-center gap-2">
+              <Building2 className="h-4 w-4" />
+              Consultorios
             </TabsTrigger>
             <TabsTrigger value="today" className="flex items-center gap-2">
               <Clock className="h-4 w-4" />
@@ -600,6 +606,20 @@ const DoctorDashboardContent = () => {
               </CardHeader>
               <CardContent>
                 {user && <DoctorCalendarSchedule doctorId={user.id} />}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="clinics">
+            <Card>
+              <CardHeader>
+                <CardTitle>Gestión de Consultorios y Asistentes</CardTitle>
+                <CardDescription>
+                  Administra tus consultorios y asigna asistentes por consultorio
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {user && <ClinicsAndAssistantsManager doctorUserId={user.id} onClinicsChange={fetchAllData} />}
               </CardContent>
             </Card>
           </TabsContent>
