@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { MapPin, DollarSign, Star, Calendar, User, Phone, FileText, Clock, Award, ArrowLeft } from "lucide-react";
 import { DoctorCalendarView } from "@/components/DoctorCalendarView";
+import { DoctorReviewsSection } from "@/components/DoctorReviewsSection";
 
 interface DoctorProfileData {
   user_id: string;
@@ -304,8 +305,9 @@ export default function DoctorProfile() {
             </Card>
           </div>
 
-          {/* Right Column - Calendar */}
-          <div className="lg:col-span-2">
+          {/* Right Column - Calendar and Reviews */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Calendar Section */}
             <Card className="shadow-soft h-fit">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -317,6 +319,9 @@ export default function DoctorProfile() {
                 <DoctorCalendarView doctorId={doctorId} />
               </CardContent>
             </Card>
+
+            {/* Reviews Section */}
+            <DoctorReviewsSection doctorUserId={doctorId || ''} />
           </div>
         </div>
       </div>
