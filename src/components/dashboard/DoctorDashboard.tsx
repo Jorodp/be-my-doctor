@@ -545,7 +545,7 @@ const DoctorDashboardContent = () => {
 
         {/* Main Content Tabs */}
         <Tabs defaultValue="consultas" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-10">
+          <TabsList className="grid w-full grid-cols-9">
             <TabsTrigger value="consultas" className="flex items-center gap-2">
               <Timer className="h-4 w-4" />
               Flujo de Consultas
@@ -573,10 +573,6 @@ const DoctorDashboardContent = () => {
             <TabsTrigger value="subscription" className="flex items-center gap-2">
               <CreditCard className="h-4 w-4" />
               Suscripción
-            </TabsTrigger>
-            <TabsTrigger value="assistants" className="flex items-center gap-2">
-              <UserCheck className="h-4 w-4" />
-              Asistentes
             </TabsTrigger>
             <TabsTrigger value="chat" className="flex items-center gap-2">
               <MessageSquare className="h-4 w-4" />
@@ -812,19 +808,6 @@ const DoctorDashboardContent = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="assistants">
-            <Card>
-              <CardHeader>
-                <CardTitle>Gestión de Asistentes</CardTitle>
-                <CardDescription>
-                  Administra tus asistentes médicos
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <AssistantManager />
-              </CardContent>
-            </Card>
-          </TabsContent>
 
           <TabsContent value="chat">
             <DoctorChatManager />

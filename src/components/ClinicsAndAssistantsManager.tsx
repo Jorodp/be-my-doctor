@@ -142,29 +142,27 @@ export function ClinicsAndAssistantsManager({ doctorUserId, onClinicsChange }: C
 
   const loadClinicAssistants = async () => {
     try {
-      // Obtener asistentes del doctor desde doctor_assistants
-      const { data: doctorAssignments, error } = await supabase
-        .from('doctor_assistants')
+      // Obtener asistentes asignados a consultorios específicos
+      const { data: clinicAssignments, error } = await supabase
+        .from('clinic_assistants')
         .select(`
           id,
-          doctor_id,
+          clinic_id,
           assistant_id,
-          assigned_at,
-          profiles!doctor_assistants_assistant_id_fkey(
+          profiles!clinic_assistants_assistant_id_fkey(
             user_id,
             full_name,
             phone,
             profile_image_url,
             created_at
           )
-        `)
-        .eq('doctor_id', doctorUserId);
+        `);
 
       if (error) throw error;
 
-      // Obtener información de clínicas asignadas y emails
+      // Obtener emails y detalles para cada asistente
       const assistantsWithDetails = await Promise.all(
-        (doctorAssignments || []).map(async (assignment: any) => {
+        (clinicAssignments || []).map(async (assignment: any) => {
           const assistant = assignment.profiles;
           if (!assistant) return null;
           
@@ -174,17 +172,10 @@ export function ClinicsAndAssistantsManager({ doctorUserId, onClinicsChange }: C
               'get-assistant-info',
               { body: { user_id: assistant.user_id } }
             );
-            
-            // Buscar si está asignado a alguna clínica específica
-            const { data: clinicAssignment } = await supabase
-              .from('clinic_assistants')
-              .select('clinic_id, clinics(name)')
-              .eq('assistant_id', assignment.assistant_id)
-              .single();
 
             return {
               id: assignment.id,
-              clinic_id: clinicAssignment?.clinic_id || null,
+              clinic_id: assignment.clinic_id,
               assistant_id: assignment.assistant_id,
               assistant: {
                 ...assistant,
@@ -195,7 +186,7 @@ export function ClinicsAndAssistantsManager({ doctorUserId, onClinicsChange }: C
             console.error('Error fetching assistant details:', error);
             return {
               id: assignment.id,
-              clinic_id: null,
+              clinic_id: assignment.clinic_id,
               assistant_id: assignment.assistant_id,
               assistant: {
                 ...assistant,
@@ -443,41 +434,69 @@ export function ClinicsAndAssistantsManager({ doctorUserId, onClinicsChange }: C
     try {
       setInviting(true);
       
-      // Crear/asignar el asistente al doctor
-      const { data, error } = await supabase.functions.invoke('assign-assistant-by-email', {
-        body: { 
-          email: inviteEmail.trim(),
-          doctor_id: doctorUserId
-        }
-      });
-
-      if (error) {
-        console.error('Edge function error:', error);
-        throw new Error(error.message || 'Error de conexión con el servidor');
-      }
-
-      if (!data || data.error) {
-        throw new Error(data?.error || 'Error desconocido del servidor');
-      }
-
-      // Obtener el ID interno del asistente
-      const { data: assistantProfile, error: profileError } = await supabase
+      // Verificar si el usuario ya existe
+      const { data: existingUser, error: userError } = await supabase
         .from('profiles')
-        .select('id')
-        .eq('user_id', data.assistant_user_id)
+        .select('id, user_id, role')
+        .eq('email', inviteEmail.trim())
         .single();
 
-      if (profileError) {
-        console.error('Error getting assistant profile:', profileError);
-        throw new Error('Error obteniendo perfil del asistente');
+      let assistantProfileId: string;
+      let assistantUserId: string;
+
+      if (existingUser) {
+        // Usuario existe - verificar que sea asistente
+        if (existingUser.role !== 'assistant') {
+          toast({
+            title: "Error",
+            description: "El usuario existe pero no tiene rol de asistente",
+            variant: "destructive"
+          });
+          return;
+        }
+        
+        assistantProfileId = existingUser.id;
+        assistantUserId = existingUser.user_id;
+      } else {
+        // Usuario no existe - crear usando edge function
+        const { data, error } = await supabase.functions.invoke('assign-assistant-by-email', {
+          body: { 
+            email: inviteEmail.trim(),
+            doctor_id: doctorUserId
+          }
+        });
+
+        if (error) {
+          console.error('Edge function error:', error);
+          throw new Error(error.message || 'Error de conexión con el servidor');
+        }
+
+        if (!data || data.error) {
+          throw new Error(data?.error || 'Error desconocido del servidor');
+        }
+
+        // Obtener el ID interno del asistente recién creado
+        const { data: assistantProfile, error: profileError } = await supabase
+          .from('profiles')
+          .select('id, user_id')
+          .eq('user_id', data.assistant_user_id)
+          .single();
+
+        if (profileError) {
+          console.error('Error getting assistant profile:', profileError);
+          throw new Error('Error obteniendo perfil del asistente');
+        }
+
+        assistantProfileId = assistantProfile.id;
+        assistantUserId = assistantProfile.user_id;
       }
 
-      // Asignar al consultorio específico
+      // Asignar SOLO al consultorio específico (NO al doctor en general)
       const { error: clinicAssignError } = await supabase
         .from('clinic_assistants')
         .insert({
           clinic_id: selectedClinicForAssistant,
-          assistant_id: assistantProfile.id
+          assistant_id: assistantProfileId
         });
 
       if (clinicAssignError) {
@@ -511,39 +530,22 @@ export function ClinicsAndAssistantsManager({ doctorUserId, onClinicsChange }: C
     }
   };
 
-  const handleRemoveAssistant = async (assistantId: string, assistantName: string, clinicId?: string) => {
+  const handleRemoveAssistant = async (assistantId: string, assistantName: string, clinicId: string) => {
     try {
-      if (clinicId) {
-        // Remover de clínica específica
-        const { error } = await supabase
-          .from('clinic_assistants')
-          .delete()
-          .eq('clinic_id', clinicId)
-          .eq('assistant_id', assistantId);
+      // Remover de clínica específica
+      const { error } = await supabase
+        .from('clinic_assistants')
+        .delete()
+        .eq('clinic_id', clinicId)
+        .eq('assistant_id', assistantId);
 
-        if (error) throw error;
+      if (error) throw error;
 
-        toast({
-          title: "Asistente removido del consultorio",
-          description: `${assistantName} ha sido removido del consultorio`,
-          variant: "default"
-        });
-      } else {
-        // Remover completamente del doctor
-        const { error } = await supabase
-          .from('doctor_assistants')
-          .delete()
-          .eq('assistant_id', assistantId)
-          .eq('doctor_id', doctorUserId);
-
-        if (error) throw error;
-
-        toast({
-          title: "Asistente removido",
-          description: `${assistantName} ha sido removido de todos los consultorios`,
-          variant: "default"
-        });
-      }
+      toast({
+        title: "Asistente removido del consultorio",
+        description: `${assistantName} ha sido removido del consultorio`,
+        variant: "default"
+      });
 
       await loadData();
     } catch (error) {
@@ -561,7 +563,8 @@ export function ClinicsAndAssistantsManager({ doctorUserId, onClinicsChange }: C
   };
 
   const getUnassignedAssistants = () => {
-    return clinicAssistants.filter(ca => !ca.clinic_id);
+    // Ya no mostramos asistentes no asignados porque ahora solo trabajamos con asignaciones específicas
+    return [];
   };
 
   if (loading) {
@@ -921,61 +924,6 @@ export function ClinicsAndAssistantsManager({ doctorUserId, onClinicsChange }: C
                   );
                 })}
 
-                {/* Asistentes sin asignar a consultorio específico */}
-                {getUnassignedAssistants().length > 0 && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <AlertCircle className="h-5 w-5 text-yellow-600" />
-                        Asistentes sin Consultorio Asignado
-                        <Badge variant="outline" className="text-yellow-600 border-yellow-600">
-                          {getUnassignedAssistants().length} asistente(s)
-                        </Badge>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-3">
-                        {getUnassignedAssistants().map((clinicAssistant) => (
-                          <div key={clinicAssistant.id} className="flex items-center justify-between p-3 border rounded-lg bg-yellow-50">
-                            <div className="flex items-center gap-3">
-                              <Avatar>
-                                <AvatarImage src={clinicAssistant.assistant.profile_image_url || ''} />
-                                <AvatarFallback>
-                                  <User className="h-5 w-5" />
-                                </AvatarFallback>
-                              </Avatar>
-                              
-                              <div>
-                                <h4 className="font-medium">
-                                  {clinicAssistant.assistant.full_name || 'Nombre no disponible'}
-                                </h4>
-                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                  <Mail className="h-3 w-3" />
-                                  <span>{clinicAssistant.assistant.email}</span>
-                                </div>
-                                <p className="text-sm text-yellow-700 font-medium">
-                                  Acceso a todos los consultorios
-                                </p>
-                              </div>
-                            </div>
-
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleRemoveAssistant(
-                                clinicAssistant.assistant_id, 
-                                clinicAssistant.assistant.full_name || 'Asistente'
-                              )}
-                              className="text-red-600 hover:text-red-700"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
               </div>
             </>
           )}
