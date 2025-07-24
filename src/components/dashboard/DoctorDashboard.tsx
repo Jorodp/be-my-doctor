@@ -39,6 +39,7 @@ import { SubscriptionStatus } from '@/components/SubscriptionStatus';
 import { AssistantManager } from '@/components/AssistantManager';
 import { DoctorChatManager } from '@/components/doctor/DoctorChatManager';
 import { DoctorAppointmentHistory } from '@/components/doctor/DoctorAppointmentHistory';
+import { AppointmentActionsExtended } from '@/components/AppointmentActionsExtended';
 
 interface DoctorProfile {
   id: string;
@@ -300,7 +301,7 @@ const DoctorDashboardContent = () => {
     if (!user) return;
 
     const { data: ratingsData, error } = await supabase
-      .from('ratings')
+      .from('doctor_ratings')
       .select('*')
       .eq('doctor_user_id', user.id)
       .order('created_at', { ascending: false })
@@ -330,7 +331,7 @@ const DoctorDashboardContent = () => {
     setRatings(ratingsWithNames);
     
     if (ratingsData && ratingsData.length > 0) {
-      const avg = ratingsData.reduce((sum, r) => sum + r.rating, 0) / ratingsData.length;
+      const avg = ratingsData.reduce((sum, r) => sum + r.stars, 0) / ratingsData.length;
       setAverageRating(Math.round(avg * 10) / 10);
     }
   };
@@ -621,42 +622,48 @@ const DoctorDashboardContent = () => {
                   <div className="space-y-4">
                     {todayAppointments.map((appointment) => (
                       <div key={appointment.id} className="border rounded-lg p-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <Avatar>
-                              <AvatarFallback>
-                                <User className="h-5 w-5" />
-                              </AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <h4 className="font-medium">
-                                {appointment.patient_profile?.full_name || 'Paciente sin nombre'}
-                              </h4>
-                              <p className="text-sm text-muted-foreground">
+                        <div className="flex items-start justify-between">
+                          <div className="space-y-2 flex-1">
+                            <div className="flex items-center gap-3">
+                              <User className="h-4 w-4 text-muted-foreground" />
+                              <span className="font-medium">
+                                {appointment.patient_profile?.full_name || 'Paciente'}
+                              </span>
+                              <Badge variant={appointment.status === 'completed' ? 'secondary' : 'default'}>
+                                {appointment.status === 'completed' ? 'Completada' : 'Programada'}
+                              </Badge>
+                            </div>
+
+                            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                              <div className="flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
                                 {formatTime(appointment.starts_at)} - {formatTime(appointment.ends_at)}
-                              </p>
+                              </div>
                               {appointment.patient_profile?.phone && (
-                                <p className="text-sm text-muted-foreground">
+                                <div className="flex items-center gap-1">
+                                  <Phone className="h-3 w-3" />
                                   {appointment.patient_profile.phone}
-                                </p>
+                                </div>
                               )}
                             </div>
+
+                            {appointment.notes && (
+                              <div className="bg-muted p-2 rounded text-sm">
+                                <strong>Notas:</strong> {appointment.notes}
+                              </div>
+                            )}
                           </div>
-                          <div className="flex items-center gap-2">
-                            {getStatusIcon(appointment.status)}
-                            <span className="text-sm capitalize">
-                              {appointment.status === 'completed' ? 'Completada' : 
-                               appointment.status === 'scheduled' ? 'Programada' :
-                               appointment.status === 'cancelled' ? 'Cancelada' : 
-                               appointment.status}
-                            </span>
+
+                          <div className="ml-4">
+                            <AppointmentActionsExtended
+                              appointment={appointment}
+                              userRole="doctor"
+                              currentUserId={user?.id || ''}
+                              onAppointmentUpdated={fetchTodayAppointments}
+                              showPatientName={false}
+                            />
                           </div>
                         </div>
-                        {appointment.notes && (
-                          <div className="mt-3 p-3 bg-muted rounded-md">
-                            <p className="text-sm">{appointment.notes}</p>
-                          </div>
-                        )}
                       </div>
                     ))}
                   </div>
@@ -680,39 +687,28 @@ const DoctorDashboardContent = () => {
                     <p>No tienes citas programadas esta semana</p>
                   </div>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="space-y-3 max-h-64 overflow-y-auto">
                     {weeklyAppointments.map((appointment) => (
-                      <div key={appointment.id} className="border rounded-lg p-4">
+                      <div key={appointment.id} className="border rounded-lg p-3">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
-                            <Avatar>
-                              <AvatarFallback>
-                                <User className="h-5 w-5" />
-                              </AvatarFallback>
-                            </Avatar>
+                            <User className="h-4 w-4 text-muted-foreground" />
                             <div>
-                              <h4 className="font-medium">
-                                {appointment.patient_profile?.full_name || 'Paciente sin nombre'}
-                              </h4>
-                              <p className="text-sm text-muted-foreground">
-                                {formatDate(appointment.starts_at)} - {formatTime(appointment.starts_at)}
+                              <p className="font-medium">
+                                {appointment.patient_profile?.full_name || 'Paciente'}
                               </p>
-                              {appointment.patient_profile?.phone && (
-                                <p className="text-sm text-muted-foreground">
-                                  {appointment.patient_profile.phone}
-                                </p>
-                              )}
+                              <p className="text-sm text-muted-foreground">
+                                {formatDate(appointment.starts_at)} • {formatTime(appointment.starts_at)}
+                              </p>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            {getStatusIcon(appointment.status)}
-                            <span className="text-sm capitalize">
-                              {appointment.status === 'completed' ? 'Completada' : 
-                               appointment.status === 'scheduled' ? 'Programada' :
-                               appointment.status === 'cancelled' ? 'Cancelada' : 
-                               appointment.status}
-                            </span>
-                          </div>
+                          <AppointmentActionsExtended
+                            appointment={appointment}
+                            userRole="doctor"
+                            currentUserId={user?.id || ''}
+                            onAppointmentUpdated={fetchWeeklyAppointments}
+                            showPatientName={false}
+                          />
                         </div>
                       </div>
                     ))}

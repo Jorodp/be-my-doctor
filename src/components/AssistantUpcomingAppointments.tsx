@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AppointmentActions } from '@/components/AppointmentActions';
 import { AppointmentDetailModal } from '@/components/AppointmentDetailModal';
+import { AppointmentActionsExtended } from '@/components/AppointmentActionsExtended';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
@@ -336,7 +337,7 @@ export function AssistantUpcomingAppointments({ doctorId }: AssistantUpcomingApp
                     )}
 
                     {/* Appointment Actions (Cancel/Reschedule) */}
-                    <AppointmentActions
+                    <AppointmentActionsExtended
                       appointment={appointment}
                       userRole="assistant"
                       currentUserId={user?.id || ''}

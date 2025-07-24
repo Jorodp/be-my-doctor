@@ -43,7 +43,7 @@ interface AppointmentHistory {
     recommendations?: string;
   };
   rating?: {
-    rating: number;
+    stars: number;
     comment?: string;
   };
 }
@@ -98,8 +98,8 @@ export const DoctorAppointmentHistory = () => {
             prescription,
             recommendations
           ),
-          ratings (
-            rating,
+          doctor_ratings (
+            stars,
             comment
           )
         `)
@@ -114,7 +114,7 @@ export const DoctorAppointmentHistory = () => {
         ...appointment,
         patient_profile: appointment.profiles as any,
         consultation_notes: appointment.consultation_notes?.[0],
-        rating: appointment.ratings?.[0]
+        rating: appointment.doctor_ratings?.[0]
       })) || [];
 
       setAppointments(processedAppointments);
@@ -335,7 +335,7 @@ export const DoctorAppointmentHistory = () => {
                           {appointment.rating && (
                             <div className="flex items-center gap-2">
                               <Star className="h-4 w-4" />
-                              {appointment.rating.rating}/5 estrellas
+                              {appointment.rating.stars}/5 estrellas
                             </div>
                           )}
                         </div>
