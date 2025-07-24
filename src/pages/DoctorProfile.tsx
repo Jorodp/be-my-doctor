@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { MapPin, DollarSign, Star, Calendar, User, Phone, FileText, Clock, Award, ArrowLeft } from "lucide-react";
+import { DoctorCalendarView } from "@/components/DoctorCalendarView";
 
 interface DoctorProfileData {
   user_id: string;
@@ -309,21 +310,11 @@ export default function DoctorProfile() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Calendar className="w-5 h-5 text-primary" />
-                  Agendar Cita
+                  Horarios Disponibles
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="bg-gradient-section rounded-lg p-8 text-center">
-                  <Calendar className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">Calendario Próximamente</h3>
-                  <p className="text-muted-foreground mb-4">
-                    Pronto podrás ver los horarios disponibles y agendar tu cita directamente desde aquí.
-                  </p>
-                  <Button variant="outline" className="gap-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground">
-                    <Phone className="w-4 h-4" />
-                    Contactar por teléfono
-                  </Button>
-                </div>
+                <DoctorCalendarView doctorId={doctorId} />
               </CardContent>
             </Card>
           </div>
