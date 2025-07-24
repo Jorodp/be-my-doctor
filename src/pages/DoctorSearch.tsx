@@ -13,16 +13,15 @@ import { BackToHomeButton } from "@/components/ui/BackToHomeButton";
 import { Search, MapPin, Star, DollarSign, User } from "lucide-react";
 
 interface Doctor {
-  // No definimos aquí el id, lo manejamos dinámicamente
   [key: string]: any;
+  doctor_user_id: string;
   full_name: string;
   specialty: string;
-  practice_locations: string[];
   profile_image_url: string | null;
   rating_avg: number;
-  consultation_fee: number;
-  years_experience?: number;
-  verification_status?: string;
+  rating_count: number;
+  experience_years?: number;
+  city?: string;
 }
 
 export default function DoctorSearch() {
@@ -37,14 +36,14 @@ export default function DoctorSearch() {
   const { user } = useAuth();
 
   // Helper para extraer el ID correcto:
-  const getDoctorId = (doc: Doctor) => doc.user_id || "";
+  const getDoctorId = (doc: Doctor) => doc.doctor_user_id || "";
 
   const fetchDoctors = async () => {
     setLoading(true);
     
     let query = supabase
       .from("public_doctors_public")
-      .select("user_id,full_name,specialty,profile_image_url,rating_avg,rating_count,practice_locations,consultation_fee,years_experience,verification_status")
+      .select("doctor_user_id,full_name,specialty,profile_image_url,rating_avg,rating_count,experience_years,city")
       .limit(50);
 
     // Aplicar filtros si existen
@@ -55,7 +54,7 @@ export default function DoctorSearch() {
       query = query.ilike("specialty", `%${filters.specialty}%`);
     }
     if (filters.location) {
-      query = query.contains("practice_locations", [filters.location]);
+      query = query.ilike("city", `%${filters.location}%`);
     }
 
     const { data, error } = await query;
@@ -198,22 +197,7 @@ export default function DoctorSearch() {
                               </div>
                             )}
                           </div>
-                          {doc.verification_status === "verified" && (
-                            <div className="absolute -bottom-1 -right-1 bg-green-500 text-white rounded-full p-1">
-                              <svg
-                                className="w-3 h-3"
-                                fill="currentColor"
-                                viewBox="0 0 20 20"
-                              >
-                                <path
-                                  fillRule="evenodd"
-                                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                  clipRule="evenodd"
-                                />
-                              </svg>
-                            </div>
-                          )}
-                        </div>
+                         </div>
 
                         {/* Info */}
                         <div className="space-y-2 w-full">
@@ -225,15 +209,10 @@ export default function DoctorSearch() {
                               {doc.specialty}
                             </Badge>
                           )}
-                          {doc.practice_locations?.length > 0 && (
+                          {doc.city && (
                             <div className="flex items-center justify-center text-sm text-muted-foreground">
                               <MapPin className="mr-1 h-3 w-3" />
-                              <span className="truncate">
-                                {doc.practice_locations
-                                  .slice(0, 2)
-                                  .join(", ")}
-                                {doc.practice_locations.length > 2 && "..."}
-                              </span>
+                              <span className="truncate">{doc.city}</span>
                             </div>
                           )}
                           <div className="flex items-center justify-center space-x-4 text-sm">
@@ -245,20 +224,12 @@ export default function DoctorSearch() {
                                 </span>
                               </div>
                             )}
-                            {doc.consultation_fee && (
-                              <div className="flex items-center text-green-600">
-                                <DollarSign className="mr-1 h-3 w-3" />
-                                <span className="font-medium">
-                                  ${doc.consultation_fee}
-                                </span>
-                              </div>
-                            )}
                           </div>
-                          {doc.years_experience && (
-                            <p className="text-xs text-muted-foreground">
-                              {doc.years_experience} años de experiencia
-                            </p>
-                          )}
+                           {doc.experience_years && (
+                             <p className="text-xs text-muted-foreground">
+                               {doc.experience_years} años de experiencia
+                             </p>
+                           )}
                         </div>
                       </div>
                     </CardContent>
