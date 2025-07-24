@@ -804,7 +804,7 @@ export function ClinicsAndAssistantsManager({ doctorUserId, onClinicsChange }: C
                   <div>
                     <Label>Consultorio</Label>
                     <Select 
-                      value={selectedClinicForAssistant || undefined} 
+                      value={selectedClinicForAssistant && selectedClinicForAssistant.trim() !== '' ? selectedClinicForAssistant : undefined} 
                       onValueChange={setSelectedClinicForAssistant}
                     >
                       <SelectTrigger>
