@@ -37,21 +37,29 @@ export default function DoctorSearch() {
   const { user } = useAuth();
 
   // Helper para extraer el ID correcto:
-  const getDoctorId = (doc: Doctor) =>
-    doc.doctor_user_id ??
-    doc.doctor_profile_id ??
-    doc.doctor_id ??
-    doc.id ??
-    "";
+  const getDoctorId = (doc: Doctor) => doc.user_id || "";
 
   const fetchDoctors = async () => {
     setLoading(true);
-    const { data, error } = await supabase.rpc("public_search_doctors", {
-      p_name: filters.name || null,
-      p_specialty: filters.specialty || null,
-      p_location: filters.location || null,
-      p_limit: 50,
-    });
+    
+    let query = supabase
+      .from("public_doctors_public")
+      .select("user_id,full_name,specialty,profile_image_url,rating_avg,rating_count,practice_locations,consultation_fee,years_experience,verification_status")
+      .limit(50);
+
+    // Aplicar filtros si existen
+    if (filters.name) {
+      query = query.ilike("full_name", `%${filters.name}%`);
+    }
+    if (filters.specialty) {
+      query = query.ilike("specialty", `%${filters.specialty}%`);
+    }
+    if (filters.location) {
+      query = query.contains("practice_locations", [filters.location]);
+    }
+
+    const { data, error } = await query;
+    
     if (error) {
       console.error("Error al buscar doctores:", error);
     } else {
