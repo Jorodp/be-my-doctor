@@ -26,17 +26,43 @@ export default function ResetPassword() {
     console.log('Token:', token);
     console.log('Type:', type);
     console.log('Search params:', searchParams.toString());
+    console.log('Full URL:', window.location.href);
     
-    // Verificar que tenemos los parámetros necesarios
-    if (!token || type !== 'recovery') {
-      console.log('Invalid token or type, redirecting to auth');
-      toast({
-        variant: "destructive",
-        title: "Enlace inválido",
-        description: "Este enlace de recuperación no es válido o ha expirado."
-      });
-      navigate('/auth');
-    }
+    // Verificar si Supabase puede manejar la sesión automáticamente
+    const handleSession = async () => {
+      try {
+        // Intentar obtener la sesión actual
+        const { data: { session }, error } = await supabase.auth.getSession();
+        console.log('Current session:', session);
+        console.log('Session error:', error);
+        
+        if (session) {
+          console.log('User is authenticated, ready to reset password');
+          return; // Usuario autenticado, puede proceder
+        }
+        
+        // Si no hay sesión pero hay parámetros de recovery, verificar
+        if (!token && !type) {
+          console.log('No token or type found in URL');
+          toast({
+            variant: "destructive",
+            title: "Enlace inválido",
+            description: "Este enlace de recuperación no es válido o ha expirado."
+          });
+          navigate('/auth');
+        }
+      } catch (error) {
+        console.error('Error handling session:', error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Hubo un problema al verificar la sesión. Intenta de nuevo."
+        });
+        navigate('/auth');
+      }
+    };
+
+    handleSession();
   }, [token, type, navigate, toast, searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
