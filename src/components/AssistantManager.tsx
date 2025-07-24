@@ -147,6 +147,12 @@ export const AssistantManager = () => {
       
     } catch (error: any) {
       console.error('Error inviting assistant:', error);
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack,
+        context: error.context
+      });
+      
       toast({
         title: "Error",
         description: error.message || "No se pudo asignar el asistente",
