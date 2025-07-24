@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-import { CheckCircle, Clock, CreditCard } from "lucide-react";
+import { CheckCircle, Clock, CreditCard, ArrowLeft, MessageCircle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 
 interface SubscriptionGuardProps {
   children: React.ReactNode;
@@ -22,23 +23,45 @@ interface Subscription {
 
 export function SubscriptionGuard({ children }: SubscriptionGuardProps) {
   const { user, profile } = useAuth();
+  const navigate = useNavigate();
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
   const [paymentSettings, setPaymentSettings] = useState<{
     monthly_price: number;
     annual_price: number;
   } | null>(null);
+  const [physicalPaymentEnabled, setPhysicalPaymentEnabled] = useState(false);
 
   useEffect(() => {
     console.log("SubscriptionGuard: Effect triggered", { user: user?.id, role: profile?.role });
     if (user && profile?.role === "doctor") {
       checkSubscription();
       fetchPaymentSettings();
+      checkPhysicalPayment();
     } else {
       console.log("SubscriptionGuard: Not a doctor or no user, setting loading to false");
       setLoading(false);
     }
   }, [user, profile]);
+
+  const checkPhysicalPayment = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("doctor_physical_payments")
+        .select("enabled")
+        .eq("doctor_user_id", user?.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        console.error("Physical payment query error:", error);
+        return;
+      }
+
+      setPhysicalPaymentEnabled(data?.enabled || false);
+    } catch (error) {
+      console.error("Error checking physical payment:", error);
+    }
+  };
 
   const fetchPaymentSettings = async () => {
     try {
@@ -77,7 +100,40 @@ export function SubscriptionGuard({ children }: SubscriptionGuardProps) {
     try {
       console.log("Checking subscription for user:", user?.id);
       
-      // Consulta directa a la tabla subscriptions para incluir suscripciones manuales
+      // Primero verificar en doctor_profiles.subscription_status
+      const { data: doctorProfile, error: doctorError } = await supabase
+        .from('doctor_profiles')
+        .select('subscription_status, subscription_expires_at')
+        .eq('user_id', user?.id)
+        .single();
+
+      if (doctorError && doctorError.code !== 'PGRST116') {
+        console.error("Doctor profile query error:", doctorError);
+        throw doctorError;
+      }
+
+      console.log("Doctor profile subscription:", doctorProfile);
+
+      // Si el doctor tiene subscription_status = 'active' en doctor_profiles
+      if (doctorProfile?.subscription_status === 'active') {
+        const now = new Date();
+        const expiresAt = doctorProfile.subscription_expires_at ? new Date(doctorProfile.subscription_expires_at) : null;
+        
+        // Si no hay fecha de expiración o aún no ha expirado
+        if (!expiresAt || expiresAt >= now) {
+          console.log("Active subscription found in doctor_profiles");
+          setSubscription({
+            id: 'doctor-profile',
+            plan: 'active',
+            status: 'active',
+            ends_at: doctorProfile.subscription_expires_at || new Date(Date.now() + 365*24*60*60*1000).toISOString(),
+            amount: 0
+          });
+          return;
+        }
+      }
+      
+      // Si no hay suscripción activa en doctor_profiles, verificar tabla subscriptions
       const { data: subscriptions, error } = await supabase
         .from('subscriptions')
         .select('*')
@@ -242,6 +298,18 @@ export function SubscriptionGuard({ children }: SubscriptionGuardProps) {
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
+      {/* Botón de regreso */}
+      <div className="flex items-center gap-4 mb-6">
+        <Button 
+          variant="outline" 
+          onClick={() => navigate('/dashboard')}
+          className="flex items-center gap-2"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Regresar al Dashboard
+        </Button>
+      </div>
+
       <Card>
         <CardHeader className="text-center">
           <CardTitle className="text-2xl">Suscripción Requerida</CardTitle>
@@ -349,6 +417,28 @@ export function SubscriptionGuard({ children }: SubscriptionGuardProps) {
               </Button>
             </div>
           </div>
+
+          {/* Opción de pago físico */}
+          {physicalPaymentEnabled && (
+            <div className="mt-8 border-t pt-6">
+              <div className="text-center space-y-4">
+                <h3 className="text-lg font-semibold">¿Prefieres pagar en efectivo o tarjeta?</h3>
+                <p className="text-muted-foreground">
+                  Solicita asistencia de un representante Be My Doctor para realizar el pago de manera presencial.
+                </p>
+                <Button 
+                  variant="outline" 
+                  onClick={() => navigate('/customer-support', { 
+                    state: { reason: 'Solicitar Pago en Efectivo/Tarjeta' } 
+                  })}
+                  className="flex items-center gap-2"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  Solicitar Pago en Efectivo/Tarjeta
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
