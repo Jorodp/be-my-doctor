@@ -195,12 +195,24 @@ export const AssistantManager = () => {
         throw new Error(data?.error || 'Error desconocido del servidor');
       }
 
+      // Obtener el ID interno del asistente
+      const { data: assistantProfile, error: profileError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', data.assistant_user_id)
+        .single();
+
+      if (profileError) {
+        console.error('Error getting assistant profile:', profileError);
+        throw new Error('Error obteniendo perfil del asistente');
+      }
+
       // Luego asignar al consultorio específico
       const { error: clinicAssignError } = await supabase
         .from('clinic_assistants')
         .insert({
           clinic_id: selectedClinic,
-          assistant_id: data.assistant_profile_id
+          assistant_id: assistantProfile.id
         });
 
       if (clinicAssignError) {
