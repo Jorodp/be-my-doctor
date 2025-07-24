@@ -201,6 +201,37 @@ export const AssistantManager = () => {
     }
   };
 
+  const handleUpdateExistingAssistant = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase.functions.invoke('update-assistant-assignment', {
+        body: { 
+          assistant_user_id: '04199ccf-106f-4cfa-a246-06ae065f77e6', // El ID del asistente que creamos
+          doctor_id: user.id
+        }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "¡Éxito!",
+        description: "Perfil del asistente actualizado correctamente",
+        variant: "default"
+      });
+
+      fetchAssistants();
+      
+    } catch (error: any) {
+      console.error('Error updating assistant:', error);
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo actualizar el asistente",
+        variant: "destructive"
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center py-8">
@@ -246,6 +277,13 @@ export const AssistantManager = () => {
                   Asignar
                 </>
               )}
+            </Button>
+            <Button 
+              onClick={handleUpdateExistingAssistant}
+              variant="secondary"
+              size="sm"
+            >
+              Corregir Asistente Existente
             </Button>
           </div>
         </CardContent>

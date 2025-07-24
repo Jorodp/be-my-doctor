@@ -65,3 +65,6 @@ verify_jwt = false
 
 [functions.assign-assistant-by-email]
 verify_jwt = false
+
+[functions.update-assistant-assignment]
+verify_jwt = false
