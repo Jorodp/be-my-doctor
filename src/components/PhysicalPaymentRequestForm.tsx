@@ -34,8 +34,8 @@ export const PhysicalPaymentRequestForm = ({ onSuccess }: PhysicalPaymentRequest
   ];
 
   const subscriptionTypes = [
-    { value: 'monthly', label: 'Mensual - $799 MXN', amount: 799 },
-    { value: 'annual', label: 'Anual - $7,990 MXN (2 meses gratis)', amount: 7990 }
+    { value: 'monthly', label: 'Mensual - $2,320 MXN (incluye IVA)', amount: 2320 },
+    { value: 'annual', label: 'Anual - $23,200 MXN (incluye IVA, 2 meses gratis)', amount: 23200 }
   ];
 
   const getSubscriptionAmount = (type: string) => {
