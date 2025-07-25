@@ -28,31 +28,93 @@ export const AssistantAccessGuard = ({ children }: AssistantAccessGuardProps) =>
     try {
       if (!user || !profile) return;
 
-      // Check if assistant has assigned_doctor_id
-      const { data: assistantProfile, error } = await supabase
+      // Get assistant's internal ID
+      const { data: assistantProfile, error: profileError } = await supabase
         .from('profiles')
-        .select('assigned_doctor_id')
+        .select('id, assigned_doctor_id')
         .eq('user_id', user.id)
         .eq('role', 'assistant')
         .single();
 
-      if (error || !assistantProfile?.assigned_doctor_id) {
+      if (profileError || !assistantProfile) {
         setHasAccess(false);
         setLoading(false);
         return;
       }
 
-      // Get doctor information
-      const { data: doctorProfile } = await supabase
-        .from('profiles')
-        .select('full_name')
-        .eq('user_id', assistantProfile.assigned_doctor_id)
-        .single();
+      // Check for specific clinic assignments (NEW METHOD)
+      const { data: clinicAssignments } = await supabase
+        .from('clinic_assistants')
+        .select('clinic_id')
+        .eq('assistant_id', assistantProfile.id);
 
-      setDoctorInfo({
-        name: doctorProfile?.full_name || 'Doctor'
-      });
+      // Check for general doctor assignment (LEGACY METHOD)
+      let doctorAssignments = [];
+      if (assistantProfile.assigned_doctor_id) {
+        const { data: doctorProfile } = await supabase
+          .from('profiles')
+          .select('full_name, user_id')
+          .eq('user_id', assistantProfile.assigned_doctor_id)
+          .single();
 
+        if (doctorProfile) {
+          doctorAssignments.push(doctorProfile);
+        }
+      }
+
+      // Check for doctor_assistants table assignments
+      const { data: doctorAssistantAssignments } = await supabase
+        .from('doctor_assistants')
+        .select('doctor_id')
+        .eq('assistant_id', assistantProfile.id);
+
+      // Determine if assistant has any access
+      const hasClinicAccess = clinicAssignments && clinicAssignments.length > 0;
+      const hasLegacyAccess = doctorAssignments.length > 0;
+      const hasDoctorAssistantAccess = doctorAssistantAssignments && doctorAssistantAssignments.length > 0;
+
+      if (!hasClinicAccess && !hasLegacyAccess && !hasDoctorAssistantAccess) {
+        setHasAccess(false);
+        setLoading(false);
+        return;
+      }
+
+      // Get doctor name from the first available assignment
+      let doctorName = 'Doctor';
+      if (hasClinicAccess && clinicAssignments?.[0]) {
+        // Get doctor info from the clinic
+        const { data: clinic } = await supabase
+          .from('clinics')
+          .select('doctor_id')
+          .eq('id', clinicAssignments[0].clinic_id)
+          .single();
+
+        if (clinic) {
+          const { data: doctorProfile } = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('id', clinic.doctor_id)
+            .single();
+
+          if (doctorProfile) {
+            doctorName = doctorProfile.full_name || 'Doctor';
+          }
+        }
+      } else if (hasLegacyAccess) {
+        doctorName = doctorAssignments[0].full_name || 'Doctor';
+      } else if (hasDoctorAssistantAccess && doctorAssistantAssignments?.[0]) {
+        const { data: doctorProfile } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', doctorAssistantAssignments[0].doctor_id)
+          .single();
+
+        if (doctorProfile) {
+          doctorName = doctorProfile.full_name || 'Doctor';
+        }
+      }
+
+      setDoctorInfo({ name: doctorName });
       setHasAccess(true);
     } catch (error) {
       console.error('Error checking assistant access:', error);
