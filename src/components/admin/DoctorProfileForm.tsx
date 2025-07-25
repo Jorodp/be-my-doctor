@@ -28,11 +28,8 @@ export function DoctorProfileForm({ doctorProfile, userProfile, onUpdate }: Doct
     // Datos del doctor
     specialty: doctorProfile?.specialty || '',
     biography: doctorProfile?.biography || '',
-    consultation_fee: doctorProfile?.consultation_fee?.toString() || '',
     experience_years: doctorProfile?.experience_years?.toString() || '',
     professional_license: doctorProfile?.professional_license || '',
-    verification_status: doctorProfile?.verification_status || 'pending',
-    subscription_status: doctorProfile?.subscription_status || 'inactive',
   });
 
   const handleInputChange = (field: string, value: string) => {
@@ -63,15 +60,10 @@ export function DoctorProfileForm({ doctorProfile, userProfile, onUpdate }: Doct
         specialty: formData.specialty,
         biography: formData.biography,
         professional_license: formData.professional_license,
-        verification_status: formData.verification_status,
-        subscription_status: formData.subscription_status,
         updated_at: new Date().toISOString()
       };
 
       // Solo incluir campos numéricos si tienen valor
-      if (formData.consultation_fee) {
-        doctorUpdateData.consultation_fee = parseFloat(formData.consultation_fee);
-      }
       if (formData.experience_years) {
         doctorUpdateData.experience_years = parseInt(formData.experience_years);
       }
@@ -186,18 +178,6 @@ export function DoctorProfileForm({ doctorProfile, userProfile, onUpdate }: Doct
                 placeholder="Número de cédula profesional"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="consultation_fee">Precio por consulta (MXN)</Label>
-              <Input
-                id="consultation_fee"
-                type="number"
-                min="0"
-                step="0.01"
-                value={formData.consultation_fee}
-                onChange={(e) => handleInputChange('consultation_fee', e.target.value)}
-                placeholder="1500.00"
-              />
-            </div>
           </div>
           
           <div className="space-y-2">
@@ -213,49 +193,6 @@ export function DoctorProfileForm({ doctorProfile, userProfile, onUpdate }: Doct
         </CardContent>
       </Card>
 
-      {/* Estado y Configuración */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Estado y Configuración</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="verification_status">Estado de verificación</Label>
-              <Select
-                value={formData.verification_status}
-                onValueChange={(value) => handleInputChange('verification_status', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar estado" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pending">Pendiente</SelectItem>
-                  <SelectItem value="verified">Verificado</SelectItem>
-                  <SelectItem value="rejected">Rechazado</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="subscription_status">Estado de suscripción</Label>
-              <Select
-                value={formData.subscription_status}
-                onValueChange={(value) => handleInputChange('subscription_status', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar estado" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="active">Activa</SelectItem>
-                  <SelectItem value="inactive">Inactiva</SelectItem>
-                  <SelectItem value="paused">Pausada</SelectItem>
-                  <SelectItem value="expired">Expirada</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Botón de guardar */}
       <div className="flex justify-end">
