@@ -29,6 +29,9 @@ export type Database = {
           doctor_user_id: string
           ends_at: string
           id: string
+          identity_validated: boolean
+          identity_validated_at: string | null
+          identity_validated_by: string | null
           marked_arrived_by: string | null
           notes: string | null
           patient_arrived_at: string | null
@@ -54,6 +57,9 @@ export type Database = {
           doctor_user_id: string
           ends_at: string
           id?: string
+          identity_validated?: boolean
+          identity_validated_at?: string | null
+          identity_validated_by?: string | null
           marked_arrived_by?: string | null
           notes?: string | null
           patient_arrived_at?: string | null
@@ -79,6 +85,9 @@ export type Database = {
           doctor_user_id?: string
           ends_at?: string
           id?: string
+          identity_validated?: boolean
+          identity_validated_at?: string | null
+          identity_validated_by?: string | null
           marked_arrived_by?: string | null
           notes?: string | null
           patient_arrived_at?: string | null
@@ -1463,6 +1472,39 @@ export type Database = {
           title?: string
           type?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      patient_identity_validations: {
+        Row: {
+          appointment_id: string
+          created_at: string
+          id: string
+          patient_user_id: string
+          updated_at: string
+          validated_at: string
+          validated_by: string
+          validation_notes: string | null
+        }
+        Insert: {
+          appointment_id: string
+          created_at?: string
+          id?: string
+          patient_user_id: string
+          updated_at?: string
+          validated_at?: string
+          validated_by: string
+          validation_notes?: string | null
+        }
+        Update: {
+          appointment_id?: string
+          created_at?: string
+          id?: string
+          patient_user_id?: string
+          updated_at?: string
+          validated_at?: string
+          validated_by?: string
+          validation_notes?: string | null
         }
         Relationships: []
       }

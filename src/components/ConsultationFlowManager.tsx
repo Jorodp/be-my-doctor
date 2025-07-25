@@ -32,6 +32,9 @@ interface Appointment {
   ends_at: string;
   status: string;
   consultation_status: string;
+  identity_validated?: boolean;
+  identity_validated_at?: string;
+  identity_validated_by?: string;
   patient_arrived_at?: string;
   consultation_started_at?: string;
   consultation_ended_at?: string;
@@ -105,6 +108,16 @@ export const ConsultationFlowManager: React.FC<ConsultationFlowManagerProps> = (
       toast({
         title: "Error",
         description: "El paciente debe estar marcado como presente antes de iniciar la consulta",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Check if identity is validated
+    if (!appointment.identity_validated) {
+      toast({
+        title: "Validación Requerida",
+        description: "La identidad del paciente debe estar validada antes de iniciar la consulta",
         variant: "destructive"
       });
       return;

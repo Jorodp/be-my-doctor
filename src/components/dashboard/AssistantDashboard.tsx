@@ -17,6 +17,7 @@ import { UploadPatientFiles } from '@/components/UploadPatientFiles';
 import { AssistantPaymentManager } from '@/components/AssistantPaymentManager';
 import { AssistantAccessGuard } from '@/components/AssistantAccessGuard';
 import { AssistantDoctorsList } from '@/components/AssistantDoctorsList';
+import { AssistantTodayAppointments } from '@/components/AssistantTodayAppointments';
 
 interface Appointment {
   id: string;
@@ -177,21 +178,20 @@ const AssistantDashboardContent = () => {
       subtitle="Gestiona la agenda del médico asignado"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Tabs defaultValue="doctors" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-9 text-xs">
-            <TabsTrigger value="doctors">Doctores</TabsTrigger>
+        <Tabs defaultValue="today-appointments" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-8 text-xs">
+            <TabsTrigger value="today-appointments">Citas de Hoy</TabsTrigger>
             <TabsTrigger value="overview">Resumen</TabsTrigger>
-            <TabsTrigger value="appointments">Citas</TabsTrigger>
+            <TabsTrigger value="appointments">Próximas Citas</TabsTrigger>
             <TabsTrigger value="schedule">Agenda</TabsTrigger>
-            <TabsTrigger value="patients">Pacientes</TabsTrigger>
             <TabsTrigger value="new-appointment">Nueva Cita</TabsTrigger>
             <TabsTrigger value="payments">Pagos</TabsTrigger>
             <TabsTrigger value="upload-files">Archivos</TabsTrigger>
             <TabsTrigger value="documents">Documentos</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="doctors" className="space-y-6">
-            <AssistantDoctorsList />
+          <TabsContent value="today-appointments" className="space-y-6">
+            <AssistantTodayAppointments doctorId={doctorId} />
           </TabsContent>
 
           <TabsContent value="overview" className="space-y-6">
@@ -202,12 +202,8 @@ const AssistantDashboardContent = () => {
             <AssistantUpcomingAppointments doctorId={doctorId} />
           </TabsContent>
 
-          <TabsContent value="schedule" className="space-y-6">${' '}
+          <TabsContent value="schedule" className="space-y-6">
             <AssistantScheduleManager doctorId={doctorId} />
-          </TabsContent>
-
-          <TabsContent value="patients" className="space-y-6">
-            <AssistantPatientManager doctorId={doctorId} />
           </TabsContent>
 
           <TabsContent value="new-appointment" className="space-y-6">
