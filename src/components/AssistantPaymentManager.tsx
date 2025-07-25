@@ -54,6 +54,7 @@ export function AssistantPaymentManager({ doctorId }: AssistantPaymentManagerPro
         .select("*")
         .eq("doctor_user_id", doctorId)
         .gte("starts_at", today.toISOString())
+        .neq("status", "cancelled")
         .order("starts_at", { ascending: true });
 
       if (appointmentsError) throw appointmentsError;
