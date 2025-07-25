@@ -8,6 +8,7 @@ export interface DoctorClinic {
   city: string;
   state: string;
   country: string;
+  consultation_fee?: number;
 }
 
 export function useDoctorClinics(doctorUserId: string) {
@@ -28,7 +29,7 @@ export function useDoctorClinics(doctorUserId: string) {
       // Get clinics for this doctor
       const { data: clinics, error: clinicsError } = await supabase
         .from('clinics')
-        .select('id, name, address, city, state, country')
+        .select('id, name, address, city, state, country, consultation_fee')
         .eq('doctor_id', doctorProfile.id)
         .order('name');
 

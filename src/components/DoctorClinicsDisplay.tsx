@@ -12,7 +12,7 @@ interface DoctorClinicsDisplayProps {
 export function DoctorClinicsDisplay({ doctorUserId }: DoctorClinicsDisplayProps) {
   const { data: clinics = [], isLoading, error } = useDoctorClinics(doctorUserId);
   
-  // Obtener el precio de consulta del perfil del doctor
+  // Obtener el precio de consulta del perfil del doctor como fallback
   const { data: doctorProfile } = useQuery({
     queryKey: ["doctor-profile-fee", doctorUserId],
     queryFn: async () => {
@@ -82,7 +82,7 @@ export function DoctorClinicsDisplay({ doctorUserId }: DoctorClinicsDisplayProps
               <DollarSign className="w-4 h-4 text-primary" />
               <span className="text-sm font-medium text-foreground">
                 Consulta: <span className="text-primary font-semibold">
-                  ${doctorProfile?.consultation_fee ? doctorProfile.consultation_fee.toLocaleString() : '1,500'} MXN
+                  ${(clinic.consultation_fee || doctorProfile?.consultation_fee || 1500).toLocaleString()} MXN
                 </span>
               </span>
             </div>

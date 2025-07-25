@@ -1,103 +1,102 @@
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { supabase } from '@/integrations/supabase/client';
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { User } from "lucide-react";
 
 interface DoctorImageProps {
   profileImageUrl?: string | null;
-  doctorName?: string | null;
+  doctorName: string;
   className?: string;
   fallbackClassName?: string;
   size?: 'sm' | 'md' | 'lg' | 'xl' | 'card';
 }
 
 const sizeClasses = {
-  sm: 'h-8 w-8',
-  md: 'h-16 w-16', 
-  lg: 'h-32 w-32',
-  xl: 'h-64 w-64 md:h-80 md:w-80',
-  card: 'w-full h-48'
+  sm: "w-8 h-8",
+  md: "w-12 h-12", 
+  lg: "w-16 h-16",
+  xl: "w-40 h-40 border-6 border-white shadow-2xl ring-4 ring-primary/20",
+  card: "w-32 h-32"
 };
 
-export const DoctorImage = ({
+export const DoctorImage = ({ 
   profileImageUrl, 
   doctorName, 
-  className,
-  fallbackClassName,
-  size = 'md'
+  className = "",
+  fallbackClassName = "",
+  size = 'md' 
 }: DoctorImageProps) => {
-  const getImageSrc = () => {
-    if (!profileImageUrl) {
-      console.log('DoctorImage: No profile image URL provided, using placeholder');
-      return '/placeholder-doctor.png';
-    }
+  
+  const getImageSrc = (): string => {
+    if (!profileImageUrl) return '';
     
-    // If it's already a full URL, use it directly
+    // Si ya es una URL completa, usarla directamente
     if (profileImageUrl.startsWith('http')) {
-      console.log('DoctorImage: Using full URL:', profileImageUrl);
-      return profileImageUrl;
+      return `${profileImageUrl}?t=${Date.now()}`;
     }
     
-    // For storage paths, use public URL from doctor-profiles bucket with cache busting
-    const { data: { publicUrl } } = supabase
-      .storage
-      .from('doctor-profiles')
-      .getPublicUrl(profileImageUrl);
+    // Si es una ruta de Supabase storage, construir la URL
+    if (profileImageUrl.includes('/')) {
+      const supabaseUrl = "https://rvsoeuwlgnovcmemlmqz.supabase.co";
+      return `${supabaseUrl}/storage/v1/object/public/doctor-images/${profileImageUrl}?t=${Date.now()}`;
+    }
     
-    // Add timestamp to avoid cache issues
-    const finalUrl = `${publicUrl}?t=${Date.now()}`;
-    
-    console.log('DoctorImage profile_image_url:', profileImageUrl);
-    console.log('DoctorImage publicUrl with cache bust:', finalUrl);
-    
-    return finalUrl;
+    return '';
   };
 
   const imageSrc = getImageSrc();
 
+  // Para tamaños especiales, usar div personalizado
   if (size === 'xl' || size === 'card') {
-    // Special handling for large profile images and card images
-    const containerClasses = size === 'xl' 
-      ? `${sizeClasses[size]} rounded-3xl overflow-hidden shadow-2xl ring-4 ring-background/50`
-      : `${sizeClasses[size]} overflow-hidden`;
-      
     return (
-      <div className={`${containerClasses} ${className || ''}`}>
-        <img 
-          src={imageSrc}
-          alt={`Dr. ${doctorName}`}
-          className="w-full h-full object-contain object-center bg-gray-100"
-          onError={(e) => {
-            console.log('DoctorImage: Error loading image, using placeholder:', imageSrc);
-            e.currentTarget.src = 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=400&h=300&fit=crop&crop=face';
-          }}
-        />
+      <div className={`relative ${className}`}>
+        <div className={`${sizeClasses[size]} rounded-full overflow-hidden bg-primary/10 flex items-center justify-center`}>
+          {imageSrc && !profileImageUrl?.includes('example.com') ? (
+            <img 
+              src={imageSrc}
+              alt={doctorName}
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                console.log('❌ Error loading doctor image:', imageSrc);
+                const target = e.currentTarget as HTMLImageElement;
+                target.style.display = 'none';
+                // Mostrar fallback
+                const fallback = target.nextElementSibling as HTMLElement;
+                if (fallback) fallback.style.display = 'flex';
+              }}
+            />
+          ) : null}
+          <div 
+            className={`w-full h-full bg-primary text-primary-foreground ${size === 'xl' ? 'text-4xl' : 'text-2xl'} flex items-center justify-center ${imageSrc && !profileImageUrl?.includes('example.com') ? 'hidden' : ''}`}
+            style={{ display: imageSrc && !profileImageUrl?.includes('example.com') ? 'none' : 'flex' }}
+          >
+            <User className={size === 'xl' ? "w-20 h-20" : "w-12 h-12"} />
+          </div>
+        </div>
+        {size === 'xl' && (
+          <div className="absolute -bottom-3 -right-3 bg-green-500 w-10 h-10 rounded-full border-4 border-white flex items-center justify-center shadow-lg">
+            <div className="w-4 h-4 bg-white rounded-full"></div>
+          </div>
+        )}
       </div>
     );
   }
 
+  // Para tamaños estándar, usar Avatar de shadcn
   return (
-    <Avatar className={`${sizeClasses[size]} ${className || ''}`}>
-      <AvatarImage 
-        src={imageSrc}
-        alt={doctorName || 'Doctor'}
-        onError={() => {
-          console.log('DoctorImage Avatar: Error loading image, fallback will show:', imageSrc);
-        }}
-      />
-      <AvatarFallback className={`bg-orange-100 text-orange-700 ${fallbackClassName || ''}`}>
-        <img 
-          src="/placeholder-doctor.png" 
-          alt="Doctor placeholder"
-          className="w-full h-full object-cover rounded-full"
+    <Avatar className={`${sizeClasses[size]} ${className}`}>
+      {imageSrc && !profileImageUrl?.includes('example.com') ? (
+        <AvatarImage 
+          src={imageSrc}
+          alt={doctorName}
+          className="object-cover w-full h-full"
           onError={() => {
-            // Final fallback to initials if placeholder also fails
-            const initials = doctorName?.split(' ').map(n => n[0]).join('') || 'D';
-            const target = document.querySelector(`[alt="${doctorName || 'Doctor'}"]`)?.parentElement?.querySelector('.fallback-initials');
-            if (target) target.textContent = initials;
+            console.log('❌ Error loading avatar image:', imageSrc);
           }}
         />
-        <span className="fallback-initials absolute inset-0 flex items-center justify-center text-sm font-semibold opacity-0">
-          {doctorName?.split(' ').map(n => n[0]).join('') || 'D'}
-        </span>
+      ) : null}
+      <AvatarFallback className={`bg-primary text-primary-foreground ${fallbackClassName}`}>
+        {doctorName?.slice(0, 2)?.toUpperCase() || (
+          <User className={size === 'sm' ? "w-4 h-4" : size === 'md' ? "w-6 h-6" : "w-8 h-8"} />
+        )}
       </AvatarFallback>
     </Avatar>
   );

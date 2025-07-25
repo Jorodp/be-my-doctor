@@ -18,6 +18,7 @@ import { MapPin, DollarSign, Star, Calendar, User, Phone, FileText, Clock, Award
 import { DoctorCalendarView } from "@/components/DoctorCalendarView";
 import { DoctorReviewsSection } from "@/components/DoctorReviewsSection";
 import { DoctorClinicsDisplay } from "@/components/DoctorClinicsDisplay";
+import { DoctorImage } from "@/components/DoctorImage";
 
 interface DoctorProfileData {
   user_id: string;
@@ -154,30 +155,12 @@ export default function DoctorProfile() {
             <div className="relative px-6 pb-6">
               <div className="flex flex-col items-center -mt-20">
                 {/* Profile Image - Prominente */}
-                <div className="relative z-10 mb-6">
-                  <Avatar className="w-40 h-40 border-6 border-white shadow-2xl ring-4 ring-primary/20">
-                    {doctor.profile_image_url && !doctor.profile_image_url.includes('example.com') ? (
-                      <AvatarImage 
-                        src={`${doctor.profile_image_url}?t=${Date.now()}`}
-                        alt={doctor.full_name}
-                        className="object-cover w-full h-full"
-                        onLoad={() => console.log('✅ Image loaded successfully:', doctor.profile_image_url)}
-                        onError={(e) => {
-                          console.log('❌ Error loading image:', doctor.profile_image_url);
-                          const target = e.currentTarget as HTMLImageElement;
-                          target.style.display = 'none';
-                        }}
-                      />
-                    ) : (
-                      <AvatarFallback className="bg-primary text-primary-foreground text-4xl w-full h-full flex items-center justify-center">
-                        <User className="w-20 h-20" />
-                      </AvatarFallback>
-                    )}
-                  </Avatar>
-                  <div className="absolute -bottom-3 -right-3 bg-green-500 w-10 h-10 rounded-full border-4 border-white flex items-center justify-center shadow-lg">
-                    <div className="w-4 h-4 bg-white rounded-full"></div>
-                  </div>
-                </div>
+                <DoctorImage 
+                  profileImageUrl={doctor.profile_image_url}
+                  doctorName={doctor.full_name}
+                  size="xl"
+                  className="relative z-10 mb-6"
+                />
 
                 {/* Doctor Info - Centrado */}
                 <div className="text-center space-y-4">
