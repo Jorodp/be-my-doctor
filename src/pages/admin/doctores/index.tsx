@@ -9,14 +9,16 @@ import {
   TableRow 
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
 import { useAdminProfileAPI } from '@/hooks/useAdminProfileAPI';
 import { SubscriptionHistoryModal } from '@/components/admin/SubscriptionHistoryModal';
 import { DoctorAppointmentsDrawer } from '@/components/admin/DoctorAppointmentsDrawer';
-import { Eye, Calendar, CreditCard, Edit, ArrowLeft } from 'lucide-react';
+import { CreateDoctorModal } from '@/components/admin/CreateDoctorModal';
+import { UnifiedDoctorProfile } from '@/components/admin/UnifiedDoctorProfile';
+import { Eye, Calendar, CreditCard, Edit, ArrowLeft, Plus, Users, Activity, CheckCircle } from 'lucide-react';
 
 interface DoctorListItem {
   doctor_user_id: string;
@@ -26,6 +28,9 @@ interface DoctorListItem {
   subscription_status: string;
   profile_complete: boolean;
   cita_count: number;
+  rating_avg?: number;
+  rating_count?: number;
+  experience_years?: number;
 }
 
 export default function AdminDoctorsPage() {
@@ -34,6 +39,8 @@ export default function AdminDoctorsPage() {
   const [selectedDoctor, setSelectedDoctor] = useState<any>(null);
   const [showSubscriptionHistory, setShowSubscriptionHistory] = useState(false);
   const [showAppointments, setShowAppointments] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showDoctorProfile, setShowDoctorProfile] = useState(false);
   
   const { toast } = useToast();
   const { listDoctors, loading: apiLoading } = useAdminProfileAPI();
@@ -58,6 +65,11 @@ export default function AdminDoctorsPage() {
     loadDoctors();
   }, []);
 
+  const handleViewProfile = (doctor: DoctorListItem) => {
+    setSelectedDoctor(doctor);
+    setShowDoctorProfile(true);
+  };
+
   const handleViewAppointments = (doctor: DoctorListItem) => {
     setSelectedDoctor(doctor);
     setShowAppointments(true);
@@ -68,12 +80,22 @@ export default function AdminDoctorsPage() {
     setShowSubscriptionHistory(true);
   };
 
+  const handleCreateDoctor = () => {
+    setShowCreateModal(true);
+  };
+
   const getVerificationBadge = (status: string) => {
     switch (status) {
       case 'verified':
-        return <Badge variant="default" className="bg-green-100 text-green-800">Verificado</Badge>;
+        return <Badge className="bg-green-100 text-green-800 border-green-300">
+          <CheckCircle className="w-3 h-3 mr-1" />
+          Verificado
+        </Badge>;
       case 'pending':
-        return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">Pendiente</Badge>;
+        return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 border-yellow-300">
+          <Activity className="w-3 h-3 mr-1" />
+          Pendiente
+        </Badge>;
       case 'rejected':
         return <Badge variant="destructive">Rechazado</Badge>;
       default:
@@ -84,7 +106,7 @@ export default function AdminDoctorsPage() {
   const getSubscriptionBadge = (status: string) => {
     switch (status) {
       case 'active':
-        return <Badge variant="default" className="bg-blue-100 text-blue-800">Activa</Badge>;
+        return <Badge className="bg-blue-100 text-blue-800 border-blue-300">Activa</Badge>;
       case 'inactive':
         return <Badge variant="outline">Inactiva</Badge>;
       case 'expired':
@@ -92,6 +114,14 @@ export default function AdminDoctorsPage() {
       default:
         return <Badge variant="outline">Sin suscripción</Badge>;
     }
+  };
+
+  // Calcular estadísticas
+  const stats = {
+    total: doctors.length,
+    verified: doctors.filter(d => d.verification_status === 'verified').length,
+    active: doctors.filter(d => d.subscription_status === 'active').length,
+    complete: doctors.filter(d => d.profile_complete).length
   };
 
   if (loading) {
@@ -103,7 +133,7 @@ export default function AdminDoctorsPage() {
   }
 
   return (
-    <div className="container mx-auto py-8 px-4">
+    <div className="container mx-auto py-8 px-4 max-w-7xl">
       {/* Botón de volver */}
       <Link to="/dashboard">
         <Button variant="ghost" className="mb-4 flex items-center gap-2">
@@ -112,99 +142,215 @@ export default function AdminDoctorsPage() {
         </Button>
       </Link>
       
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-3xl font-bold">Gestión de Doctores</h1>
-          <p className="text-muted-foreground">
-            Administra los perfiles, verificaciones y suscripciones de los doctores
-          </p>
+      {/* Header con estadísticas */}
+      <div className="mb-8">
+        <div className="flex justify-between items-start mb-6">
+          <div>
+            <h1 className="text-3xl font-bold">Gestión de Doctores</h1>
+            <p className="text-muted-foreground mt-1">
+              Administra los perfiles, verificaciones y suscripciones de los doctores
+            </p>
+          </div>
+          <div className="flex gap-3">
+            <Button onClick={loadDoctors} disabled={apiLoading} variant="outline">
+              Actualizar
+            </Button>
+            <Button onClick={handleCreateDoctor} className="bg-primary hover:bg-primary/90">
+              <Plus className="h-4 w-4 mr-2" />
+              Crear Doctor
+            </Button>
+          </div>
         </div>
-        <Button onClick={loadDoctors} disabled={apiLoading}>
-          Actualizar
-        </Button>
+
+        {/* Tarjetas de estadísticas */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <Users className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Total Doctores</p>
+                  <p className="text-2xl font-bold">{stats.total}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <CheckCircle className="h-5 w-5 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Verificados</p>
+                  <p className="text-2xl font-bold">{stats.verified}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <CreditCard className="h-5 w-5 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Suscripciones Activas</p>
+                  <p className="text-2xl font-bold">{stats.active}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <Activity className="h-5 w-5 text-purple-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Perfiles Completos</p>
+                  <p className="text-2xl font-bold">{stats.complete}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
+      {/* Tabla de doctores */}
       <Card>
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nombre</TableHead>
-                <TableHead>Especialidad</TableHead>
-                <TableHead>Verificado</TableHead>
-                <TableHead>Suscripción</TableHead>
-                <TableHead>Perfil completo</TableHead>
-                <TableHead># Citas</TableHead>
-                <TableHead>Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {doctors.map((doctor) => (
-                <TableRow key={doctor.doctor_user_id}>
-                  <TableCell className="font-medium">
-                    {doctor.full_name || 'Sin nombre'}
-                  </TableCell>
-                  <TableCell>{doctor.specialty || 'Sin especialidad'}</TableCell>
-                  <TableCell>
-                    {getVerificationBadge(doctor.verification_status)}
-                  </TableCell>
-                  <TableCell>
-                    {getSubscriptionBadge(doctor.subscription_status)}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={doctor.profile_complete ? "default" : "outline"}>
-                      {doctor.profile_complete ? "Completo" : "Incompleto"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {doctor.cita_count || 0}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <Link to={`/admin/doctores/${doctor.doctor_user_id}`}>
+        <CardHeader>
+          <CardTitle>Lista de Doctores</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nombre</TableHead>
+                  <TableHead>Especialidad</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead>Suscripción</TableHead>
+                  <TableHead>Experiencia</TableHead>
+                  <TableHead>Calificación</TableHead>
+                  <TableHead># Citas</TableHead>
+                  <TableHead>Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {doctors.map((doctor) => (
+                  <TableRow key={doctor.doctor_user_id} className="hover:bg-muted/50">
+                    <TableCell>
+                      <div className="font-medium">
+                        {doctor.full_name || 'Sin nombre'}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        ID: {doctor.doctor_user_id.slice(0, 8)}...
+                      </div>
+                    </TableCell>
+                    <TableCell>{doctor.specialty || 'Sin especialidad'}</TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        {getVerificationBadge(doctor.verification_status)}
+                        <div>
+                          <Badge variant={doctor.profile_complete ? "default" : "outline"} className="text-xs">
+                            {doctor.profile_complete ? "Completo" : "Incompleto"}
+                          </Badge>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {getSubscriptionBadge(doctor.subscription_status)}
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-sm">
+                        {doctor.experience_years ? `${doctor.experience_years} años` : 'No especificado'}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        <span className="text-sm font-medium">
+                          {doctor.rating_avg ? doctor.rating_avg.toFixed(1) : '0.0'}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          ({doctor.rating_count || 0})
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <span className="font-medium">{doctor.cita_count || 0}</span>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
                         <Button
                           size="sm"
                           variant="outline"
-                          className="flex items-center gap-1"
+                          onClick={() => handleViewProfile(doctor)}
+                          className="h-8 px-2"
                         >
-                          <Edit className="h-4 w-4" />
-                          Editar
+                          <Eye className="h-3 w-3" />
                         </Button>
-                      </Link>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleViewAppointments(doctor)}
-                        className="flex items-center gap-1"
-                      >
-                        <Calendar className="h-4 w-4" />
-                        Citas
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleViewSubscriptions(doctor)}
-                        className="flex items-center gap-1"
-                      >
-                        <CreditCard className="h-4 w-4" />
-                        Suscripciones
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-
-        {doctors.length === 0 && (
-          <div className="text-center py-8">
-            <p className="text-muted-foreground">No se encontraron doctores</p>
+                        <Link to={`/admin/doctores/${doctor.doctor_user_id}`}>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 px-2"
+                          >
+                            <Edit className="h-3 w-3" />
+                          </Button>
+                        </Link>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleViewAppointments(doctor)}
+                          className="h-8 px-2"
+                        >
+                          <Calendar className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
-        )}
+
+          {doctors.length === 0 && (
+            <div className="text-center py-12">
+              <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground text-lg">No se encontraron doctores</p>
+              <p className="text-sm text-muted-foreground mb-4">Crea el primer doctor para comenzar</p>
+              <Button onClick={handleCreateDoctor}>
+                <Plus className="h-4 w-4 mr-2" />
+                Crear Primer Doctor
+              </Button>
+            </div>
+          )}
+        </CardContent>
       </Card>
 
-      {/* Subscription History Modal */}
+      {/* Modales */}
+      <CreateDoctorModal 
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onDoctorCreated={loadDoctors}
+      />
+
+      <UnifiedDoctorProfile
+        isOpen={showDoctorProfile}
+        onClose={() => {
+          setShowDoctorProfile(false);
+          setSelectedDoctor(null);
+        }}
+        doctor={selectedDoctor}
+        onDoctorUpdated={loadDoctors}
+      />
+
       <SubscriptionHistoryModal
         isOpen={showSubscriptionHistory}
         onClose={() => {
@@ -215,7 +361,6 @@ export default function AdminDoctorsPage() {
         doctorName={selectedDoctor?.full_name}
       />
 
-      {/* Appointments Drawer */}
       <DoctorAppointmentsDrawer
         isOpen={showAppointments}
         onClose={() => {
