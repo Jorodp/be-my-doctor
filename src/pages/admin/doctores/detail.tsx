@@ -13,6 +13,7 @@ import { DoctorClinicsManager } from '@/components/admin/DoctorClinicsManager';
 import { DoctorProfileForm } from '@/components/admin/DoctorProfileForm';
 import { DoctorDocumentManager } from '@/components/admin/DoctorDocumentManager';
 import { SubscriptionManager } from '@/components/admin/SubscriptionManager';
+import { useDoctorClinics } from '@/hooks/useDoctorClinics';
 
 interface DoctorProfile {
   id: string;
@@ -44,6 +45,7 @@ export default function AdminDoctorDetailPage() {
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('profile');
   const { toast } = useToast();
+  const { data: clinics } = useDoctorClinics(id!);
 
   useEffect(() => {
     if (id) {
@@ -188,7 +190,12 @@ export default function AdminDoctorDetailPage() {
                 </div>
                 <div className="text-center p-3 bg-muted/50 rounded-lg">
                   <div className="text-sm text-muted-foreground">Precio</div>
-                  <div className="font-medium">${doctorProfile.consultation_fee?.toLocaleString() || 'No definido'}</div>
+                  <div className="font-medium">
+                    {clinics && clinics.length > 0 
+                      ? `$${clinics[0].consultation_fee?.toLocaleString() || doctorProfile.consultation_fee?.toLocaleString() || 'No definido'}`
+                      : `$${doctorProfile.consultation_fee?.toLocaleString() || 'No definido'}`
+                    }
+                  </div>
                 </div>
               </div>
             </div>
