@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { format, addDays, addMonths, addYears } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { PhysicalPaymentValidator } from './PhysicalPaymentValidator';
 
 interface Doctor {
   doctor_user_id: string;
@@ -195,8 +196,19 @@ export const SubscriptionManager = ({
     return expirationDate < now;
   };
 
+  const handlePaymentValidated = async () => {
+    // Refresh subscription data after payment validation
+    await onSubscriptionUpdate(doctorProfile.subscription_status);
+  };
+
   return (
     <div className="space-y-6">
+      {/* Physical Payment Validation */}
+      <PhysicalPaymentValidator 
+        doctorUserId={doctor.doctor_user_id}
+        onPaymentValidated={handlePaymentValidated}
+      />
+
       {/* Current Status Overview */}
       <Card>
         <CardHeader>
