@@ -3193,6 +3193,10 @@ export type Database = {
         Args: { user_uuid: string }
         Returns: string
       }
+      handle_subscription_expiration: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       has_internal_role: {
         Args: { target_roles: string[] }
         Returns: boolean
