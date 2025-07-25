@@ -152,7 +152,7 @@ export function DoctorCalendarView({ doctorId }: DoctorCalendarViewProps) {
             <CalendarIcon className="w-5 h-5 text-primary" />
             <h3 className="font-semibold text-lg">Calendario</h3>
           </div>
-          <div className="p-4 bg-gradient-to-br from-primary/5 to-primary/10 rounded-xl border border-primary/20 relative z-10">
+          <div className="p-4 bg-gradient-to-br from-primary/5 to-primary/10 rounded-xl border border-primary/20 relative z-0">
             <Calendar
               mode="single"
               selected={selectedDate}
