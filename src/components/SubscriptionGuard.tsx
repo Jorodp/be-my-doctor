@@ -298,15 +298,22 @@ export function SubscriptionGuard({ children }: SubscriptionGuardProps) {
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
-      {/* Botón de regreso */}
+      {/* Botones de navegación */}
       <div className="flex items-center gap-4 mb-6">
         <Button 
           variant="outline" 
-          onClick={() => window.location.href = '/dashboard'}
+          onClick={() => navigate('/dashboard')}
           className="flex items-center gap-2"
         >
           <ArrowLeft className="h-4 w-4" />
           Regresar al Dashboard
+        </Button>
+        <Button 
+          variant="ghost" 
+          onClick={() => navigate('/')}
+          className="flex items-center gap-2"
+        >
+          Ir a Inicio
         </Button>
       </div>
 
