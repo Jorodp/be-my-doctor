@@ -17,6 +17,7 @@ import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { MapPin, DollarSign, Star, Calendar, User, Phone, FileText, Clock, Award, ArrowLeft } from "lucide-react";
 import { DoctorCalendarView } from "@/components/DoctorCalendarView";
 import { DoctorReviewsSection } from "@/components/DoctorReviewsSection";
+import { DoctorClinicsDisplay } from "@/components/DoctorClinicsDisplay";
 
 interface DoctorProfileData {
   user_id: string;
@@ -143,19 +144,19 @@ export default function DoctorProfile() {
         </Button>
 
         {/* Header Section - Hero Style */}
-        <Card className="mb-8 overflow-hidden shadow-medium border-0" style={{ backgroundColor: '#00a0df' }}>
+        <Card className="mb-8 overflow-hidden shadow-medium border-0">
           <CardContent className="p-0">
-            <div className="relative h-48" style={{ backgroundColor: '#00a0df' }}>
-              <div className="absolute inset-0"></div>
+            <div className="relative bg-gradient-to-br from-primary/20 to-primary/40 pt-8 pb-20">
+              <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent"></div>
             </div>
             
             {/* Profile Section */}
             <div className="relative px-6 pb-6">
-              <div className="flex flex-col md:flex-row items-center md:items-end gap-6 -mt-16">
-                {/* Profile Image - Centro de atención */}
-                <div className="relative z-10">
-                  <Avatar className="w-32 h-32 border-4 border-white shadow-xl ring-4 ring-white/20">
-                    {doctor.profile_image_url && (
+              <div className="flex flex-col items-center -mt-20">
+                {/* Profile Image - Prominente */}
+                <div className="relative z-10 mb-6">
+                  <Avatar className="w-40 h-40 border-6 border-white shadow-2xl ring-4 ring-primary/20">
+                    {doctor.profile_image_url && !doctor.profile_image_url.includes('example.com') ? (
                       <AvatarImage 
                         src={doctor.profile_image_url} 
                         alt={doctor.full_name}
@@ -163,61 +164,49 @@ export default function DoctorProfile() {
                         onLoad={() => console.log('✅ Image loaded successfully:', doctor.profile_image_url)}
                         onError={(e) => {
                           console.log('❌ Error loading image:', doctor.profile_image_url);
-                          console.log('Error event:', e);
                           const target = e.currentTarget as HTMLImageElement;
                           target.style.display = 'none';
                         }}
                       />
+                    ) : (
+                      <AvatarFallback className="bg-primary text-primary-foreground text-4xl w-full h-full flex items-center justify-center">
+                        <User className="w-20 h-20" />
+                      </AvatarFallback>
                     )}
-                    <AvatarFallback className="bg-primary text-primary-foreground text-2xl w-full h-full flex items-center justify-center">
-                      <User className="w-16 h-16" />
-                    </AvatarFallback>
                   </Avatar>
-                  <div className="absolute -bottom-2 -right-2 bg-accent w-8 h-8 rounded-full border-4 border-white flex items-center justify-center">
-                    <div className="w-3 h-3 bg-white rounded-full"></div>
+                  <div className="absolute -bottom-3 -right-3 bg-green-500 w-10 h-10 rounded-full border-4 border-white flex items-center justify-center shadow-lg">
+                    <div className="w-4 h-4 bg-white rounded-full"></div>
                   </div>
                 </div>
 
-                {/* Doctor Info */}
-                <div className="flex-1 text-center md:text-left text-primary-foreground">
-                  <h1 className="text-3xl md:text-4xl font-bold mb-2">{doctor.full_name}</h1>
-                  <p className="text-xl text-primary-foreground/80 mb-3">{doctor.specialty}</p>
+                {/* Doctor Info - Centrado */}
+                <div className="text-center space-y-4">
+                  <div>
+                    <h1 className="text-4xl md:text-5xl font-bold mb-2 text-foreground">{doctor.full_name}</h1>
+                    <p className="text-xl text-muted-foreground mb-4">{doctor.specialty}</p>
+                  </div>
                   
                   {/* Rating */}
-                  <div className="flex items-center justify-center md:justify-start gap-2 mb-4">
+                  <div className="flex items-center justify-center gap-2 mb-4">
                     <div className="flex">
                       {renderStars(doctor.rating_avg || 0)}
                     </div>
-                    <span className="text-primary-foreground/80">
+                    <span className="text-muted-foreground font-medium">
                       {doctor.rating_avg?.toFixed(1) || '0.0'} ({doctor.rating_count || 0} reseñas)
                     </span>
                   </div>
 
                   {/* Stats */}
-                  <div className="flex flex-wrap justify-center md:justify-start gap-4 text-sm">
-                    <Badge variant="secondary" className="bg-primary-foreground/20 text-primary-foreground border-primary-foreground/30">
-                      <Award className="w-4 h-4 mr-1" />
+                  <div className="flex flex-wrap justify-center gap-4 text-sm">
+                    <Badge variant="secondary" className="px-4 py-2">
+                      <Award className="w-4 h-4 mr-2" />
                       {doctor.experience_years || 0} años de experiencia
                     </Badge>
-                    <Badge variant="secondary" className="bg-primary-foreground/20 text-primary-foreground border-primary-foreground/30">
-                      <MapPin className="w-4 h-4 mr-1" />
-                      {doctor.practice_locations?.length || 0} consultorios
+                    <Badge variant="secondary" className="px-4 py-2">
+                      <MapPin className="w-4 h-4 mr-2" />
+                      Múltiples consultorios
                     </Badge>
                   </div>
-                </div>
-
-                {/* Price and Action */}
-                <div className="text-center">
-                  <div className="bg-primary-foreground/20 backdrop-blur-sm rounded-lg p-4 mb-4">
-                    <div className="text-3xl font-bold text-primary-foreground mb-1">
-                      ${doctor.consultation_fee || 0}
-                    </div>
-                    <div className="text-primary-foreground/80 text-sm">por consulta</div>
-                  </div>
-                  <Button size="lg" className="bg-primary-foreground text-primary hover:bg-primary-foreground/90 font-semibold px-8">
-                    <Calendar className="w-5 h-5 mr-2" />
-                    Agendar Cita
-                  </Button>
                 </div>
               </div>
             </div>
@@ -256,22 +245,16 @@ export default function DoctorProfile() {
               </CardContent>
             </Card>
 
-            {/* Locations */}
+            {/* Consultorios */}
             <Card className="shadow-soft">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <MapPin className="w-5 h-5 text-primary" />
-                  Consultorios
+                  Consultorios Disponibles
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2">
-                  {doctor.practice_locations?.map((location, index) => (
-                    <div key={index} className="p-3 bg-primary/5 rounded-lg border border-primary/10">
-                      <div className="font-medium text-sm">{location}</div>
-                    </div>
-                  ))}
-                </div>
+                <DoctorClinicsDisplay doctorUserId={doctorId || ''} />
               </CardContent>
             </Card>
 
@@ -309,13 +292,16 @@ export default function DoctorProfile() {
           <div className="lg:col-span-2 space-y-6">
             {/* Calendar Section */}
             <Card className="shadow-soft h-fit">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Calendar className="w-5 h-5 text-primary" />
-                  Horarios Disponibles
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-2 text-xl">
+                  <Calendar className="w-6 h-6 text-primary" />
+                  Agenda tu Cita
                 </CardTitle>
+                <p className="text-muted-foreground text-sm">
+                  Selecciona la fecha y hora que mejor se adapte a tu agenda
+                </p>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pt-0">
                 <DoctorCalendarView doctorId={doctorId} />
               </CardContent>
             </Card>

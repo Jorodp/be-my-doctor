@@ -112,20 +112,31 @@ export function DoctorCalendarView({ doctorId }: DoctorCalendarViewProps) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Clinic Selection */}
       {clinics.length > 1 && (
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Consultorio</label>
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-primary rounded-full"></div>
+            <label className="text-sm font-semibold text-foreground">Selecciona un Consultorio</label>
+          </div>
           <Select value={selectedClinic} onValueChange={setSelectedClinic}>
-            <SelectTrigger>
-              <SelectValue placeholder="Selecciona un consultorio" />
+            <SelectTrigger className="h-12 border-primary/20 focus:border-primary">
+              <SelectValue placeholder="Elige el consultorio de tu preferencia" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todos los consultorios</SelectItem>
+              <SelectItem value="all" className="py-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-muted-foreground rounded-full"></div>
+                  <span>Todos los consultorios</span>
+                </div>
+              </SelectItem>
               {clinics.map((clinic) => (
-                <SelectItem key={clinic.id} value={clinic.id}>
-                  {clinic.name} - {clinic.address}
+                <SelectItem key={clinic.id} value={clinic.id} className="py-3">
+                  <div className="flex flex-col gap-1">
+                    <span className="font-medium">{clinic.name}</span>
+                    <span className="text-xs text-muted-foreground">{clinic.address}</span>
+                  </div>
                 </SelectItem>
               ))}
             </SelectContent>
@@ -133,172 +144,228 @@ export function DoctorCalendarView({ doctorId }: DoctorCalendarViewProps) {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
         {/* Calendar */}
-        <div>
-          <Calendar
-            mode="single"
-            selected={selectedDate}
-            onSelect={(date) => {
-              setSelectedDate(date);
-              setSelectedSlot(null); // Reset selected slot when date changes
-            }}
-            className="rounded-md border"
-            modifiers={{
-              available: (date) => hasAvailabilityForDate(date),
-              today: (date) => isToday(date)
-            }}
-            modifiersStyles={{
-              available: {
-                backgroundColor: 'hsl(var(--primary))',
-                color: 'hsl(var(--primary-foreground))',
-                borderRadius: '4px'
-              },
-              today: {
-                backgroundColor: 'hsl(var(--accent))',
-                color: 'hsl(var(--accent-foreground))',
-                fontWeight: 'bold',
-                border: '2px solid hsl(var(--primary))'
-              }
-            }}
-            locale={es}
-            disabled={(date) => date < startOfDay(new Date())}
-          />
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 pb-2">
+            <CalendarIcon className="w-5 h-5 text-primary" />
+            <h3 className="font-semibold text-lg">Calendario</h3>
+          </div>
+          <div className="p-4 bg-gradient-to-br from-primary/5 to-primary/10 rounded-xl border border-primary/20">
+            <Calendar
+              mode="single"
+              selected={selectedDate}
+              onSelect={(date) => {
+                setSelectedDate(date);
+                setSelectedSlot(null); // Reset selected slot when date changes
+              }}
+              className="rounded-lg bg-background shadow-sm w-full"
+              modifiers={{
+                available: (date) => hasAvailabilityForDate(date),
+                today: (date) => isToday(date)
+              }}
+              modifiersStyles={{
+                available: {
+                  backgroundColor: 'hsl(var(--primary))',
+                  color: 'hsl(var(--primary-foreground))',
+                  borderRadius: '8px',
+                  fontWeight: '600'
+                },
+                today: {
+                  backgroundColor: 'hsl(var(--accent))',
+                  color: 'hsl(var(--accent-foreground))',
+                  fontWeight: 'bold',
+                  border: '2px solid hsl(var(--primary))',
+                  borderRadius: '8px'
+                }
+              }}
+              locale={es}
+              disabled={(date) => date < startOfDay(new Date())}
+            />
+          </div>
           
           {/* Legend */}
-          <div className="mt-4 space-y-2">
-            <div className="flex items-center gap-2 text-sm">
-              <div className="w-4 h-4 bg-primary rounded"></div>
-              <span>Días con horarios disponibles</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm">
-              <div className="w-4 h-4 bg-accent border-2 border-primary rounded"></div>
-              <span>Hoy</span>
+          <div className="bg-muted/30 p-4 rounded-lg space-y-3">
+            <h4 className="font-medium text-sm text-foreground">Leyenda</h4>
+            <div className="space-y-2">
+              <div className="flex items-center gap-3 text-sm">
+                <div className="w-4 h-4 bg-primary rounded-lg"></div>
+                <span>Días con horarios disponibles</span>
+              </div>
+              <div className="flex items-center gap-3 text-sm">
+                <div className="w-4 h-4 bg-accent border-2 border-primary rounded-lg"></div>
+                <span>Hoy</span>
+              </div>
             </div>
           </div>
         </div>
 
         {/* Available times for selected date */}
-        <div>
-          <h3 className="font-semibold mb-4 flex items-center gap-2">
-            <Clock className="w-4 h-4" />
-              {selectedDate ? (
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 pb-2">
+            <Clock className="w-5 h-5 text-primary" />
+            <h3 className="font-semibold text-lg">Horarios Disponibles</h3>
+          </div>
+          
+          {selectedDate ? (
+            <div className="space-y-4">
+              <div className="p-3 bg-primary/5 rounded-lg border border-primary/20">
                 <div className="flex flex-col gap-1">
-                  <span>Horarios para {format(selectedDate, "EEEE d 'de' MMMM", { locale: es })}</span>
+                  <h4 className="font-medium text-foreground">
+                    {format(selectedDate, "EEEE d 'de' MMMM", { locale: es })}
+                  </h4>
                   {selectedClinic !== 'all' && (
-                    <div className="text-sm font-normal text-muted-foreground flex items-center gap-1">
+                    <div className="text-sm text-muted-foreground flex items-center gap-2">
                       <div className="w-2 h-2 bg-primary rounded-full"></div>
-                      Consultorio: {clinics.find(c => c.id === selectedClinic)?.name}
+                      <span>Consultorio: {clinics.find(c => c.id === selectedClinic)?.name}</span>
                     </div>
                   )}
                   {selectedClinic === 'all' && (
-                    <div className="text-sm font-normal text-muted-foreground">
-                      Mostrando horarios de todos los consultorios
+                    <div className="text-sm text-muted-foreground flex items-center gap-2">
+                      <div className="w-2 h-2 bg-muted-foreground rounded-full"></div>
+                      <span>Mostrando horarios de todos los consultorios</span>
                     </div>
                   )}
                 </div>
-              ) : (
-                'Selecciona una fecha'
-              )}
-          </h3>
-          
-          {selectedDate && (
-            <div className="space-y-3">
-              {slots.length > 0 ? (
-                <>
-                  {slots.map((slot, index) => {
-                    const slotId = `${slot.clinic_id}-${slot.start_time}-${slot.end_time}`;
-                    const isSelected = selectedSlot === slot.start_time && selectedClinic === slot.clinic_id;
-                    const isBooked = !slot.available;
-                    
-                    return (
-                      <div
-                        key={slotId}
-                        className={`flex items-center justify-between p-3 rounded-lg border transition-all ${
-                          isBooked 
-                            ? 'bg-muted/50 border-muted' 
-                            : isSelected
-                            ? 'bg-primary/20 border-primary'
-                            : 'bg-primary/5 border-primary/10 hover:bg-primary/10'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <div className="flex flex-col">
-                            <Badge 
-                              variant={isBooked ? "secondary" : isSelected ? "default" : "outline"} 
-                              className={
-                                isBooked 
-                                  ? "text-muted-foreground" 
-                                  : isSelected 
-                                  ? "bg-primary text-primary-foreground"
-                                  : "border-primary text-primary"
-                              }
-                            >
-                              {formatTime(slot.start_time)} - {formatTime(slot.end_time)}
-                            </Badge>
-                            <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                              <div className="w-1.5 h-1.5 bg-primary/60 rounded-full"></div>
-                              <span className="font-medium">{slot.clinic_name}</span>
+              </div>
+
+              <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
+                {slots.length > 0 ? (
+                  <>
+                    {slots.map((slot, index) => {
+                      const slotId = `${slot.clinic_id}-${slot.start_time}-${slot.end_time}`;
+                      const isSelected = selectedSlot === slot.start_time && selectedClinic === slot.clinic_id;
+                      const isBooked = !slot.available;
+                      
+                      return (
+                        <div
+                          key={slotId}
+                          className={`group flex items-center justify-between p-4 rounded-xl border-2 transition-all duration-200 cursor-pointer ${
+                            isBooked 
+                              ? 'bg-muted/30 border-muted cursor-not-allowed opacity-60' 
+                              : isSelected
+                              ? 'bg-primary/10 border-primary shadow-md'
+                              : 'bg-gradient-to-r from-background to-primary/5 border-primary/20 hover:border-primary/40 hover:shadow-sm'
+                          }`}
+                          onClick={() => !isBooked && handleSlotSelect(slot.start_time, slot.clinic_id)}
+                        >
+                          <div className="flex items-center gap-4">
+                            <div className={`w-3 h-3 rounded-full ${
+                              isBooked ? 'bg-muted-foreground' : isSelected ? 'bg-primary' : 'bg-primary/60'
+                            }`}></div>
+                            <div className="flex flex-col gap-1">
+                              <div className="flex items-center gap-3">
+                                <Badge 
+                                  variant={isBooked ? "secondary" : isSelected ? "default" : "outline"} 
+                                  className={`text-base px-3 py-1 ${
+                                    isBooked 
+                                      ? "text-muted-foreground bg-muted" 
+                                      : isSelected 
+                                      ? "bg-primary text-primary-foreground shadow-sm"
+                                      : "border-primary/40 text-primary font-medium"
+                                  }`}
+                                >
+                                  {formatTime(slot.start_time)} - {formatTime(slot.end_time)}
+                                </Badge>
+                                {isBooked && (
+                                  <Badge variant="destructive" className="text-xs">
+                                    No disponible
+                                  </Badge>
+                                )}
+                              </div>
+                              {selectedClinic === 'all' && (
+                                <div className="text-sm text-muted-foreground flex items-center gap-2">
+                                  <div className="w-1.5 h-1.5 bg-primary/60 rounded-full"></div>
+                                  <span className="font-medium">{slot.clinic_name}</span>
+                                </div>
+                              )}
                             </div>
                           </div>
-                          {isBooked && (
-                            <span className="text-xs text-muted-foreground">Ocupado</span>
-                          )}
+                          
+                          <Button 
+                            size="sm" 
+                            className={`px-6 transition-all duration-200 ${
+                              isSelected ? 'shadow-md' : ''
+                            }`}
+                            variant={isSelected ? "default" : "outline"}
+                            disabled={isBooked}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSlotSelect(slot.start_time, slot.clinic_id);
+                            }}
+                          >
+                            {isSelected ? "✓ Seleccionado" : "Seleccionar"}
+                          </Button>
+                        </div>
+                      );
+                    })}
+                    
+                    {/* Book Appointment Button */}
+                    {selectedSlot && selectedClinic && selectedClinic !== 'all' && (
+                      <div className="pt-6 border-t-2 border-primary/20">
+                        <div className="mb-4 p-4 bg-gradient-to-r from-primary/10 to-primary/5 rounded-xl border border-primary/30">
+                          <div className="flex items-center gap-2 text-sm font-medium text-foreground mb-2">
+                            <div className="w-2 h-2 bg-primary rounded-full"></div>
+                            <span>Resumen de tu cita:</span>
+                          </div>
+                          <div className="text-sm text-muted-foreground ml-4 space-y-1">
+                            <div>Fecha: {format(selectedDate, "EEEE d 'de' MMMM 'de' yyyy", { locale: es })}</div>
+                            <div>Hora: {formatTime(selectedSlot)}</div>
+                            <div>Lugar: {clinics.find(c => c.id === selectedClinic)?.name}</div>
+                          </div>
                         </div>
                         <Button 
-                          size="sm" 
-                          className="px-6"
-                          variant={isSelected ? "default" : "outline"}
-                          disabled={isBooked}
-                          onClick={() => handleSlotSelect(slot.start_time, slot.clinic_id)}
+                          onClick={handleBookAppointment}
+                          disabled={!selectedSlot || bookAppointment.isPending}
+                          className="w-full h-12 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
+                          size="lg"
                         >
-                          {isSelected ? "Seleccionado" : "Seleccionar"}
+                          {bookAppointment.isPending ? (
+                            <div className="flex items-center gap-2">
+                              <LoadingSpinner size="sm" />
+                              <span>Agendando...</span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <Calendar className="w-5 h-5" />
+                              <span>Confirmar Cita</span>
+                            </div>
+                          )}
                         </Button>
                       </div>
-                    );
-                  })}
-                  
-                  {/* Book Appointment Button */}
-                  <div className="pt-4 border-t">
-                    {selectedSlot && selectedClinic && selectedClinic !== 'all' && (
-                      <div className="mb-3 p-3 bg-primary/5 rounded-lg border border-primary/20">
-                        <div className="flex items-center gap-2 text-sm">
-                          <div className="w-2 h-2 bg-primary rounded-full"></div>
-                          <span className="font-medium">Cita seleccionada:</span>
-                        </div>
-                        <div className="text-sm text-muted-foreground mt-1 ml-4">
-                          {formatTime(selectedSlot)} en {clinics.find(c => c.id === selectedClinic)?.name}
+                    )}
+
+                    {selectedSlot && selectedClinic === 'all' && (
+                      <div className="pt-4 border-t border-muted">
+                        <div className="p-4 bg-muted/20 rounded-lg border border-muted">
+                          <p className="text-sm text-muted-foreground text-center">
+                            Selecciona un consultorio específico para continuar con la reserva
+                          </p>
                         </div>
                       </div>
                     )}
-                    <Button 
-                      onClick={handleBookAppointment}
-                      disabled={!selectedSlot || bookAppointment.isPending || selectedClinic === 'all'}
-                      className="w-full"
-                      size="lg"
-                    >
-                      {bookAppointment.isPending ? (
-                        <LoadingSpinner size="sm" />
-                      ) : selectedSlot && selectedClinic !== 'all' ? (
-                        `Confirmar cita para ${formatTime(selectedSlot)}`
-                      ) : selectedClinic === 'all' ? (
-                        'Selecciona un consultorio específico'
-                      ) : (
-                        'Selecciona una hora para agendar'
-                      )}
-                    </Button>
+                  </>
+                ) : (
+                  <div className="text-center p-8 bg-gradient-to-br from-muted/20 to-muted/10 rounded-xl border border-muted">
+                    <Clock className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                    <h4 className="font-medium text-foreground mb-2">No hay horarios disponibles</h4>
+                    <p className="text-muted-foreground text-sm">
+                      No se encontraron horarios para esta fecha.
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Por favor selecciona otra fecha resaltada en el calendario.
+                    </p>
                   </div>
-                </>
-              ) : (
-                <div className="text-center p-6 bg-muted/30 rounded-lg">
-                  <p className="text-muted-foreground">
-                    No hay horarios disponibles para esta fecha.
-                  </p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Por favor selecciona otra fecha resaltada en el calendario.
-                  </p>
-                </div>
-              )}
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="text-center p-8 bg-muted/10 rounded-xl border border-muted">
+              <CalendarIcon className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+              <h4 className="font-medium text-foreground mb-2">Selecciona una fecha</h4>
+              <p className="text-muted-foreground text-sm">
+                Elige una fecha del calendario para ver los horarios disponibles
+              </p>
             </div>
           )}
         </div>
