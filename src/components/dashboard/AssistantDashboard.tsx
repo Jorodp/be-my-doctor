@@ -49,18 +49,94 @@ const AssistantDashboardContent = () => {
 
   useEffect(() => {
     if (user && profile) {
-      // Get assigned doctor ID from profile table, not user metadata
-      const assignedDoctorId = (profile as any).assigned_doctor_id;
-      console.log('Assistant assigned doctor ID:', assignedDoctorId);
-      setDoctorId(assignedDoctorId);
+      fetchAssignedDoctorId();
+    }
+  }, [user, profile]);
+
+  const fetchAssignedDoctorId = async () => {
+    try {
+      if (!user || !profile) return;
+
+      // Get assistant's internal ID
+      const { data: assistantProfile } = await supabase
+        .from('profiles')
+        .select('id, assigned_doctor_id')
+        .eq('user_id', user.id)
+        .eq('role', 'assistant')
+        .single();
+
+      if (!assistantProfile) {
+        setLoading(false);
+        return;
+      }
+
+      let doctorUserId = null;
+
+      // Check for specific clinic assignments (NEW METHOD)
+      const { data: clinicAssignments } = await supabase
+        .from('clinic_assistants')
+        .select('clinic_id')
+        .eq('assistant_id', assistantProfile.id);
+
+      if (clinicAssignments && clinicAssignments.length > 0) {
+        // Get doctor from the first assigned clinic
+        const { data: clinic } = await supabase
+          .from('clinics')
+          .select('doctor_id')
+          .eq('id', clinicAssignments[0].clinic_id)
+          .single();
+
+        if (clinic) {
+          const { data: doctorProfile } = await supabase
+            .from('profiles')
+            .select('user_id')
+            .eq('id', clinic.doctor_id)
+            .single();
+
+          if (doctorProfile) {
+            doctorUserId = doctorProfile.user_id;
+          }
+        }
+      }
+
+      // Fallback to legacy assignment
+      if (!doctorUserId && assistantProfile.assigned_doctor_id) {
+        doctorUserId = assistantProfile.assigned_doctor_id;
+      }
+
+      // Check doctor_assistants table as another fallback
+      if (!doctorUserId) {
+        const { data: doctorAssistantAssignments } = await supabase
+          .from('doctor_assistants')
+          .select('doctor_id')
+          .eq('assistant_id', assistantProfile.id);
+
+        if (doctorAssistantAssignments && doctorAssistantAssignments.length > 0) {
+          const { data: doctorProfile } = await supabase
+            .from('profiles')
+            .select('user_id')
+            .eq('id', doctorAssistantAssignments[0].doctor_id)
+            .single();
+
+          if (doctorProfile) {
+            doctorUserId = doctorProfile.user_id;
+          }
+        }
+      }
+
+      console.log('Assistant assigned doctor ID:', doctorUserId);
+      setDoctorId(doctorUserId);
       
-      if (assignedDoctorId) {
-        fetchTodayAppointments(assignedDoctorId);
+      if (doctorUserId) {
+        fetchTodayAppointments(doctorUserId);
       } else {
         setLoading(false);
       }
+    } catch (error) {
+      console.error('Error fetching assigned doctor:', error);
+      setLoading(false);
     }
-  }, [user, profile]);
+  };
 
   const fetchTodayAppointments = async (doctorUserId: string) => {
     try {
