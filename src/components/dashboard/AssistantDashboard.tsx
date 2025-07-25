@@ -203,7 +203,8 @@ const AssistantDashboardContent = () => {
           </TabsContent>
 
           <TabsContent value="schedule" className="space-y-6">
-            <AssistantScheduleManager doctorId={doctorId} />
+            {/* Pasar doctorId solo si hay uno específico asignado, de lo contrario el componente manejará múltiples doctores */}
+            <AssistantScheduleManager doctorId={doctorId || undefined} />
           </TabsContent>
 
           <TabsContent value="new-appointment" className="space-y-6">
