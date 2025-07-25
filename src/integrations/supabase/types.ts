@@ -2886,6 +2886,10 @@ export type Database = {
         Args: { p_doctor_id: string }
         Returns: undefined
       }
+      assistant_can_access_clinic: {
+        Args: { clinic_id: string }
+        Returns: boolean
+      }
       book_slot: {
         Args: {
           p_doctor_internal_id: string
