@@ -116,6 +116,33 @@ const DoctorDashboardContent = () => {
     monthlyRevenue: 0
   });
 
+  // Realtime updates para appointments
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('schema-db-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // INSERT, UPDATE, DELETE
+          schema: 'public',
+          table: 'appointments',
+          filter: `doctor_user_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('Appointment change detected:', payload);
+          // Refresh all data when appointment changes
+          fetchAllData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
+
   useEffect(() => {
     if (user) {
       fetchAllData();
@@ -561,7 +588,7 @@ const DoctorDashboardContent = () => {
 
         {/* Main Content Tabs */}
         <Tabs defaultValue="consultas" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-11 text-xs">
+          <TabsList className="grid w-full grid-cols-10 text-xs">
             <TabsTrigger value="consultas" className="flex items-center gap-1">
               <Timer className="h-3 w-3" />
               <span className="hidden sm:inline">Flujo de Consultas</span>
@@ -586,11 +613,6 @@ const DoctorDashboardContent = () => {
               <Clock className="h-3 w-3" />
               <span className="hidden sm:inline">Citas de Hoy</span>
               <span className="sm:hidden">Hoy</span>
-            </TabsTrigger>
-            <TabsTrigger value="week" className="flex items-center gap-1">
-              <Calendar className="h-3 w-3" />
-              <span className="hidden sm:inline">Esta Semana</span>
-              <span className="sm:hidden">Semana</span>
             </TabsTrigger>
             <TabsTrigger value="ratings" className="flex items-center gap-1">
               <Star className="h-3 w-3" />
@@ -727,7 +749,7 @@ const DoctorDashboardContent = () => {
                               appointment={appointment}
                               userRole="doctor"
                               currentUserId={user?.id || ''}
-                              onAppointmentUpdated={fetchTodayAppointments}
+                              onAppointmentUpdated={fetchAllData}
                               showPatientName={false}
                             />
                           </div>
@@ -740,51 +762,6 @@ const DoctorDashboardContent = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="week">
-            <Card>
-              <CardHeader>
-                <CardTitle>Citas de Esta Semana</CardTitle>
-                <CardDescription>
-                  {weeklyAppointments.length} cita(s) en los próximos 7 días
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {weeklyAppointments.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Calendar className="h-12 w-12 mx-auto mb-4" />
-                    <p>No tienes citas programadas esta semana</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3 max-h-64 overflow-y-auto">
-                    {weeklyAppointments.map((appointment) => (
-                      <div key={appointment.id} className="border rounded-lg p-3">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <User className="h-4 w-4 text-muted-foreground" />
-                            <div>
-                              <p className="font-medium">
-                                {appointment.patient_profile?.full_name || 'Paciente'}
-                              </p>
-                              <p className="text-sm text-muted-foreground">
-                                {formatDate(appointment.starts_at)} • {formatTime(appointment.starts_at)}
-                              </p>
-                            </div>
-                          </div>
-                          <AppointmentActionsExtended
-                            appointment={appointment}
-                            userRole="doctor"
-                            currentUserId={user?.id || ''}
-                            onAppointmentUpdated={fetchWeeklyAppointments}
-                            showPatientName={false}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
 
           <TabsContent value="ratings">
             <Card>
