@@ -88,6 +88,13 @@ export const SubscriptionManager = ({
             Inactiva
           </Badge>
         );
+      case 'grace':
+        return (
+          <Badge className="bg-orange-100 text-orange-800 border-orange-300">
+            <Clock className="w-3 h-3 mr-1" />
+            Período de Gracia
+          </Badge>
+        );
       case 'expired':
         return (
           <Badge variant="destructive">
@@ -95,11 +102,18 @@ export const SubscriptionManager = ({
             Expirada
           </Badge>
         );
-      case 'grace':
+      case 'past_due':
         return (
-          <Badge className="bg-orange-100 text-orange-800 border-orange-300">
-            <Clock className="w-3 h-3 mr-1" />
-            Período de Gracia
+          <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300">
+            <AlertCircle className="w-3 h-3 mr-1" />
+            Vencida
+          </Badge>
+        );
+      case 'canceled':
+        return (
+          <Badge variant="destructive">
+            <StopCircle className="w-3 h-3 mr-1" />
+            Cancelada
           </Badge>
         );
       default:
@@ -307,8 +321,10 @@ export const SubscriptionManager = ({
                 <SelectContent>
                   <SelectItem value="active">Activa</SelectItem>
                   <SelectItem value="inactive">Inactiva</SelectItem>
-                  <SelectItem value="paused">Pausada</SelectItem>
+                  <SelectItem value="grace">Período de Gracia</SelectItem>
                   <SelectItem value="expired">Expirada</SelectItem>
+                  <SelectItem value="past_due">Vencida</SelectItem>
+                  <SelectItem value="canceled">Cancelada</SelectItem>
                 </SelectContent>
               </Select>
             </div>
