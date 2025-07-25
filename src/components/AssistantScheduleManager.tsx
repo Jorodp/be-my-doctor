@@ -31,7 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useDoctorClinics } from '@/hooks/useDoctorClinics';
+import { useAssistantClinics } from '@/hooks/useAssistantClinics';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -45,16 +45,6 @@ interface Availability {
   slot_duration_minutes?: number;
 }
 
-interface DoctorAssignment {
-  id: string;
-  doctor_id: string;
-  doctor_profile: {
-    user_id: string;
-    full_name: string;
-    specialty: string;
-  };
-}
-
 interface AssistantScheduleManagerProps {
   doctorId?: string;
 }
@@ -66,7 +56,7 @@ const timeSlots = Array.from({ length: 33 }, (_, i) => {
   return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
 });
 
-export function AssistantScheduleManager({ doctorId: propDoctorId }: AssistantScheduleManagerProps) {
+export function AssistantScheduleManager({}: AssistantScheduleManagerProps) {
   const { toast } = useToast();
   const { user } = useAuth();
   const [availability, setAvailability] = useState<Availability[]>([]);
@@ -78,26 +68,8 @@ export function AssistantScheduleManager({ doctorId: propDoctorId }: AssistantSc
   const [newStartTime, setNewStartTime] = useState('09:00');
   const [newEndTime, setNewEndTime] = useState('17:00');
   
-  // Estados para múltiples doctores
-  const [assignments, setAssignments] = useState<DoctorAssignment[]>([]);
-  const [selectedDoctor, setSelectedDoctor] = useState<string>(propDoctorId || '');
-  
-  // Obtener clínicas del doctor seleccionado
-  const { data: clinics = [], isLoading: clinicsLoading } = useDoctorClinics(selectedDoctor);
-
-  // Cargar doctores asignados al asistente
-  useEffect(() => {
-    if (user && !propDoctorId) {
-      fetchDoctorAssignments();
-    }
-  }, [user, propDoctorId]);
-
-  // Si hay un doctor específico pasado como prop, usarlo directamente
-  useEffect(() => {
-    if (propDoctorId) {
-      setSelectedDoctor(propDoctorId);
-    }
-  }, [propDoctorId]);
+  // Obtener clínicas asignadas al asistente
+  const { data: clinics = [], isLoading: clinicsLoading } = useAssistantClinics();
 
   // Configurar clínica por defecto cuando cambien las clínicas
   useEffect(() => {
@@ -113,76 +85,6 @@ export function AssistantScheduleManager({ doctorId: propDoctorId }: AssistantSc
     }
   }, [selectedClinic]);
 
-  const fetchDoctorAssignments = async () => {
-    if (!user) return;
-    
-    try {
-      setLoading(true);
-      
-      const { data: doctorAssignments, error } = await supabase
-        .from('doctor_assistants')
-        .select(`
-          id,
-          doctor_id,
-          profiles:doctor_id (
-            user_id,
-            full_name
-          )
-        `)
-        .eq('assistant_id', user.id);
-
-      if (error) throw error;
-
-      const assignmentsWithDetails = await Promise.all(
-        (doctorAssignments || []).map(async (assignment: any) => {
-          const doctorProfile = assignment.profiles;
-          if (!doctorProfile) return null;
-
-          try {
-            const { data: doctorDetails, error: doctorError } = await supabase
-              .from('doctor_profiles')
-              .select('specialty')
-              .eq('user_id', doctorProfile.user_id)
-              .single();
-
-            return {
-              ...assignment,
-              doctor_profile: {
-                ...doctorProfile,
-                specialty: doctorDetails?.specialty || 'Medicina General',
-              },
-            };
-          } catch (error) {
-            console.error('Error fetching doctor details:', error);
-            return {
-              ...assignment,
-              doctor_profile: {
-                ...doctorProfile,
-                specialty: 'Medicina General',
-              },
-            };
-          }
-        })
-      );
-
-      const validAssignments = assignmentsWithDetails.filter(Boolean);
-      setAssignments(validAssignments);
-      
-      // Seleccionar el primer doctor si no hay uno seleccionado
-      if (validAssignments.length > 0 && !selectedDoctor) {
-        setSelectedDoctor(validAssignments[0].doctor_profile.user_id);
-      }
-    } catch (error) {
-      console.error('Error fetching doctor assignments:', error);
-      toast({
-        title: "Error",
-        description: "No se pudieron cargar los doctores asignados",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const fetchAvailability = async () => {
     if (!selectedClinic) return;
@@ -364,28 +266,6 @@ export function AssistantScheduleManager({ doctorId: propDoctorId }: AssistantSc
     });
   };
 
-  if (loading && (propDoctorId || assignments.length === 0)) {
-    return (
-      <div className="flex justify-center items-center min-h-64">
-        <LoadingSpinner />
-      </div>
-    );
-  }
-
-  // Si no hay doctores asignados y no se pasó un doctor específico
-  if (!propDoctorId && assignments.length === 0 && !loading) {
-    return (
-      <Card>
-        <CardContent className="text-center py-8">
-          <User className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-          <p className="text-lg font-semibold mb-2">No tienes doctores asignados</p>
-          <p className="text-muted-foreground">
-            Contacta al administrador para que te asignen a un doctor.
-          </p>
-        </CardContent>
-      </Card>
-    );
-  }
 
   if (clinicsLoading) {
     return (
@@ -410,86 +290,42 @@ export function AssistantScheduleManager({ doctorId: propDoctorId }: AssistantSc
   }
 
   const selectedClinicInfo = clinics.find(c => c.id === selectedClinic);
-  const selectedDoctorInfo = assignments.find(a => a.doctor_profile.user_id === selectedDoctor);
 
   return (
     <div className="space-y-6">
-      {/* Selector de doctor (solo si hay múltiples doctores asignados) */}
-      {!propDoctorId && assignments.length > 1 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Stethoscope className="h-5 w-5" />
-              Seleccionar Doctor
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Select value={selectedDoctor} onValueChange={setSelectedDoctor}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecciona un doctor" />
-              </SelectTrigger>
-              <SelectContent>
-                {assignments.map((assignment) => (
-                  <SelectItem 
-                    key={assignment.id} 
-                    value={assignment.doctor_profile.user_id}
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">
-                        {assignment.doctor_profile.full_name}
-                      </span>
-                      <span className="text-muted-foreground text-sm">
-                        - {assignment.doctor_profile.specialty}
-                      </span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Información del doctor y consultorio seleccionado */}
-      {(selectedDoctorInfo || propDoctorId) && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Building className="h-5 w-5" />
-              Gestión de Agenda
-              {selectedDoctorInfo && (
-                <Badge variant="outline" className="ml-2">
-                  Dr. {selectedDoctorInfo.doctor_profile.full_name}
-                </Badge>
-              )}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-4 mb-4">
-              <div className="flex-1">
-                <label className="text-sm font-medium">Consultorio:</label>
-                <Select value={selectedClinic} onValueChange={setSelectedClinic}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {clinics.map(clinic => (
-                      <SelectItem key={clinic.id} value={clinic.id}>
-                        <div>
-                          <div className="font-medium">{clinic.name}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {clinic.city}, {clinic.state}
-                          </div>
+      {/* Selector de consultorio */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Building className="h-5 w-5" />
+            Gestión de Agenda
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-4 mb-4">
+            <div className="flex-1">
+              <label className="text-sm font-medium">Consultorio:</label>
+              <Select value={selectedClinic} onValueChange={setSelectedClinic}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {clinics.map(clinic => (
+                    <SelectItem key={clinic.id} value={clinic.id}>
+                      <div>
+                        <div className="font-medium">{clinic.name}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {clinic.city}, {clinic.state}
                         </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-          </CardContent>
-        </Card>
-      )}
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Calendario */}
