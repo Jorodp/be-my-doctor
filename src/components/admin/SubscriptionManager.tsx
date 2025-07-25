@@ -142,24 +142,39 @@ export const SubscriptionManager = ({
   const handleStatusUpdate = async () => {
     setLoading(true);
     try {
-      let expiresAt: string | undefined;
+      console.log('Starting subscription update...', {
+        newStatus,
+        verificationStatus,
+        doctorUserId: doctor.doctor_user_id
+      });
+
+      let updateData: any = {
+        subscription_status: newStatus,
+        verification_status: verificationStatus,
+        updated_at: new Date().toISOString()
+      };
       
       if (newStatus === 'active') {
-        expiresAt = calculateNewExpirationDate().toISOString();
+        const expiresAt = calculateNewExpirationDate().toISOString();
+        updateData.subscription_expires_at = expiresAt;
+        console.log('Adding expiration date:', expiresAt);
       }
-      
-      // Actualizar doctor_profiles
-      const { error } = await supabase
-        .from('doctor_profiles')
-        .update({
-          subscription_status: newStatus,
-          verification_status: verificationStatus,
-          subscription_expires_at: expiresAt,
-          updated_at: new Date().toISOString()
-        })
-        .eq('user_id', doctor.doctor_user_id);
 
-      if (error) throw error;
+      console.log('Update data:', updateData);
+      
+      // Actualizar doctor_profiles directamente
+      const { error, data } = await supabase
+        .from('doctor_profiles')
+        .update(updateData)
+        .eq('user_id', doctor.doctor_user_id)
+        .select();
+
+      console.log('Update result:', { error, data });
+
+      if (error) {
+        console.error('Supabase error details:', error);
+        throw error;
+      }
 
       toast({
         title: 'Actualización exitosa',
@@ -171,7 +186,7 @@ export const SubscriptionManager = ({
       console.error('Error updating subscription:', error);
       toast({
         title: 'Error',
-        description: 'No se pudo actualizar la información',
+        description: error instanceof Error ? error.message : 'No se pudo actualizar la información',
         variant: 'destructive'
       });
     } finally {
