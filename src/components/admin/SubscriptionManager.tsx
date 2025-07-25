@@ -304,12 +304,12 @@ export const SubscriptionManager = ({
         onPaymentValidated={handlePaymentValidated}
       />
 
-      {/* Estado y Configuración Rápida */}
+      {/* Estado Actual (Solo Lectura) */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Settings className="w-5 h-5" />
-            Estado y Configuración
+            Estado del Doctor
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -328,29 +328,54 @@ export const SubscriptionManager = ({
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Estado de suscripción</Label>
-              <Select value={newStatus} onValueChange={setNewStatus}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="active">Activa</SelectItem>
-                  <SelectItem value="inactive">Inactiva</SelectItem>
-                  <SelectItem value="grace">Período de Gracia</SelectItem>
-                  <SelectItem value="expired">Expirada</SelectItem>
-                  <SelectItem value="past_due">Vencida</SelectItem>
-                  <SelectItem value="canceled">Cancelada</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label>Estado de suscripción (Automático)</Label>
+              <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-md">
+                {getStatusBadge(doctorProfile.subscription_status)}
+                <span className="text-sm text-muted-foreground">
+                  Se actualiza automáticamente por pagos y vencimientos
+                </span>
+              </div>
             </div>
           </div>
-          <Button 
-            onClick={handleStatusUpdate}
-            disabled={loading}
-            className="w-full"
-          >
-            {loading ? 'Actualizando...' : 'Aplicar Cambios'}
-          </Button>
+          
+          <div className="flex items-center gap-4">
+            <Button 
+              onClick={async () => {
+                try {
+                  const { error } = await supabase
+                    .from('doctor_profiles')
+                    .update({
+                      verification_status: verificationStatus,
+                      updated_at: new Date().toISOString()
+                    })
+                    .eq('user_id', doctor.doctor_user_id);
+
+                  if (error) throw error;
+
+                  toast({
+                    title: 'Estado de verificación actualizado',
+                    description: 'El estado de verificación se actualizó correctamente'
+                  });
+
+                  onSubscriptionUpdate();
+                } catch (error) {
+                  toast({
+                    title: 'Error',
+                    description: 'No se pudo actualizar el estado de verificación',
+                    variant: 'destructive'
+                  });
+                }
+              }}
+              disabled={loading}
+              variant="outline"
+            >
+              Actualizar Verificación
+            </Button>
+            
+            <div className="text-sm text-muted-foreground">
+              💡 El estado de suscripción se activa automáticamente con pagos: $2,000 = 1 mes, $20,000 = 1 año
+            </div>
+          </div>
         </CardContent>
       </Card>
 

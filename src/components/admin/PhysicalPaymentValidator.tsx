@@ -89,7 +89,7 @@ export const PhysicalPaymentValidator = ({
     }
   };
 
-  const validatePayment = async (requestId: string, subscriptionType: string) => {
+  const validatePayment = async (requestId: string, amount: number) => {
     setProcessing(true);
     try {
       // 1. Marcar la solicitud como completada
@@ -105,7 +105,21 @@ export const PhysicalPaymentValidator = ({
 
       if (requestError) throw requestError;
 
-      // 2. Actualizar el estado de suscripción del doctor, extendiendo desde la fecha actual de expiración
+      // 2. Determinar duración basada en el monto pagado
+      let durationMonths = 0;
+      let subscriptionType = '';
+      
+      if (amount >= 20000) {
+        durationMonths = 12; // 1 año
+        subscriptionType = 'anual';
+      } else if (amount >= 2000) {
+        durationMonths = Math.floor(amount / 2000); // $2000 = 1 mes
+        subscriptionType = 'mensual';
+      } else {
+        throw new Error('El monto no es suficiente para activar suscripción');
+      }
+
+      // 3. Obtener fecha de expiración actual para extender desde ahí
       const { data: currentProfile, error: fetchError } = await supabase
         .from('doctor_profiles')
         .select('subscription_expires_at')
@@ -119,12 +133,15 @@ export const PhysicalPaymentValidator = ({
         ? new Date(currentProfile.subscription_expires_at)
         : new Date();
 
-      const extensionTime = subscriptionType === 'annual' 
-        ? 365 * 24 * 60 * 60 * 1000 // 1 año
-        : 30 * 24 * 60 * 60 * 1000;  // 30 días
+      // Si la fecha base es anterior a hoy, usar hoy como base
+      const now = new Date();
+      const effectiveBaseDate = baseDate < now ? now : baseDate;
 
-      const expirationDate = new Date(baseDate.getTime() + extensionTime);
+      // Calcular nueva fecha de expiración
+      const expirationDate = new Date(effectiveBaseDate);
+      expirationDate.setMonth(expirationDate.getMonth() + durationMonths);
 
+      // 4. Actualizar el perfil del doctor
       const { error: profileError } = await supabase
         .from('doctor_profiles')
         .update({
@@ -137,8 +154,8 @@ export const PhysicalPaymentValidator = ({
       if (profileError) throw profileError;
 
       toast({
-        title: "Pago validado exitosamente",
-        description: `La suscripción ${subscriptionTypeLabels[subscriptionType as keyof typeof subscriptionTypeLabels].toLowerCase()} ha sido activada.`
+        title: "Pago validado y suscripción activada",
+        description: `Se agregaron ${durationMonths} ${durationMonths === 1 ? 'mes' : 'meses'} a la suscripción. Nueva expiración: ${expirationDate.toLocaleDateString('es-ES')}`
       });
 
       // Refrescar datos
@@ -151,7 +168,7 @@ export const PhysicalPaymentValidator = ({
       toast({
         variant: "destructive",
         title: "Error",
-        description: "No se pudo validar el pago. Inténtalo de nuevo."
+        description: error.message || "No se pudo validar el pago. Inténtalo de nuevo."
       });
     } finally {
       setProcessing(false);
@@ -266,40 +283,39 @@ export const PhysicalPaymentValidator = ({
                       />
                     </div>
 
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button 
-                          className="w-full bg-green-600 hover:bg-green-700"
-                          disabled={processing}
-                        >
-                          <CheckCircle className="w-4 h-4 mr-2" />
-                          Validar Pago y Activar Suscripción
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Confirmar Validación de Pago</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            ¿Confirmas que el pago físico por <strong>${request.amount} MXN</strong> ha sido recibido 
-                            y deseas activar la suscripción <strong>{subscriptionTypeLabels[request.subscription_type as keyof typeof subscriptionTypeLabels].toLowerCase()}</strong>?
-                            <br /><br />
-                            Esta acción:
-                            <br />• Marcará la solicitud como completada
-                            <br />• Activará la suscripción del doctor
-                            <br />• Establecerá la fecha de expiración correspondiente
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction 
-                            onClick={() => validatePayment(request.id, request.subscription_type)}
-                            className="bg-green-600 hover:bg-green-700"
-                          >
-                            Confirmar Validación
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button 
+                              className="w-full bg-green-600 hover:bg-green-700"
+                              disabled={processing}
+                            >
+                              <CheckCircle className="w-4 h-4 mr-2" />
+                              Validar Pago y Activar Suscripción
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Confirmar Validación de Pago</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                ¿Confirmas que el pago físico por <strong>${request.amount} MXN</strong> ha sido recibido?
+                                <br /><br />
+                                <strong>Se activará automáticamente:</strong>
+                                <br />• ${request.amount >= 20000 ? '12 meses (1 año)' : `${Math.floor(request.amount / 2000)} mes(es)`} de suscripción
+                                <br />• El tiempo se sumará a la expiración actual
+                                <br />• Estado cambiará a "activa" automáticamente
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction 
+                                onClick={() => validatePayment(request.id, request.amount)}
+                                className="bg-green-600 hover:bg-green-700"
+                              >
+                                Confirmar Validación
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                   </div>
                 </div>
               ))}
