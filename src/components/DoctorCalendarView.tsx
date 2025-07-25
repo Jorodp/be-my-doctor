@@ -160,7 +160,7 @@ export function DoctorCalendarView({ doctorId }: DoctorCalendarViewProps) {
                 setSelectedDate(date);
                 setSelectedSlot(null); // Reset selected slot when date changes
               }}
-              className="rounded-lg bg-background shadow-sm w-full"
+              className="rounded-lg bg-background shadow-sm w-full [&_button]:pointer-events-auto"
               modifiers={{
                 available: (date) => hasAvailabilityForDate(date)
               }}
