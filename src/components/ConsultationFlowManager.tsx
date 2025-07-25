@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ConsultationProgress } from '@/components/ConsultationProgress';
-import { ConsultationNotesForm } from '@/components/ConsultationNotesForm';
+import { ConsultationWorkspace } from '@/components/ConsultationWorkspace';
 import {
   Users, 
   Clock, 
@@ -57,6 +57,8 @@ export const ConsultationFlowManager: React.FC<ConsultationFlowManagerProps> = (
   onAppointmentUpdate
 }) => {
   const [loading, setLoading] = useState<string | null>(null);
+  const [consultationWorkspaceOpen, setConsultationWorkspaceOpen] = useState(false);
+  const [activeAppointment, setActiveAppointment] = useState<Appointment | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -253,14 +255,14 @@ export const ConsultationFlowManager: React.FC<ConsultationFlowManagerProps> = (
         if (userRole === 'doctor') {
           return (
             <Button
-              variant="destructive"
+              variant="default"
               size="sm"
-              onClick={() => endConsultation(appointment.id)}
+              onClick={() => openConsultationWorkspace(appointment)}
               disabled={loading === appointment.id}
-              className="gap-2"
+              className="gap-2 bg-green-600 hover:bg-green-700"
             >
-              <Square className="h-4 w-4" />
-              {loading === appointment.id ? 'Finalizando...' : 'Finalizar consulta'}
+              <Stethoscope className="h-4 w-4" />
+              Abrir Consulta
             </Button>
           );
         }
@@ -296,6 +298,11 @@ export const ConsultationFlowManager: React.FC<ConsultationFlowManagerProps> = (
       return `${waitingMinutes}min esperando`;
     }
     return null;
+  };
+
+  const openConsultationWorkspace = (appointment: Appointment) => {
+    setActiveAppointment(appointment);
+    setConsultationWorkspaceOpen(true);
   };
 
   const getTimelineSteps = (appointment: Appointment) => {
@@ -482,13 +489,13 @@ export const ConsultationFlowManager: React.FC<ConsultationFlowManagerProps> = (
                     </CardContent>
                   </Card>
 
-                  {/* Consultation Notes Form - Only show when consultation is in progress and user is doctor */}
+                  {/* Show consultation workspace button for in-progress consultations */}
                   {isInProgress && userRole === 'doctor' && (
-                    <ConsultationNotesForm
-                      appointmentId={appointment.id}
-                      patientName={appointment.patient_profile?.full_name || 'Paciente'}
-                      onSave={onAppointmentUpdate}
-                    />
+                    <div className="text-center">
+                      <p className="text-sm text-muted-foreground mb-2">
+                        La consulta está en progreso. Haz clic en "Abrir Consulta" para gestionar las notas médicas.
+                      </p>
+                    </div>
                   )}
                 </div>
               );
@@ -496,6 +503,20 @@ export const ConsultationFlowManager: React.FC<ConsultationFlowManagerProps> = (
           </div>
         )}
       </CardContent>
+
+      {/* Consultation Workspace Modal */}
+      {activeAppointment && (
+        <ConsultationWorkspace
+          isOpen={consultationWorkspaceOpen}
+          onClose={() => setConsultationWorkspaceOpen(false)}
+          appointment={activeAppointment}
+          onConsultationComplete={() => {
+            setConsultationWorkspaceOpen(false);
+            setActiveAppointment(null);
+            onAppointmentUpdate();
+          }}
+        />
+      )}
     </Card>
   );
 };

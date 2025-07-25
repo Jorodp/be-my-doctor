@@ -42,7 +42,7 @@ import { DoctorChatManager } from '@/components/doctor/DoctorChatManager';
 import { DoctorAppointmentHistory } from '@/components/doctor/DoctorAppointmentHistory';
 import { AppointmentActionsExtended } from '@/components/AppointmentActionsExtended';
 import { ClinicsAndAssistantsManager } from '@/components/ClinicsAndAssistantsManager';
-import { ConsultationNotesForm } from '@/components/ConsultationNotesForm';
+import { ConsultationWorkspace } from '@/components/ConsultationWorkspace';
 
 interface DoctorProfile {
   id: string;
@@ -630,55 +630,16 @@ const DoctorDashboardContent = () => {
           <TabsContent value="notas">
             <Card>
               <CardHeader>
-                <CardTitle>Notas Médicas de Citas</CardTitle>
+                <CardTitle>Notas Médicas</CardTitle>
                 <CardDescription>
-                  Completa las notas médicas para cada cita. Selecciona una cita para agregar diagnóstico, prescripción y recomendaciones.
+                  Las notas médicas se gestionan durante el flujo de consultas activas.
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {todayAppointments.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <FileText className="h-12 w-12 mx-auto mb-4" />
-                    <p>No hay citas para hoy</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {todayAppointments
-                      .filter(apt => apt.status === 'scheduled' || apt.consultation_status === 'in_progress')
-                      .map((appointment) => (
-                        <div key={appointment.id}>
-                          <Card className="mb-4">
-                            <CardHeader className="pb-3">
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                  <User className="h-4 w-4 text-muted-foreground" />
-                                  <div>
-                                    <h3 className="font-medium">
-                                      {appointment.patient_profile?.full_name || 'Paciente'}
-                                    </h3>
-                                    <p className="text-sm text-muted-foreground">
-                                      {formatTime(appointment.starts_at)} - {formatTime(appointment.ends_at)}
-                                    </p>
-                                  </div>
-                                </div>
-                                <Badge variant={appointment.consultation_status === 'in_progress' ? 'default' : 'secondary'}>
-                                  {appointment.consultation_status === 'in_progress' ? 'En consulta' : 'Programada'}
-                                </Badge>
-                              </div>
-                            </CardHeader>
-                          </Card>
-                          
-                          {appointment.consultation_status === 'in_progress' && (
-                            <ConsultationNotesForm
-                              appointmentId={appointment.id}
-                              patientName={appointment.patient_profile?.full_name || 'Paciente'}
-                              onSave={() => fetchAllData()}
-                            />
-                          )}
-                        </div>
-                      ))}
-                  </div>
-                )}
+                <div className="text-center py-8 text-muted-foreground">
+                  <FileText className="h-12 w-12 mx-auto mb-4" />
+                  <p>Ve a la pestaña "Flujo de Consultas" para gestionar notas médicas durante las consultas.</p>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
