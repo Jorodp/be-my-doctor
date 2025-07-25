@@ -226,48 +226,38 @@ export function DoctorCalendarView({ doctorId }: DoctorCalendarViewProps) {
               </div>
 
               <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
-                {slots.length > 0 ? (
+                {slots.filter(slot => slot.available).length > 0 ? (
                   <>
-                    {slots.map((slot, index) => {
+                    {slots.filter(slot => slot.available).map((slot, index) => {
                       const slotId = `${slot.clinic_id}-${slot.start_time}-${slot.end_time}`;
                       const isSelected = selectedSlot === slot.start_time && selectedClinic === slot.clinic_id;
-                      const isBooked = !slot.available;
                       
                       return (
                         <div
                           key={slotId}
                           className={`group flex items-center justify-between p-4 rounded-xl border-2 transition-all duration-200 cursor-pointer ${
-                            isBooked 
-                              ? 'bg-muted/30 border-muted cursor-not-allowed opacity-60' 
-                              : isSelected
+                            isSelected
                               ? 'bg-primary/10 border-primary shadow-md'
                               : 'bg-gradient-to-r from-background to-primary/5 border-primary/20 hover:border-primary/40 hover:shadow-sm'
                           }`}
-                          onClick={() => !isBooked && handleSlotSelect(slot.start_time, slot.clinic_id)}
+                          onClick={() => handleSlotSelect(slot.start_time, slot.clinic_id)}
                         >
                           <div className="flex items-center gap-4">
                             <div className={`w-3 h-3 rounded-full ${
-                              isBooked ? 'bg-muted-foreground' : isSelected ? 'bg-primary' : 'bg-primary/60'
+                              isSelected ? 'bg-primary' : 'bg-primary/60'
                             }`}></div>
                             <div className="flex flex-col gap-1">
                               <div className="flex items-center gap-3">
                                 <Badge 
-                                  variant={isBooked ? "secondary" : isSelected ? "default" : "outline"} 
+                                  variant={isSelected ? "default" : "outline"} 
                                   className={`text-base px-3 py-1 ${
-                                    isBooked 
-                                      ? "text-muted-foreground bg-muted" 
-                                      : isSelected 
+                                    isSelected 
                                       ? "bg-primary text-primary-foreground shadow-sm"
                                       : "border-primary/40 text-primary font-medium"
                                   }`}
                                 >
                                   {formatTime(slot.start_time)} - {formatTime(slot.end_time)}
                                 </Badge>
-                                {isBooked && (
-                                  <Badge variant="destructive" className="text-xs">
-                                    No disponible
-                                  </Badge>
-                                )}
                               </div>
                               {selectedClinic === 'all' && (
                                 <div className="text-sm text-muted-foreground flex items-center gap-2">
@@ -284,7 +274,6 @@ export function DoctorCalendarView({ doctorId }: DoctorCalendarViewProps) {
                               isSelected ? 'shadow-md' : ''
                             }`}
                             variant={isSelected ? "default" : "outline"}
-                            disabled={isBooked}
                             onClick={(e) => {
                               e.stopPropagation();
                               handleSlotSelect(slot.start_time, slot.clinic_id);
