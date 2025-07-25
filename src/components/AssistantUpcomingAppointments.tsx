@@ -24,6 +24,7 @@ import {
   MapPin
 } from 'lucide-react';
 import { PatientIdDocument } from './PatientIdDocument';
+import { useSignedUrl } from '@/hooks/useSignedUrl';
 
 interface Appointment {
   id: string;
@@ -204,6 +205,51 @@ export function AssistantUpcomingAppointments({ doctorId }: AssistantUpcomingApp
     return patient?.profile_image_url && patient?.id_document_url;
   };
 
+  // Componente para mostrar la foto de perfil del paciente
+  const ProfileImageViewer = ({ profileImageUrl, patientName }: { profileImageUrl?: string; patientName?: string }) => {
+    const { signedUrl, loading, error } = useSignedUrl('patient-profiles', profileImageUrl);
+    
+    return (
+      <div className="space-y-2">
+        <h4 className="font-medium text-sm">Foto de Perfil</h4>
+        <div className="border rounded-lg p-2 h-32 flex items-center justify-center bg-muted/30">
+          {loading ? (
+            <div className="animate-spin rounded-full h-6 w-6 border-2 border-primary border-t-transparent"></div>
+          ) : error ? (
+            <div className="text-center">
+              <ImageIcon className="h-8 w-8 text-muted-foreground mx-auto mb-1" />
+              <p className="text-xs text-destructive">Error al cargar</p>
+            </div>
+          ) : signedUrl ? (
+            <img 
+              src={signedUrl}
+              alt={`Foto de perfil de ${patientName || 'paciente'}`}
+              className="max-h-full max-w-full object-cover rounded shadow-sm"
+              onError={(e) => {
+                console.error('Error loading profile image:', e);
+                e.currentTarget.style.display = 'none';
+                e.currentTarget.nextElementSibling?.classList.remove('hidden');
+              }}
+            />
+          ) : (
+            <div className="text-center">
+              <ImageIcon className="h-8 w-8 text-muted-foreground mx-auto mb-1" />
+              <p className="text-xs text-muted-foreground">Sin foto</p>
+            </div>
+          )}
+          
+          {/* Fallback icon (initially hidden) */}
+          {signedUrl && (
+            <div className="hidden text-center">
+              <ImageIcon className="h-8 w-8 text-muted-foreground mx-auto mb-1" />
+              <p className="text-xs text-destructive">Error al cargar imagen</p>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   if (loading) {
     return (
       <Card>
@@ -350,20 +396,10 @@ export function AssistantUpcomingAppointments({ doctorId }: AssistantUpcomingApp
                               </div>
 
                               <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                  <h4 className="font-medium text-sm">Foto de Perfil</h4>
-                                  <div className="border rounded p-2 h-32 flex items-center justify-center">
-                                    {selectedPatient.patient_profile?.profile_image_url ? (
-                                      <img 
-                                        src={selectedPatient.patient_profile.profile_image_url}
-                                        alt="Foto de perfil"
-                                        className="max-h-full max-w-full object-cover rounded"
-                                      />
-                                    ) : (
-                                      <ImageIcon className="h-8 w-8 text-muted-foreground" />
-                                    )}
-                                  </div>
-                                </div>
+                              <ProfileImageViewer 
+                                profileImageUrl={selectedPatient.patient_profile?.profile_image_url}
+                                patientName={selectedPatient.patient_profile?.full_name}
+                              />
 
                                 <PatientIdDocument 
                                   idDocumentUrl={selectedPatient.patient_profile?.id_document_url}
