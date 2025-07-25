@@ -338,14 +338,17 @@ export const ConsultationFlowManager: React.FC<ConsultationFlowManagerProps> = (
     ];
   };
 
-  // Sort appointments by consultation flow priority
-  const sortedAppointments = [...appointments].sort((a, b) => {
+  // Filter and sort appointments - exclude cancelled and completed appointments from flow
+  const filteredAppointments = appointments.filter(appointment => 
+    appointment.status !== 'cancelled' && 
+    appointment.consultation_status !== 'completed'
+  );
+
+  const sortedAppointments = [...filteredAppointments].sort((a, b) => {
     const statusPriority = {
       'in_progress': 0,
       'waiting': 1,
-      'scheduled': 2,
-      'completed': 3,
-      'cancelled': 4
+      'scheduled': 2
     };
 
     const aPriority = statusPriority[a.consultation_status as keyof typeof statusPriority] ?? 5;
