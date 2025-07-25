@@ -298,36 +298,55 @@ export function DoctorCalendarView({ doctorId }: DoctorCalendarViewProps) {
                     
                     {/* Book Appointment Button */}
                     {selectedSlot && selectedClinic && selectedClinic !== 'all' && (
-                      <div className="pt-6 border-t-2 border-primary/20">
-                        <div className="mb-4 p-4 bg-gradient-to-r from-primary/10 to-primary/5 rounded-xl border border-primary/30">
-                          <div className="flex items-center gap-2 text-sm font-medium text-foreground mb-2">
-                            <div className="w-2 h-2 bg-primary rounded-full"></div>
-                            <span>Resumen de tu cita:</span>
+                      <div className="mt-8 p-6 bg-gradient-to-br from-background to-primary/5 rounded-2xl border-2 border-primary/20 shadow-soft">
+                        {/* Appointment Summary */}
+                        <div className="mb-6 space-y-3">
+                          <div className="flex items-center gap-2 text-base font-semibold text-foreground">
+                            <div className="w-3 h-3 bg-primary rounded-full animate-pulse"></div>
+                            <span>Resumen de tu cita</span>
                           </div>
-                          <div className="text-sm text-muted-foreground ml-4 space-y-1">
-                            <div>Fecha: {format(selectedDate, "EEEE d 'de' MMMM 'de' yyyy", { locale: es })}</div>
-                            <div>Hora: {formatTime(selectedSlot)}</div>
-                            <div>Lugar: {clinics.find(c => c.id === selectedClinic)?.name}</div>
+                          <div className="bg-background/60 backdrop-blur-sm p-4 rounded-xl border border-primary/10 space-y-2">
+                            <div className="flex items-center gap-3 text-sm text-foreground">
+                              <CalendarIcon className="w-4 h-4 text-primary" />
+                              <span className="font-medium">Fecha:</span>
+                              <span>{format(selectedDate, "EEEE d 'de' MMMM 'de' yyyy", { locale: es })}</span>
+                            </div>
+                            <div className="flex items-center gap-3 text-sm text-foreground">
+                              <Clock className="w-4 h-4 text-primary" />
+                              <span className="font-medium">Hora:</span>
+                              <span>{formatTime(selectedSlot)}</span>
+                            </div>
+                            <div className="flex items-center gap-3 text-sm text-foreground">
+                              <div className="w-4 h-4 bg-primary rounded-full flex-shrink-0"></div>
+                              <span className="font-medium">Lugar:</span>
+                              <span>{clinics.find(c => c.id === selectedClinic)?.name}</span>
+                            </div>
                           </div>
                         </div>
-                        <Button 
-                          onClick={handleBookAppointment}
-                          disabled={!selectedSlot || bookAppointment.isPending}
-                          className="w-full h-12 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
-                          size="lg"
-                        >
-                          {bookAppointment.isPending ? (
-                            <div className="flex items-center gap-2">
-                              <LoadingSpinner size="sm" />
-                              <span>Agendando...</span>
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-2">
-                              <Calendar className="w-5 h-5" />
-                              <span>Confirmar Cita</span>
-                            </div>
-                          )}
-                        </Button>
+
+                        {/* Confirmation Button */}
+                        <div className="relative z-10">
+                          <Button 
+                            onClick={handleBookAppointment}
+                            disabled={!selectedSlot || bookAppointment.isPending}
+                            className="w-full h-14 text-lg font-bold bg-gradient-to-r from-primary to-primary-dark hover:from-primary-dark hover:to-primary text-primary-foreground rounded-xl border-0 shadow-medium hover:shadow-lg transform hover:scale-[1.02] transition-all duration-300"
+                            size="lg"
+                          >
+                            {bookAppointment.isPending ? (
+                              <div className="flex items-center gap-3">
+                                <LoadingSpinner size="sm" />
+                                <span>Agendando cita...</span>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-3">
+                                <div className="w-6 h-6 bg-primary-foreground/20 rounded-full flex items-center justify-center">
+                                  <CalendarIcon className="w-4 h-4" />
+                                </div>
+                                <span>Confirmar Cita Médica</span>
+                              </div>
+                            )}
+                          </Button>
+                        </div>
                       </div>
                     )}
 
