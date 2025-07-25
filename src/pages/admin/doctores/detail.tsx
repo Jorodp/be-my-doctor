@@ -272,83 +272,19 @@ export default function AdminDoctorDetailPage() {
         </TabsContent>
 
         <TabsContent value="subscription" className="mt-6">
-          <div className="space-y-6">
-            {/* Estado y Configuración */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <CreditCard className="w-5 h-5" />
-                  Estado y Configuración
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Estado de verificación</label>
-                    <select 
-                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                      value={doctorProfile.verification_status}
-                      onChange={async (e) => {
-                        try {
-                          await supabase
-                            .from('doctor_profiles')
-                            .update({ verification_status: e.target.value })
-                            .eq('user_id', id);
-                          loadDoctorData();
-                          toast({ title: 'Estado actualizado', description: 'El estado de verificación se actualizó correctamente' });
-                        } catch (error) {
-                          toast({ title: 'Error', description: 'No se pudo actualizar el estado', variant: 'destructive' });
-                        }
-                      }}
-                    >
-                      <option value="pending">Pendiente</option>
-                      <option value="verified">Verificado</option>
-                      <option value="rejected">Rechazado</option>
-                    </select>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Estado de suscripción</label>
-                    <select 
-                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                      value={doctorProfile.subscription_status}
-                      onChange={async (e) => {
-                        try {
-                          await supabase
-                            .from('doctor_profiles')
-                            .update({ subscription_status: e.target.value })
-                            .eq('user_id', id);
-                          loadDoctorData();
-                          toast({ title: 'Estado actualizado', description: 'El estado de suscripción se actualizó correctamente' });
-                        } catch (error) {
-                          toast({ title: 'Error', description: 'No se pudo actualizar el estado', variant: 'destructive' });
-                        }
-                      }}
-                    >
-                      <option value="active">Activa</option>
-                      <option value="inactive">Inactiva</option>
-                      <option value="paused">Pausada</option>
-                      <option value="expired">Expirada</option>
-                    </select>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Gestión de Suscripción */}
-            <SubscriptionManager
-              doctor={{
-                doctor_user_id: id,
-                full_name: userProfile.full_name || '',
-                specialty: doctorProfile.specialty,
-                verification_status: doctorProfile.verification_status,
-                subscription_status: doctorProfile.subscription_status,
-                profile_complete: true
-              }}
-              doctorProfile={doctorProfile}
-              subscriptionHistory={[]}
-              onSubscriptionUpdate={loadDoctorData}
-            />
-          </div>
+          <SubscriptionManager
+            doctor={{
+              doctor_user_id: id,
+              full_name: userProfile.full_name || '',
+              specialty: doctorProfile.specialty,
+              verification_status: doctorProfile.verification_status,
+              subscription_status: doctorProfile.subscription_status,
+              profile_complete: true
+            }}
+            doctorProfile={doctorProfile}
+            subscriptionHistory={[]}
+            onSubscriptionUpdate={loadDoctorData}
+          />
         </TabsContent>
 
         <TabsContent value="settings" className="mt-6">

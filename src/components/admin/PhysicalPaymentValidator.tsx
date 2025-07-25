@@ -105,10 +105,25 @@ export const PhysicalPaymentValidator = ({
 
       if (requestError) throw requestError;
 
-      // 2. Actualizar el estado de suscripción del doctor
-      const expirationDate = subscriptionType === 'annual' 
-        ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) // 1 año
-        : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);  // 30 días
+      // 2. Actualizar el estado de suscripción del doctor, extendiendo desde la fecha actual de expiración
+      const { data: currentProfile, error: fetchError } = await supabase
+        .from('doctor_profiles')
+        .select('subscription_expires_at')
+        .eq('user_id', doctorUserId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Usar la fecha de expiración actual como base, o la fecha actual si no hay expiración
+      const baseDate = currentProfile?.subscription_expires_at 
+        ? new Date(currentProfile.subscription_expires_at)
+        : new Date();
+
+      const extensionTime = subscriptionType === 'annual' 
+        ? 365 * 24 * 60 * 60 * 1000 // 1 año
+        : 30 * 24 * 60 * 60 * 1000;  // 30 días
+
+      const expirationDate = new Date(baseDate.getTime() + extensionTime);
 
       const { error: profileError } = await supabase
         .from('doctor_profiles')

@@ -408,7 +408,7 @@ export const UnifiedDoctorProfile = ({
               doctor={doctor}
               doctorProfile={data.doctorProfile}
               subscriptionHistory={data.subscriptionHistory}
-              onSubscriptionUpdate={handleSubscriptionUpdate}
+              onSubscriptionUpdate={() => fetchDoctorData()}
             />
           </TabsContent>
 

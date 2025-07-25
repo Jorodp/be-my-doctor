@@ -16,11 +16,15 @@ import {
   Clock,
   CheckCircle,
   XCircle,
-  AlertCircle
+  AlertCircle,
+  Plus,
+  Settings
 } from 'lucide-react';
 import { format, addDays, addMonths, addYears } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { PhysicalPaymentValidator } from './PhysicalPaymentValidator';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface Doctor {
   doctor_user_id: string;
@@ -35,6 +39,7 @@ interface DoctorProfile {
   id: string;
   user_id: string;
   subscription_status: string;
+  verification_status?: string;
   subscription_expires_at?: string;
   grace_ends_at?: string;
 }
@@ -51,7 +56,7 @@ interface SubscriptionManagerProps {
   doctor: Doctor;
   doctorProfile: DoctorProfile;
   subscriptionHistory: SubscriptionHistory[];
-  onSubscriptionUpdate: (status: string, expiresAt?: string) => Promise<void>;
+  onSubscriptionUpdate: () => void;
 }
 
 export const SubscriptionManager = ({
@@ -60,8 +65,10 @@ export const SubscriptionManager = ({
   subscriptionHistory,
   onSubscriptionUpdate
 }: SubscriptionManagerProps) => {
+  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [newStatus, setNewStatus] = useState(doctorProfile.subscription_status);
+  const [verificationStatus, setVerificationStatus] = useState(doctorProfile.verification_status || doctor.verification_status || 'pending');
   const [durationType, setDurationType] = useState('months');
   const [durationValue, setDurationValue] = useState('1');
 
@@ -100,19 +107,21 @@ export const SubscriptionManager = ({
     }
   };
 
-  const calculateNewExpirationDate = () => {
-    const now = new Date();
+  const calculateNewExpirationDate = (fromExisting: boolean = false) => {
+    const baseDate = fromExisting && doctorProfile.subscription_expires_at 
+      ? new Date(doctorProfile.subscription_expires_at)
+      : new Date();
     const value = parseInt(durationValue);
     
     switch (durationType) {
       case 'days':
-        return addDays(now, value);
+        return addDays(baseDate, value);
       case 'months':
-        return addMonths(now, value);
+        return addMonths(baseDate, value);
       case 'years':
-        return addYears(now, value);
+        return addYears(baseDate, value);
       default:
-        return addMonths(now, 1);
+        return addMonths(baseDate, 1);
     }
   };
 
@@ -125,9 +134,66 @@ export const SubscriptionManager = ({
         expiresAt = calculateNewExpirationDate().toISOString();
       }
       
-      await onSubscriptionUpdate(newStatus, expiresAt);
+      // Actualizar doctor_profiles
+      const { error } = await supabase
+        .from('doctor_profiles')
+        .update({
+          subscription_status: newStatus,
+          verification_status: verificationStatus,
+          subscription_expires_at: expiresAt,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', doctor.doctor_user_id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Actualización exitosa',
+        description: 'Los estados del doctor se actualizaron correctamente'
+      });
+
+      onSubscriptionUpdate();
     } catch (error) {
       console.error('Error updating subscription:', error);
+      toast({
+        title: 'Error',
+        description: 'No se pudo actualizar la información',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const extendSubscription = async () => {
+    setLoading(true);
+    try {
+      const newExpirationDate = calculateNewExpirationDate(true);
+      
+      const { error } = await supabase
+        .from('doctor_profiles')
+        .update({
+          subscription_status: 'active',
+          subscription_expires_at: newExpirationDate.toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', doctor.doctor_user_id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Suscripción extendida',
+        description: `Se agregó ${durationValue} ${durationType === 'days' ? 'días' : durationType === 'months' ? 'meses' : 'años'} a la suscripción`
+      });
+
+      onSubscriptionUpdate();
+    } catch (error) {
+      console.error('Error extending subscription:', error);
+      toast({
+        title: 'Error',
+        description: 'No se pudo extender la suscripción',
+        variant: 'destructive'
+      });
     } finally {
       setLoading(false);
     }
@@ -198,7 +264,7 @@ export const SubscriptionManager = ({
 
   const handlePaymentValidated = async () => {
     // Refresh subscription data after payment validation
-    await onSubscriptionUpdate(doctorProfile.subscription_status);
+    onSubscriptionUpdate();
   };
 
   return (
@@ -208,6 +274,54 @@ export const SubscriptionManager = ({
         doctorUserId={doctor.doctor_user_id}
         onPaymentValidated={handlePaymentValidated}
       />
+
+      {/* Estado y Configuración Rápida */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Settings className="w-5 h-5" />
+            Estado y Configuración
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Estado de verificación</Label>
+              <Select value={verificationStatus} onValueChange={setVerificationStatus}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending">Pendiente</SelectItem>
+                  <SelectItem value="verified">Verificado</SelectItem>
+                  <SelectItem value="rejected">Rechazado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Estado de suscripción</Label>
+              <Select value={newStatus} onValueChange={setNewStatus}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Activa</SelectItem>
+                  <SelectItem value="inactive">Inactiva</SelectItem>
+                  <SelectItem value="paused">Pausada</SelectItem>
+                  <SelectItem value="expired">Expirada</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <Button 
+            onClick={handleStatusUpdate}
+            disabled={loading}
+            className="w-full"
+          >
+            {loading ? 'Actualizando...' : 'Aplicar Cambios'}
+          </Button>
+        </CardContent>
+      </Card>
 
       {/* Current Status Overview */}
       <Card>
@@ -267,124 +381,83 @@ export const SubscriptionManager = ({
         </CardContent>
       </Card>
 
-      {/* Quick Actions */}
+      {/* Extender Suscripción */}
       <Card>
         <CardHeader>
-          <CardTitle>Acciones Rápidas</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {getQuickActions().map((action, index) => (
-              <AlertDialog key={index}>
-                <AlertDialogTrigger asChild>
-                  <Button 
-                    variant={action.variant}
-                    className="justify-start h-auto p-4"
-                    disabled={loading}
-                  >
-                    <action.icon className="w-4 h-4 mr-2" />
-                    <div className="text-left">
-                      <div className="font-medium">{action.label}</div>
-                      <div className="text-xs opacity-70">{action.description}</div>
-                    </div>
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Confirmar Acción</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      ¿Estás seguro de que quieres {action.label.toLowerCase()} para Dr. {doctor.full_name}?
-                      {action.status === 'active' && ' Se establecerá una nueva fecha de expiración.'}
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                    <AlertDialogAction 
-                      onClick={() => {
-                        setNewStatus(action.status);
-                        handleStatusUpdate();
-                      }}
-                    >
-                      Confirmar
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Manual Status Change */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Gestión Manual de Suscripción</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Plus className="w-5 h-5" />
+            Extender Suscripción
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Agrega tiempo a la fecha de expiración actual. Si no hay fecha de expiración, se calcula desde ahora.
+          </p>
+          
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <Label htmlFor="status">Nuevo Estado</Label>
-              <Select value={newStatus} onValueChange={setNewStatus}>
+              <Label htmlFor="extend-duration-value">Cantidad</Label>
+              <Input
+                id="extend-duration-value"
+                type="number"
+                min="1"
+                value={durationValue}
+                onChange={(e) => setDurationValue(e.target.value)}
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="extend-duration-type">Tipo</Label>
+              <Select value={durationType} onValueChange={setDurationType}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar estado" />
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="active">Activa</SelectItem>
-                  <SelectItem value="inactive">Inactiva</SelectItem>
-                  <SelectItem value="expired">Expirada</SelectItem>
-                  <SelectItem value="grace">Período de Gracia</SelectItem>
+                  <SelectItem value="days">Días</SelectItem>
+                  <SelectItem value="months">Meses</SelectItem>
+                  <SelectItem value="years">Años</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            {newStatus === 'active' && (
-              <>
-                <div>
-                  <Label htmlFor="duration-value">Duración</Label>
-                  <Input
-                    id="duration-value"
-                    type="number"
-                    min="1"
-                    value={durationValue}
-                    onChange={(e) => setDurationValue(e.target.value)}
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="duration-type">Tipo</Label>
-                  <Select value={durationType} onValueChange={setDurationType}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="days">Días</SelectItem>
-                      <SelectItem value="months">Meses</SelectItem>
-                      <SelectItem value="years">Años</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </>
-            )}
+            <div className="flex items-end">
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button className="w-full" disabled={loading}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Extender
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Extender Suscripción</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      ¿Confirmas que quieres agregar {durationValue} {durationType === 'days' ? 'días' : durationType === 'months' ? 'meses' : 'años'} a la suscripción de Dr. {doctor.full_name}?
+                      <br /><br />
+                      <strong>Nueva fecha de expiración:</strong> {' '}
+                      {format(calculateNewExpirationDate(true), 'dd/MM/yyyy HH:mm', { locale: es })}
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={extendSubscription}>
+                      Confirmar Extensión
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
           </div>
 
-          {newStatus === 'active' && (
-            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm text-blue-800">
-                <strong>Nueva fecha de expiración:</strong> {' '}
-                {format(calculateNewExpirationDate(), 'dd/MM/yyyy HH:mm', { locale: es })}
-              </p>
-            </div>
-          )}
-
-          <Button 
-            onClick={handleStatusUpdate}
-            disabled={loading || newStatus === doctorProfile.subscription_status}
-            className="w-full"
-          >
-            {loading ? 'Actualizando...' : 'Actualizar Suscripción'}
-          </Button>
+          <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm text-blue-800">
+              <strong>Nueva fecha de expiración:</strong> {' '}
+              {format(calculateNewExpirationDate(true), 'dd/MM/yyyy HH:mm', { locale: es })}
+            </p>
+          </div>
         </CardContent>
       </Card>
+
 
       {/* Subscription History */}
       <Card>
