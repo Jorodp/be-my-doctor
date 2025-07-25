@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, MapPin, Trash2, Star, Building2, Users } from 'lucide-react';
+import { Plus, MapPin, Trash2, Star, Building2, Users, Clock, Mail } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 interface Clinic {
@@ -47,6 +47,8 @@ export function DoctorClinicsManager({ doctorUserId, onClinicsChange }: DoctorCl
   const [saving, setSaving] = useState(false);
   const [editingClinic, setEditingClinic] = useState<Clinic | null>(null);
   const [isAddingNew, setIsAddingNew] = useState(false);
+  const [assistantEmail, setAssistantEmail] = useState('');
+  const [assigningAssistant, setAssigningAssistant] = useState(false);
   const { toast } = useToast();
 
   const [formData, setFormData] = useState({
@@ -163,6 +165,7 @@ export function DoctorClinicsManager({ doctorUserId, onClinicsChange }: DoctorCl
     });
     setEditingClinic(null);
     setIsAddingNew(false);
+    setAssistantEmail('');
   };
 
   const handleEdit = (clinic: Clinic) => {
@@ -398,6 +401,65 @@ export function DoctorClinicsManager({ doctorUserId, onClinicsChange }: DoctorCl
     }
   };
 
+  const handleAssignAssistantByEmail = async () => {
+    if (!assistantEmail.trim()) {
+      toast({
+        title: 'Error',
+        description: 'Por favor ingresa un email válido',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    if (!editingClinic) {
+      toast({
+        title: 'Error',
+        description: 'Guarda primero la clínica antes de asignar asistentes',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    try {
+      setAssigningAssistant(true);
+
+      const { data, error } = await supabase.functions.invoke('assign-assistant-by-email', {
+        body: { 
+          email: assistantEmail.trim(),
+          doctor_id: doctorUserId,
+          clinic_id: editingClinic.id
+        }
+      });
+
+      if (error) {
+        console.error('Edge function error:', error);
+        throw new Error(error.message || 'Error de conexión con el servidor');
+      }
+
+      if (!data || data.error) {
+        throw new Error(data?.error || 'Error desconocido del servidor');
+      }
+
+      toast({
+        title: 'Éxito',
+        description: 'Asistente asignado correctamente a la clínica'
+      });
+
+      setAssistantEmail('');
+      await loadClinicAssistants();
+
+    } catch (error) {
+      console.error('Error assigning assistant:', error);
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'No se pudo asignar el asistente',
+        variant: 'destructive'
+      });
+    } finally {
+      setAssigningAssistant(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-32">
@@ -562,42 +624,38 @@ export function DoctorClinicsManager({ doctorUserId, onClinicsChange }: DoctorCl
             </div>
             
             {/* Sección de asistentes */}
-            <div className="space-y-2 mt-4">
-              <Label>Asistentes del consultorio</Label>
-              <div className="space-y-2 max-h-40 overflow-y-auto border rounded p-2">
-                {assistants.map((assistant) => (
-                  <div key={assistant.id} className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id={assistant.id}
-                      checked={formData.selectedAssistants.includes(assistant.id)}
-                      onChange={(e) => {
-                        const assistantId = assistant.id;
-                        if (e.target.checked) {
-                          setFormData(prev => ({
-                            ...prev,
-                            selectedAssistants: [...prev.selectedAssistants, assistantId]
-                          }));
-                        } else {
-                          setFormData(prev => ({
-                            ...prev,
-                            selectedAssistants: prev.selectedAssistants.filter(id => id !== assistantId)
-                          }));
-                        }
-                      }}
-                      className="rounded border-gray-300"
-                    />
-                    <label htmlFor={assistant.id} className="text-sm">
-                      {assistant.full_name}
-                    </label>
-                  </div>
-                ))}
-                {assistants.length === 0 && (
-                  <p className="text-sm text-muted-foreground">
-                    No hay asistentes disponibles
-                  </p>
-                )}
+            <div className="space-y-3 mt-4">
+              <Label>Asignar Asistente por Email</Label>
+              <div className="flex gap-2">
+                <Input
+                  type="email"
+                  placeholder="email@ejemplo.com"
+                  value={assistantEmail}
+                  onChange={(e) => setAssistantEmail(e.target.value)}
+                  className="flex-1"
+                />
+                <Button 
+                  type="button"
+                  onClick={handleAssignAssistantByEmail}
+                  disabled={!assistantEmail.trim() || assigningAssistant}
+                  size="sm"
+                >
+                  {assigningAssistant ? (
+                    <>
+                      <Clock className="h-4 w-4 mr-2 animate-spin" />
+                      Asignando...
+                    </>
+                  ) : (
+                    <>
+                      <Mail className="h-4 w-4 mr-2" />
+                      Asignar
+                    </>
+                  )}
+                </Button>
               </div>
+              <p className="text-xs text-muted-foreground">
+                Si el usuario no tiene cuenta, se creará automáticamente como asistente.
+              </p>
             </div>
 
             <div className="flex gap-2 mt-4">
