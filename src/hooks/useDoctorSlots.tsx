@@ -49,7 +49,9 @@ export function useDoctorSlots(doctorUserId: string, selectedDate: Date | undefi
     queryFn: async (): Promise<DoctorSlot[]> => {
       if (!selectedDate) return [];
 
-      const dayOfWeek = selectedDate.getDay();
+      // Convertir de JavaScript weekday (0=domingo, 6=sábado) a formato interno (0=lunes, 6=domingo)
+      const jsDay = selectedDate.getDay();
+      const internalWeekday = jsDay === 0 ? 6 : jsDay - 1;
       
       // First, get doctor's profile to get internal ID
       const { data: doctorProfile, error: profileError } = await supabase
@@ -86,7 +88,7 @@ export function useDoctorSlots(doctorUserId: string, selectedDate: Date | undefi
           .from('availabilities')
           .select('start_time, end_time, slot_duration_minutes')
           .eq('clinic_id', clinic.id)
-          .eq('weekday', dayOfWeek)
+          .eq('weekday', internalWeekday)
           .eq('is_active', true);
 
         if (availError) throw availError;

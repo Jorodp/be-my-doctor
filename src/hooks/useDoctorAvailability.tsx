@@ -39,11 +39,13 @@ export function useDoctorAvailability(doctorUserId: string) {
 
       if (availError) throw availError;
 
-      // Create a map of weekdays that have availability
-      const availabilityMap: { [key: number]: boolean } = {};
-      availabilities?.forEach(avail => {
-        availabilityMap[avail.weekday] = true;
-      });
+  // Create a map of weekdays that have availability (JavaScript format: 0=domingo, 6=sábado)
+  const availabilityMap: { [key: number]: boolean } = {};
+  availabilities?.forEach(avail => {
+    // Convertir de formato interno (0=lunes, 6=domingo) a JavaScript (0=domingo, 6=sábado)
+    const jsWeekday = avail.weekday === 6 ? 0 : avail.weekday + 1;
+    availabilityMap[jsWeekday] = true;
+  });
 
       return availabilityMap;
     },

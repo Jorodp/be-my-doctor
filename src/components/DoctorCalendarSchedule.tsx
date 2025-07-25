@@ -33,6 +33,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useDoctorClinics, DoctorClinic } from '@/hooks/useDoctorClinics';
+import { useDoctorAvailability } from '@/hooks/useDoctorAvailability';
 
 interface Availability {
   id: string;
@@ -66,6 +67,9 @@ export const DoctorCalendarSchedule = ({ doctorId }: DoctorCalendarScheduleProps
   
   // Obtener clínicas del doctor
   const { data: clinics = [], isLoading: clinicsLoading } = useDoctorClinics(doctorId);
+  
+  // Usar el mismo hook que el perfil público para consistencia
+  const { data: globalAvailabilityMap = {} } = useDoctorAvailability(doctorId);
 
   useEffect(() => {
     if (clinics.length > 0 && !selectedClinic) {
@@ -254,13 +258,9 @@ export const DoctorCalendarSchedule = ({ doctorId }: DoctorCalendarScheduleProps
   };
 
   const hasAvailability = (date: Date) => {
-    // Verificar disponibilidad en TODAS las clínicas del doctor, no solo la seleccionada
-    const jsDay = date.getDay();
-    const weekday = jsDay === 0 ? 6 : jsDay - 1;
-    
-    return availability.some(slot => 
-      slot.weekday === weekday && slot.is_active
-    );
+    // Verificar disponibilidad global usando el mismo hook que el perfil público
+    const dayOfWeek = date.getDay();
+    return globalAvailabilityMap[dayOfWeek] || false;
   };
 
   const getSelectedDateSlots = () => {

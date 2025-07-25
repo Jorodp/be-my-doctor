@@ -30,6 +30,7 @@ export function DoctorCalendarView({ doctorId }: DoctorCalendarViewProps) {
   const bookAppointment = useBookAppointment();
 
   const hasAvailabilityForDate = (date: Date) => {
+    // Usar formato JavaScript estándar (0=domingo, 6=sábado)
     const dayOfWeek = date.getDay();
     return availabilityMap[dayOfWeek] || false;
   };
