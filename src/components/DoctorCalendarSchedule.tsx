@@ -79,6 +79,13 @@ export const DoctorCalendarSchedule = ({ doctorId }: DoctorCalendarScheduleProps
     }
   }, [selectedClinic]);
 
+  // Cargar disponibilidad de TODAS las clínicas para mostrar correctamente los días disponibles
+  useEffect(() => {
+    if (clinics.length > 0) {
+      fetchAllClinicsAvailability();
+    }
+  }, [clinics]);
+
   const fetchAvailability = async () => {
     if (!selectedClinic) return;
     
@@ -104,6 +111,26 @@ export const DoctorCalendarSchedule = ({ doctorId }: DoctorCalendarScheduleProps
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAllClinicsAvailability = async () => {
+    try {
+      const clinicIds = clinics.map(c => c.id);
+      
+      const { data, error } = await supabase
+        .from('availabilities')
+        .select('*')
+        .in('clinic_id', clinicIds)
+        .eq('is_active', true)
+        .order('weekday')
+        .order('start_time');
+
+      if (error) throw error;
+
+      setAvailability(data || []);
+    } catch (error) {
+      console.error('Error fetching all clinics availability:', error);
     }
   };
 
@@ -227,7 +254,13 @@ export const DoctorCalendarSchedule = ({ doctorId }: DoctorCalendarScheduleProps
   };
 
   const hasAvailability = (date: Date) => {
-    return getDateAvailability(date).length > 0;
+    // Verificar disponibilidad en TODAS las clínicas del doctor, no solo la seleccionada
+    const jsDay = date.getDay();
+    const weekday = jsDay === 0 ? 6 : jsDay - 1;
+    
+    return availability.some(slot => 
+      slot.weekday === weekday && slot.is_active
+    );
   };
 
   const getSelectedDateSlots = () => {
