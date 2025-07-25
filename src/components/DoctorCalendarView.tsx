@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Calendar } from "@/components/ui/calendar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,9 +8,11 @@ import { format, startOfDay, isSameDay, isToday } from "date-fns";
 import { es } from "date-fns/locale";
 import { useDoctorSlots, useBookAppointment } from "@/hooks/useDoctorSlots";
 import { useDoctorClinics } from "@/hooks/useDoctorClinics";
+import { useDoctorAvailability } from "@/hooks/useDoctorAvailability";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { supabase } from "@/integrations/supabase/client";
 
 interface DoctorCalendarViewProps {
   doctorId?: string;
@@ -24,13 +26,12 @@ export function DoctorCalendarView({ doctorId }: DoctorCalendarViewProps) {
 
   const { data: clinics = [], isLoading: clinicsLoading } = useDoctorClinics(doctorId || '');
   const { data: slots = [], isLoading, error } = useDoctorSlots(doctorId || '', selectedDate, selectedClinic === 'all' ? undefined : selectedClinic);
+  const { data: availabilityMap = {} } = useDoctorAvailability(doctorId || '');
   const bookAppointment = useBookAppointment();
 
   const hasAvailabilityForDate = (date: Date) => {
     const dayOfWeek = date.getDay();
-    // Simulamos disponibilidad basada en los datos que ya tienes
-    // Esto se puede mejorar con una query más eficiente
-    return dayOfWeek >= 1 && dayOfWeek <= 5; // Lun-Vie por ahora
+    return availabilityMap[dayOfWeek] || false;
   };
 
   const formatTime = (time: string) => {
@@ -161,8 +162,7 @@ export function DoctorCalendarView({ doctorId }: DoctorCalendarViewProps) {
               }}
               className="rounded-lg bg-background shadow-sm w-full"
               modifiers={{
-                available: (date) => hasAvailabilityForDate(date),
-                today: (date) => isToday(date)
+                available: (date) => hasAvailabilityForDate(date)
               }}
               modifiersStyles={{
                 available: {
@@ -170,14 +170,10 @@ export function DoctorCalendarView({ doctorId }: DoctorCalendarViewProps) {
                   color: 'hsl(var(--primary-foreground))',
                   borderRadius: '8px',
                   fontWeight: '600'
-                },
-                today: {
-                  backgroundColor: 'hsl(var(--accent))',
-                  color: 'hsl(var(--accent-foreground))',
-                  fontWeight: 'bold',
-                  border: '2px solid hsl(var(--primary))',
-                  borderRadius: '8px'
                 }
+              }}
+              classNames={{
+                day_today: "bg-orange-400 text-white border-2 border-orange-600 rounded-lg font-bold"
               }}
               locale={es}
               disabled={(date) => date < startOfDay(new Date())}
@@ -193,7 +189,7 @@ export function DoctorCalendarView({ doctorId }: DoctorCalendarViewProps) {
                 <span>Días con horarios disponibles</span>
               </div>
               <div className="flex items-center gap-3 text-sm">
-                <div className="w-4 h-4 bg-accent border-2 border-primary rounded-lg"></div>
+                <div className="w-4 h-4 bg-orange-400 border-2 border-orange-600 rounded-lg"></div>
                 <span>Hoy</span>
               </div>
             </div>
