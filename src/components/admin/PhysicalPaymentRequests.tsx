@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
@@ -47,6 +49,9 @@ export default function PhysicalPaymentRequests() {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [adminNotes, setAdminNotes] = useState('');
   const [processing, setProcessing] = useState(false);
+  const [showCompletionForm, setShowCompletionForm] = useState(false);
+  const [actualAmount, setActualAmount] = useState<string>('');
+  const [planType, setPlanType] = useState<'monthly' | 'annual'>('monthly');
 
   const statusColors = {
     pending: 'default',
@@ -120,6 +125,7 @@ export default function PhysicalPaymentRequests() {
 
       await fetchRequests();
       setShowDetailModal(false);
+      setShowCompletionForm(false);
     } catch (error: any) {
       console.error('Error updating request:', error);
       toast({
@@ -132,10 +138,83 @@ export default function PhysicalPaymentRequests() {
     }
   };
 
+  const completePayment = async () => {
+    if (!selectedRequest || !actualAmount) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Debes especificar el monto pagado."
+      });
+      return;
+    }
+
+    setProcessing(true);
+    try {
+      // Crear el registro de suscripción manualmente
+      const amount = parseFloat(actualAmount);
+      const expirationDate = new Date();
+      
+      if (planType === 'monthly') {
+        expirationDate.setMonth(expirationDate.getMonth() + 1);
+      } else {
+        expirationDate.setFullYear(expirationDate.getFullYear() + 1);
+      }
+
+      // Insertar en la tabla subscriptions
+      const { error: subscriptionError } = await supabase
+        .from('subscriptions')
+        .insert({
+          user_id: selectedRequest.doctor_user_id,
+          plan: planType,
+          status: 'active',
+          ends_at: expirationDate.toISOString(),
+          amount: amount,
+          payment_method: 'physical',
+          stripe_subscription_id: null,
+          stripe_customer_id: null
+        });
+
+      if (subscriptionError) throw subscriptionError;
+
+      // Actualizar el estado de la solicitud
+      await updateRequestStatus(
+        selectedRequest.id, 
+        'completed', 
+        `Pago completado: $${amount} - Plan ${planType === 'monthly' ? 'mensual' : 'anual'} hasta ${expirationDate.toLocaleDateString()}`
+      );
+
+      toast({
+        title: "Pago procesado",
+        description: `Se ha creado la suscripción ${planType === 'monthly' ? 'mensual' : 'anual'} por $${amount}.`
+      });
+
+      // Limpiar formulario
+      setActualAmount('');
+      setPlanType('monthly');
+      
+    } catch (error: any) {
+      console.error('Error completing payment:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo completar el pago."
+      });
+      setProcessing(false);
+    }
+  };
+
   const openDetailModal = (request: PhysicalPaymentRequest) => {
     setSelectedRequest(request);
     setAdminNotes(request.admin_notes || '');
     setShowDetailModal(true);
+    setShowCompletionForm(false);
+  };
+
+  const startCompletion = (request: PhysicalPaymentRequest) => {
+    setSelectedRequest(request);
+    setActualAmount(request.amount.toString());
+    setPlanType(request.subscription_type as 'monthly' | 'annual');
+    setShowCompletionForm(true);
   };
 
   if (loading) {
@@ -270,7 +349,7 @@ export default function PhysicalPaymentRequests() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => updateRequestStatus(request.id, 'completed')}
+                        onClick={() => startCompletion(request)}
                         disabled={processing}
                         className="text-green-600 hover:text-green-700"
                       >
@@ -285,7 +364,7 @@ export default function PhysicalPaymentRequests() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => updateRequestStatus(request.id, 'completed')}
+                        onClick={() => startCompletion(request)}
                         disabled={processing}
                         className="text-green-600 hover:text-green-700"
                       >
@@ -388,7 +467,7 @@ export default function PhysicalPaymentRequests() {
                       Marcar en proceso
                     </Button>
                     <Button
-                      onClick={() => updateRequestStatus(selectedRequest.id, 'completed', adminNotes)}
+                      onClick={() => startCompletion(selectedRequest)}
                       disabled={processing}
                       className="bg-green-600 hover:bg-green-700"
                     >
@@ -407,7 +486,7 @@ export default function PhysicalPaymentRequests() {
                 {selectedRequest.status === 'in_progress' && (
                   <>
                     <Button
-                      onClick={() => updateRequestStatus(selectedRequest.id, 'completed', adminNotes)}
+                      onClick={() => startCompletion(selectedRequest)}
                       disabled={processing}
                       className="bg-green-600 hover:bg-green-700"
                     >
@@ -422,6 +501,71 @@ export default function PhysicalPaymentRequests() {
                     </Button>
                   </>
                 )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de completar pago */}
+      <Dialog open={showCompletionForm} onOpenChange={setShowCompletionForm}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Completar Pago Físico</DialogTitle>
+            <DialogDescription>
+              Especifica el monto pagado y el plazo de la suscripción
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedRequest && (
+            <div className="space-y-4">
+              <div className="bg-muted p-4 rounded-lg">
+                <h4 className="font-semibold mb-2">{selectedRequest.doctor_name}</h4>
+                <p className="text-sm text-muted-foreground">
+                  Monto solicitado: ${selectedRequest.amount} - {subscriptionTypeLabels[selectedRequest.subscription_type as keyof typeof subscriptionTypeLabels]}
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="actual-amount">Monto pagado</Label>
+                <Input
+                  id="actual-amount"
+                  type="number"
+                  step="0.01"
+                  value={actualAmount}
+                  onChange={(e) => setActualAmount(e.target.value)}
+                  placeholder="Ingresa el monto pagado"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="plan-type">Tipo de plan</Label>
+                <Select value={planType} onValueChange={(value) => setPlanType(value as 'monthly' | 'annual')}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="monthly">Mensual</SelectItem>
+                    <SelectItem value="annual">Anual</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex gap-2 pt-4">
+                <Button
+                  onClick={completePayment}
+                  disabled={processing || !actualAmount}
+                  className="bg-green-600 hover:bg-green-700 flex-1"
+                >
+                  {processing ? 'Procesando...' : 'Confirmar Pago'}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowCompletionForm(false)}
+                  disabled={processing}
+                >
+                  Cancelar
+                </Button>
               </div>
             </div>
           )}
