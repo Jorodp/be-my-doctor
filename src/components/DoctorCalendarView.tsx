@@ -41,9 +41,8 @@ export function DoctorCalendarView({ doctorId }: DoctorCalendarViewProps) {
 
   const handleSlotSelect = (slotTime: string, clinicId: string) => {
     setSelectedSlot(slotTime);
-    if (!selectedClinic) {
-      setSelectedClinic(clinicId);
-    }
+    // Siempre actualizar la clínica seleccionada al hacer click en un slot específico
+    setSelectedClinic(clinicId);
   };
 
   const handleBookAppointment = async () => {
