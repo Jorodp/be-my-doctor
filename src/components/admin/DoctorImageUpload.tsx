@@ -138,11 +138,13 @@ export const DoctorImageUpload: React.FC<DoctorImageUploadProps> = ({
 
       console.log('URL pública generada:', publicUrl);
 
-      // Actualizar perfil del médico en doctor_profiles con timestamp para evitar cache
+      // Actualizar perfil del médico en doctor_profiles con URL pública completa
+      const imageUrl = `${publicUrl}?t=${Date.now()}`;
+      
       const { error: updateDoctorError } = await supabase
         .from('doctor_profiles')
         .update({ 
-          profile_image_url: fileName,
+          profile_image_url: imageUrl,
           updated_at: new Date().toISOString()
         })
         .eq('user_id', doctorId);
@@ -156,7 +158,7 @@ export const DoctorImageUpload: React.FC<DoctorImageUploadProps> = ({
       const { error: updateProfileError } = await supabase
         .from('profiles')
         .update({ 
-          profile_image_url: fileName,
+          profile_image_url: imageUrl,
           updated_at: new Date().toISOString()
         })
         .eq('user_id', doctorId);

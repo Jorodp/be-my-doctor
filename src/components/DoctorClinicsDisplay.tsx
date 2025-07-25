@@ -2,6 +2,8 @@ import { useDoctorClinics } from "@/hooks/useDoctorClinics";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { MapPin, DollarSign, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 interface DoctorClinicsDisplayProps {
   doctorUserId: string;
@@ -9,6 +11,22 @@ interface DoctorClinicsDisplayProps {
 
 export function DoctorClinicsDisplay({ doctorUserId }: DoctorClinicsDisplayProps) {
   const { data: clinics = [], isLoading, error } = useDoctorClinics(doctorUserId);
+  
+  // Obtener el precio de consulta del perfil del doctor
+  const { data: doctorProfile } = useQuery({
+    queryKey: ["doctor-profile-fee", doctorUserId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('doctor_profiles')
+        .select('consultation_fee')
+        .eq('user_id', doctorUserId)
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!doctorUserId,
+  });
 
   if (isLoading) {
     return (
@@ -63,7 +81,9 @@ export function DoctorClinicsDisplay({ doctorUserId }: DoctorClinicsDisplayProps
             <div className="flex items-center gap-2 pt-2 border-t border-primary/10">
               <DollarSign className="w-4 h-4 text-primary" />
               <span className="text-sm font-medium text-foreground">
-                Consulta: <span className="text-primary font-semibold">$1,500 MXN</span>
+                Consulta: <span className="text-primary font-semibold">
+                  ${doctorProfile?.consultation_fee ? doctorProfile.consultation_fee.toLocaleString() : '1,500'} MXN
+                </span>
               </span>
             </div>
           </div>

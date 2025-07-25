@@ -463,10 +463,17 @@ const DoctorDashboardContent = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-3">
                 <Avatar className="h-16 w-16">
-                  <AvatarImage src={profile.profile_image_url || ''} />
-                  <AvatarFallback>
-                    <User className="h-8 w-8" />
-                  </AvatarFallback>
+                  {profile.profile_image_url && !profile.profile_image_url.includes('example.com') ? (
+                    <AvatarImage 
+                      src={`${profile.profile_image_url}?t=${Date.now()}`} 
+                      alt={profile.full_name || 'Doctor'}
+                      className="object-cover w-full h-full"
+                    />
+                  ) : (
+                    <AvatarFallback>
+                      <User className="h-8 w-8" />
+                    </AvatarFallback>
+                  )}
                 </Avatar>
                 <div>
                   <h2 className="text-2xl font-bold">{profile.full_name}</h2>

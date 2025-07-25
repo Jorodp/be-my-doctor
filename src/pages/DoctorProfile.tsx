@@ -158,7 +158,7 @@ export default function DoctorProfile() {
                   <Avatar className="w-40 h-40 border-6 border-white shadow-2xl ring-4 ring-primary/20">
                     {doctor.profile_image_url && !doctor.profile_image_url.includes('example.com') ? (
                       <AvatarImage 
-                        src={doctor.profile_image_url} 
+                        src={`${doctor.profile_image_url}?t=${Date.now()}`}
                         alt={doctor.full_name}
                         className="object-cover w-full h-full"
                         onLoad={() => console.log('✅ Image loaded successfully:', doctor.profile_image_url)}
