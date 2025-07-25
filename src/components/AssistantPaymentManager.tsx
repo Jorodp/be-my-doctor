@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { usePayments } from "@/hooks/usePayments";
 import { AppointmentCard } from "@/components/AppointmentCard";
+import { ManualPaymentForm } from "@/components/ManualPaymentForm";
 
 interface AssistantPaymentManagerProps {
   doctorId: string;
@@ -218,38 +219,25 @@ export function AssistantPaymentManager({ doctorId }: AssistantPaymentManagerPro
                         </div>
                       </CardHeader>
                       <CardContent className="space-y-3">
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm">Monto:</span>
-                          <span className="font-bold">${appointment.consultation_fee} MXN</span>
-                        </div>
-                        
                         {appointment.payment ? (
-                          <div className="space-y-2 text-sm">
+                          <div className="space-y-2">
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm">Monto Pagado:</span>
+                              <span className="font-bold">${appointment.payment.amount} MXN</span>
+                            </div>
                             <div className="flex justify-between">
-                              <span>Método:</span>
-                              <span className="capitalize">{appointment.payment.payment_method}</span>
+                              <span className="text-sm">Método:</span>
+                              <span className="capitalize text-sm">{appointment.payment.payment_method}</span>
                             </div>
                           </div>
                         ) : (
-                          <div className="space-y-3">
-                            <p className="text-sm text-muted-foreground">
-                              El paciente no ha realizado el pago aún.
-                            </p>
-                            
-                            <Button 
-                              onClick={() => handleMarkCashPayment(
-                                appointment.id, 
-                                appointment.consultation_fee || 0,
-                                appointment.patient_user_id
-                              )}
-                              variant="outline"
-                              size="sm"
-                              className="w-full"
-                            >
-                              <CreditCard className="h-4 w-4 mr-2" />
-                              Marcar como Pagado en Efectivo
-                            </Button>
-                          </div>
+                          <ManualPaymentForm
+                            appointmentId={appointment.id}
+                            patientId={appointment.patient_user_id}
+                            doctorId={doctorId}
+                            defaultAmount={appointment.consultation_fee || 0}
+                            onPaymentRecorded={fetchAppointments}
+                          />
                         )}
                       </CardContent>
                     </Card>

@@ -29,6 +29,8 @@ serve(async (req) => {
         return await createConsultationPayment(req, data);
       case "mark-cash-payment":
         return await markCashPayment(req, data);
+      case "mark-manual-payment":
+        return await markManualPayment(req, data);
       case "check-subscription":
         return await checkSubscription(req, data);
       case "webhook":
@@ -226,6 +228,65 @@ async function markCashPayment(req: Request, data: any) {
     });
 
   if (error) throw error;
+
+  return new Response(
+    JSON.stringify({ success: true }),
+    { headers: corsHeaders }
+  );
+}
+
+async function markManualPayment(req: Request, data: any) {
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader) throw new Error("Missing authorization header");
+
+  const token = authHeader.replace("Bearer ", "");
+  const { data: userData } = await supabaseAdmin.auth.getUser(token);
+  if (!userData.user) throw new Error("User not authenticated");
+
+  // Verify user is assistant or admin
+  const { data: profile } = await supabaseAdmin
+    .from("profiles")
+    .select("role")
+    .eq("user_id", userData.user.id)
+    .single();
+
+  if (!profile || !["assistant", "admin"].includes(profile.role)) {
+    throw new Error("Unauthorized");
+  }
+
+  const { appointmentId, amount, patientId, doctorId, paymentMethod } = data;
+
+  console.log("Recording manual payment:", { appointmentId, amount, paymentMethod });
+
+  const { error } = await supabaseAdmin
+    .from("consultation_payments")
+    .upsert({
+      appointment_id: appointmentId,
+      patient_user_id: patientId,
+      doctor_user_id: doctorId,
+      amount,
+      payment_method: paymentMethod,
+      status: "paid",
+      paid_at: new Date().toISOString(),
+    });
+
+  if (error) {
+    console.error("Error recording manual payment:", error);
+    throw error;
+  }
+
+  // Update appointment price to reflect actual amount paid
+  const { error: appointmentError } = await supabaseAdmin
+    .from("appointments")
+    .update({ price: amount })
+    .eq("id", appointmentId);
+
+  if (appointmentError) {
+    console.error("Error updating appointment price:", appointmentError);
+    // Don't throw here as payment was already recorded
+  }
+
+  console.log("Manual payment recorded successfully");
 
   return new Response(
     JSON.stringify({ success: true }),
