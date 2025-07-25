@@ -42,6 +42,12 @@ export const ConsultationNotesForm: React.FC<ConsultationNotesFormProps> = ({
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [savedNotes, setSavedNotes] = useState<ConsultationNotes>({
+    diagnosis: '',
+    prescription: '',
+    recommendations: '',
+    follow_up_date: ''
+  });
   
   const [notes, setNotes] = useState<ConsultationNotes>({
     diagnosis: '',
@@ -69,12 +75,14 @@ export const ConsultationNotesForm: React.FC<ConsultationNotesFormProps> = ({
       }
 
       if (data) {
-        setNotes({
+        const loadedNotes = {
           diagnosis: data.diagnosis || '',
           prescription: data.prescription || '',
           recommendations: data.recommendations || '',
           follow_up_date: data.follow_up_date || ''
-        });
+        };
+        setNotes(loadedNotes);
+        setSavedNotes(loadedNotes);
         setLastSaved(new Date(data.updated_at));
       }
     } catch (error) {
@@ -139,6 +147,7 @@ export const ConsultationNotesForm: React.FC<ConsultationNotesFormProps> = ({
       if (error) throw error;
 
       setLastSaved(new Date());
+      setSavedNotes({...notes}); // Actualizar el estado guardado
       toast({
         title: "Notas guardadas",
         description: "Las notas de la consulta se han guardado correctamente",
@@ -158,7 +167,12 @@ export const ConsultationNotesForm: React.FC<ConsultationNotesFormProps> = ({
   };
 
   const hasUnsavedChanges = () => {
-    return notes.diagnosis || notes.prescription || notes.recommendations || notes.follow_up_date;
+    return (
+      notes.diagnosis !== savedNotes.diagnosis ||
+      notes.prescription !== savedNotes.prescription ||
+      notes.recommendations !== savedNotes.recommendations ||
+      notes.follow_up_date !== savedNotes.follow_up_date
+    );
   };
 
   if (loading) {
