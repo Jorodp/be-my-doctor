@@ -65,7 +65,9 @@ export const AssistantTodayAppointments = ({ doctorId }: AssistantTodayAppointme
   const [validatingIdentity, setValidatingIdentity] = useState(false);
 
   useEffect(() => {
-    fetchTodayAppointments();
+    if (doctorId) {
+      fetchTodayAppointments();
+    }
   }, [doctorId]);
 
   const fetchTodayAppointments = async () => {
@@ -73,6 +75,9 @@ export const AssistantTodayAppointments = ({ doctorId }: AssistantTodayAppointme
       // Usar la fecha actual en la zona horaria local
       const today = new Date();
       const todayStr = today.toISOString().split('T')[0]; // YYYY-MM-DD format
+      
+      console.log('AssistantTodayAppointments - Fetching for doctor:', doctorId);
+      console.log('AssistantTodayAppointments - Today date range:', `${todayStr}T00:00:00.000Z`, 'to', `${todayStr}T23:59:59.999Z`);
       
       const { data: appointmentsData, error } = await supabase
         .from('appointments')
@@ -82,6 +87,8 @@ export const AssistantTodayAppointments = ({ doctorId }: AssistantTodayAppointme
         .lt('starts_at', `${todayStr}T23:59:59.999Z`)
         .neq('status', 'cancelled')
         .order('starts_at', { ascending: true });
+
+      console.log('AssistantTodayAppointments - Query result:', appointmentsData);
 
       if (error) throw error;
 
