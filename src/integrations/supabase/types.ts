@@ -1475,6 +1475,42 @@ export type Database = {
         }
         Relationships: []
       }
+      patient_documents: {
+        Row: {
+          created_at: string
+          document_type: string
+          document_url: string
+          file_size: number | null
+          id: string
+          original_filename: string | null
+          patient_user_id: string
+          updated_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          document_type: string
+          document_url: string
+          file_size?: number | null
+          id?: string
+          original_filename?: string | null
+          patient_user_id: string
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          document_type?: string
+          document_url?: string
+          file_size?: number | null
+          id?: string
+          original_filename?: string | null
+          patient_user_id?: string
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: []
+      }
       patient_identity_validations: {
         Row: {
           appointment_id: string

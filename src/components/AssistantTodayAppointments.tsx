@@ -25,6 +25,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { UploadPatientFiles } from '@/components/UploadPatientFiles';
+import { PatientDocumentUploader } from '@/components/PatientDocumentUploader';
 
 interface PatientProfile {
   full_name: string;
@@ -129,10 +130,10 @@ export const AssistantTodayAppointments = ({ doctorId }: AssistantTodayAppointme
         .select('document_type, document_url')
         .eq('patient_user_id', patientUserId);
 
-      // Get profile image
+      // Get profile image from profiles table (fallback)
       const { data: profile } = await supabase
         .from('profiles')
-        .select('profile_image_url')
+        .select('profile_image_url, id_document_url')
         .eq('user_id', patientUserId)
         .single();
 
@@ -140,14 +141,24 @@ export const AssistantTodayAppointments = ({ doctorId }: AssistantTodayAppointme
         profile_image_url: profile?.profile_image_url
       };
 
-      if (documents) {
+      // First check patient_documents table
+      if (documents && documents.length > 0) {
         documents.forEach(doc => {
           if (doc.document_type === 'identification') {
             docs.identification_url = doc.document_url;
           }
+          if (doc.document_type === 'profile_image') {
+            docs.profile_image_url = doc.document_url;
+          }
         });
       }
 
+      // Fallback: check profiles table if no documents found in patient_documents
+      if (!docs.identification_url && profile?.id_document_url) {
+        docs.identification_url = profile.id_document_url;
+      }
+
+      console.log('Patient documents found:', docs);
       setPatientDocuments(docs);
     } catch (error) {
       console.error('Error fetching patient documents:', error);
@@ -382,12 +393,22 @@ export const AssistantTodayAppointments = ({ doctorId }: AssistantTodayAppointme
                                 <Upload className="h-4 w-4" />
                                 Documentos Faltantes
                               </h3>
-                              <Alert>
+                              <Alert className="mb-4">
                                 <AlertTriangle className="h-4 w-4" />
                                 <AlertDescription>
-                                  Faltan documentos para validar la identidad. Solicita al paciente que los proporcione.
+                                  Faltan documentos para validar la identidad. Utiliza el botón de abajo para subir los documentos faltantes.
                                 </AlertDescription>
                               </Alert>
+                              <PatientDocumentUploader 
+                                patientUserId={appointment.patient_user_id}
+                                onUploadComplete={() => {
+                                  fetchPatientDocuments(appointment.patient_user_id);
+                                  toast({
+                                    title: "Documentos subidos",
+                                    description: "Los documentos han sido subidos correctamente"
+                                  });
+                                }}
+                              />
                             </div>
                           )}
 
