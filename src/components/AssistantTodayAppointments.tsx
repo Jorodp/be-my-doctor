@@ -22,10 +22,12 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { useSignedUrl } from '@/hooks/useSignedUrl';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { UploadPatientFiles } from '@/components/UploadPatientFiles';
 import { PatientDocumentUploader } from '@/components/PatientDocumentUploader';
+import { PatientDocumentImage } from '@/components/PatientDocumentImage';
 
 interface PatientProfile {
   full_name: string;
@@ -344,22 +346,10 @@ export const AssistantTodayAppointments = ({ doctorId }: AssistantTodayAppointme
                                 <FileText className="h-4 w-4" />
                                 Documento de Identificación
                               </h3>
-                              {patientDocuments.identification_url ? (
-                                <div className="border rounded-lg p-4">
-                                  <img 
-                                    src={patientDocuments.identification_url} 
-                                    alt="Identificación" 
-                                    className="w-full max-h-64 object-contain rounded"
-                                  />
-                                </div>
-                              ) : (
-                                <Alert>
-                                  <AlertTriangle className="h-4 w-4" />
-                                  <AlertDescription>
-                                    No se ha subido documento de identificación
-                                  </AlertDescription>
-                                </Alert>
-                              )}
+                              <PatientDocumentImage 
+                                documentUrl={patientDocuments.identification_url}
+                                alt="Documento de identificación"
+                              />
                             </div>
                             
                             <div>
@@ -367,22 +357,10 @@ export const AssistantTodayAppointments = ({ doctorId }: AssistantTodayAppointme
                                 <Camera className="h-4 w-4" />
                                 Foto del Paciente
                               </h3>
-                              {patientDocuments.profile_image_url ? (
-                                <div className="border rounded-lg p-4">
-                                  <img 
-                                    src={patientDocuments.profile_image_url} 
-                                    alt="Foto del paciente" 
-                                    className="w-full max-h-64 object-contain rounded"
-                                  />
-                                </div>
-                              ) : (
-                                <Alert>
-                                  <AlertTriangle className="h-4 w-4" />
-                                  <AlertDescription>
-                                    No se ha subido foto del paciente
-                                  </AlertDescription>
-                                </Alert>
-                              )}
+                              <PatientDocumentImage 
+                                documentUrl={patientDocuments.profile_image_url}
+                                alt="Foto del paciente"
+                              />
                             </div>
                           </div>
 
