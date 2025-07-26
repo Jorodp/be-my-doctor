@@ -139,7 +139,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []); // Empty dependency array to run only once
 
   const signUp = async (email: string, password: string, role: UserRole = 'patient', additionalData: any = {}) => {
-    const redirectUrl = `https://bemy.com.mx/email-confirmation`;
+    // Use current domain for development, bemy.com.mx for production
+    const isProduction = window.location.hostname === 'bemy.com.mx' || window.location.hostname.includes('bemy.com.mx');
+    const redirectUrl = isProduction 
+      ? `https://bemy.com.mx/email-confirmation`
+      : `${window.location.origin}/email-confirmation`;
     
     const { error } = await supabase.auth.signUp({
       email,

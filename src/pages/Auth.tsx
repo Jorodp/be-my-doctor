@@ -108,8 +108,8 @@ export default function Auth() {
       setRegistrationStatus('success');
       setRegistrationMessage(
         role === 'doctor' 
-          ? 'Te has registrado como médico. Tu cuenta está pendiente de verificación por un administrador.'
-          : 'Te has registrado exitosamente. Revisa tu email para confirmar tu cuenta.'
+          ? 'Te has registrado como médico exitosamente.'
+          : 'Te has registrado como paciente exitosamente.'
       );
     }
 
@@ -196,10 +196,38 @@ export default function Auth() {
                 {registrationStatus === 'success' ? '¡Registro exitoso!' : 'Error de registro'}
               </CardTitle>
               <CardDescription className="text-center mt-2">
-                {registrationMessage}
+                {registrationStatus === 'success' 
+                  ? 'Sigue estos pasos para completar tu registro:'
+                  : registrationMessage
+                }
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {registrationStatus === 'success' && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4 space-y-3">
+                  <div className="flex items-start gap-3">
+                    <span className="flex-shrink-0 w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold">1</span>
+                    <div>
+                      <p className="font-medium text-green-800">Revisa tu correo electrónico</p>
+                      <p className="text-sm text-green-600">Te hemos enviado un correo de confirmación a <strong>{signUpEmail}</strong></p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <span className="flex-shrink-0 w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold">2</span>
+                    <div>
+                      <p className="font-medium text-green-800">Haz click en el enlace del correo</p>
+                      <p className="text-sm text-green-600">El enlace te llevará de vuelta a nuestra plataforma para confirmar tu cuenta</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <span className="flex-shrink-0 w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold">3</span>
+                    <div>
+                      <p className="font-medium text-green-800">¡Ya podrás iniciar sesión!</p>
+                      <p className="text-sm text-green-600">Una vez confirmado tu email, podrás acceder a tu cuenta</p>
+                    </div>
+                  </div>
+                </div>
+              )}
               <div className="flex flex-col gap-3">
                 {registrationStatus === 'success' && (
                   <Button onClick={() => setActiveTab('signin')} className="w-full">

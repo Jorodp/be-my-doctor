@@ -13,34 +13,50 @@ export default function EmailConfirmation() {
   useEffect(() => {
     const handleEmailConfirmation = async () => {
       try {
-        // Get token and type from URL params
+        // Check if we have URL parameters for token confirmation
         const token = searchParams.get('token');
+        const tokenHash = searchParams.get('token_hash');
         const type = searchParams.get('type');
         
-        if (!token || type !== 'email') {
-          setStatus('error');
-          setMessage('Enlace de confirmación inválido o expirado.');
-          return;
-        }
+        if (token && type === 'signup') {
+          // This is a signup confirmation with token
+          const { error } = await supabase.auth.verifyOtp({
+            token_hash: tokenHash || token,
+            type: 'signup'
+          });
 
-        // Verify the email with Supabase
-        const { error } = await supabase.auth.verifyOtp({
-          token_hash: token,
-          type: 'email'
-        });
+          if (error) {
+            console.error('Signup confirmation error:', error);
+            setStatus('error');
+            setMessage('Error al confirmar el registro. El enlace puede haber expirado. Por favor intenta registrarte de nuevo.');
+          } else {
+            setStatus('success');
+            setMessage('¡Tu registro ha sido confirmado exitosamente! Ya puedes iniciar sesión con tu email y contraseña.');
+          }
+        } else if (token && type === 'email') {
+          // This is an email confirmation
+          const { error } = await supabase.auth.verifyOtp({
+            token_hash: tokenHash || token,
+            type: 'email'
+          });
 
-        if (error) {
-          setStatus('error');
-          setMessage('Error al confirmar el email. El enlace puede haber expirado.');
-          console.error('Email confirmation error:', error);
+          if (error) {
+            console.error('Email confirmation error:', error);
+            setStatus('error');
+            setMessage('Error al confirmar el email. El enlace puede haber expirado.');
+          } else {
+            setStatus('success');
+            setMessage('¡Tu email ha sido confirmado exitosamente! Ya puedes iniciar sesión en tu cuenta.');
+          }
         } else {
-          setStatus('success');
-          setMessage('¡Tu email ha sido confirmado exitosamente! Ya puedes iniciar sesión en tu cuenta.');
+          // No valid parameters found
+          setStatus('error');
+          setMessage('Enlace de confirmación inválido o parámetros faltantes. Por favor verifica que hayas clickeado en el enlace correcto desde tu email.');
         }
       } catch (error) {
         console.error('Email confirmation error:', error);
         setStatus('error');
-        setMessage('Ocurrió un error inesperado. Por favor intenta de nuevo.');
+        setMessage('Ocurrió un error inesperado. Por favor intenta de nuevo o contacta soporte.');
       }
     };
 
