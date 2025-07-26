@@ -70,17 +70,16 @@ export const AssistantTodayAppointments = ({ doctorId }: AssistantTodayAppointme
 
   const fetchTodayAppointments = async () => {
     try {
+      // Usar la fecha actual en la zona horaria local
       const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-
+      const todayStr = today.toISOString().split('T')[0]; // YYYY-MM-DD format
+      
       const { data: appointmentsData, error } = await supabase
         .from('appointments')
         .select('*')
         .eq('doctor_user_id', doctorId)
-        .gte('starts_at', today.toISOString())
-        .lt('starts_at', tomorrow.toISOString())
+        .gte('starts_at', `${todayStr}T00:00:00.000Z`)
+        .lt('starts_at', `${todayStr}T23:59:59.999Z`)
         .neq('status', 'cancelled')
         .order('starts_at', { ascending: true });
 
@@ -198,7 +197,9 @@ export const AssistantTodayAppointments = ({ doctorId }: AssistantTodayAppointme
   };
 
   const formatTime = (dateString: string) => {
-    return format(new Date(dateString), 'HH:mm', { locale: es });
+    // Asegurar formato correcto de hora en zona local
+    const date = new Date(dateString);
+    return format(date, 'HH:mm', { locale: es });
   };
 
   const getStatusBadge = (appointment: Appointment) => {
