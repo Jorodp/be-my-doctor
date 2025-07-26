@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { BackToHomeButton } from '@/components/ui/BackToHomeButton';
-import { Home, ArrowLeft, Search, UserCircle } from 'lucide-react';
+import { Home, ArrowLeft, Search, UserCircle, CheckCircle, XCircle } from 'lucide-react';
 import { Database } from '@/integrations/supabase/types';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -26,6 +26,8 @@ export default function Auth() {
   
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'signin' | 'signup'>('signin');
+  const [registrationStatus, setRegistrationStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [registrationMessage, setRegistrationMessage] = useState('');
   
   // Sign In form
   const [signInEmail, setSignInEmail] = useState('');
@@ -96,20 +98,19 @@ export default function Auth() {
     const { error } = await signUp(signUpEmail, signUpPassword, role, additionalData);
 
     if (error) {
-      toast({
-        variant: "destructive",
-        title: "Error de registro",
-        description: error.message === 'User already registered' 
+      setRegistrationStatus('error');
+      setRegistrationMessage(
+        error.message === 'User already registered' 
           ? 'Este email ya está registrado. Intenta iniciar sesión.' 
           : error.message
-      });
+      );
     } else {
-      toast({
-        title: "Registro exitoso",
-        description: role === 'doctor' 
+      setRegistrationStatus('success');
+      setRegistrationMessage(
+        role === 'doctor' 
           ? 'Te has registrado como médico. Tu cuenta está pendiente de verificación por un administrador.'
           : 'Te has registrado exitosamente. Revisa tu email para confirmar tu cuenta.'
-      });
+      );
     }
 
     setLoading(false);
@@ -179,16 +180,58 @@ export default function Auth() {
       
       <div className="flex flex-col items-center gap-6 w-full max-w-md">
         <Card className="w-full">
-        <CardHeader>
-          <div className="flex items-center justify-center gap-3 mb-2">
-            <img src="/lovable-uploads/2176a5eb-dd8e-4ff9-8a38-3cfe98feb63a.png" alt="Be My Doctor" className="h-8 w-auto" />
-            <CardTitle className="text-2xl text-center">Be My Doctor</CardTitle>
-          </div>
-          <CardDescription className="text-center">
-            Plataforma médica integral
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+        {registrationStatus !== 'idle' ? (
+          // Pantalla de resultado de registro
+          <>
+            <CardHeader className="text-center">
+              <div className="flex justify-center mb-4">
+                {registrationStatus === 'success' && (
+                  <CheckCircle className="h-12 w-12 text-green-500" />
+                )}
+                {registrationStatus === 'error' && (
+                  <XCircle className="h-12 w-12 text-red-500" />
+                )}
+              </div>
+              <CardTitle className="text-2xl">
+                {registrationStatus === 'success' ? '¡Registro exitoso!' : 'Error de registro'}
+              </CardTitle>
+              <CardDescription className="text-center mt-2">
+                {registrationMessage}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex flex-col gap-3">
+                {registrationStatus === 'success' && (
+                  <Button onClick={() => setActiveTab('signin')} className="w-full">
+                    Ir a iniciar sesión
+                  </Button>
+                )}
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setRegistrationStatus('idle');
+                    setRegistrationMessage('');
+                  }} 
+                  className="w-full"
+                >
+                  {registrationStatus === 'success' ? 'Registrar otra cuenta' : 'Intentar de nuevo'}
+                </Button>
+              </div>
+            </CardContent>
+          </>
+        ) : (
+          // Formulario normal de autenticación
+          <>
+            <CardHeader>
+              <div className="flex items-center justify-center gap-3 mb-2">
+                <img src="/lovable-uploads/2176a5eb-dd8e-4ff9-8a38-3cfe98feb63a.png" alt="Be My Doctor" className="h-8 w-auto" />
+                <CardTitle className="text-2xl text-center">Be My Doctor</CardTitle>
+              </div>
+              <CardDescription className="text-center">
+                Plataforma médica integral
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
           <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'signin' | 'signup')}>
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="signin">Iniciar Sesión</TabsTrigger>
@@ -335,8 +378,10 @@ export default function Auth() {
               </form>
             </TabsContent>
           </Tabs>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </>
+        )}
+        </Card>
       </div>
       </div>
     </div>

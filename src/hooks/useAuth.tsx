@@ -139,7 +139,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []); // Empty dependency array to run only once
 
   const signUp = async (email: string, password: string, role: UserRole = 'patient', additionalData: any = {}) => {
-    const redirectUrl = `${window.location.origin}/`;
+    const redirectUrl = `https://bemy.com.mx/email-confirmation`;
     
     const { error } = await supabase.auth.signUp({
       email,
