@@ -18,6 +18,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { generateConsultationPDF } from '@/utils/pdfGenerator';
 
 interface ConsultationNote {
   id: string;
@@ -123,9 +124,31 @@ export const ConsultationNotesViewer: React.FC<ConsultationNotesViewerProps> = (
     }
   };
 
-  const generatePDF = (note: ConsultationNote) => {
-    // This would be implemented with a PDF generation library
-    console.log('Generate PDF for note:', note.id);
+  const generatePDF = async (note: ConsultationNote) => {
+    try {
+      // Fetch patient profile
+      const { data: patientProfile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('user_id', user?.id)
+        .single();
+
+      const pdfData = {
+        patientName: patientProfile?.full_name || 'Paciente',
+        doctorName: note.doctor_profile?.full_name || 'Doctor',
+        specialty: note.doctor_profile?.specialty || 'Medicina General',
+        date: format(new Date(note.appointment?.starts_at || note.created_at), "d 'de' MMMM, yyyy", { locale: es }),
+        time: format(new Date(note.appointment?.starts_at || note.created_at), "HH:mm", { locale: es }),
+        diagnosis: note.diagnosis,
+        prescription: note.prescription,
+        recommendations: note.recommendations,
+        followUpDate: note.follow_up_date ? format(new Date(note.follow_up_date), "d 'de' MMMM, yyyy", { locale: es }) : null
+      };
+
+      generateConsultationPDF(pdfData);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+    }
   };
 
   if (loading) {
