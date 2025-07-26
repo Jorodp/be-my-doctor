@@ -243,14 +243,14 @@ async function markManualPayment(req: Request, data: any) {
   const { data: userData } = await supabaseAdmin.auth.getUser(token);
   if (!userData.user) throw new Error("User not authenticated");
 
-  // Verify user is assistant or admin
+  // Verify user is assistant, admin, or doctor
   const { data: profile } = await supabaseAdmin
     .from("profiles")
     .select("role")
     .eq("user_id", userData.user.id)
     .single();
 
-  if (!profile || !["assistant", "admin"].includes(profile.role)) {
+  if (!profile || !["assistant", "admin", "doctor"].includes(profile.role)) {
     throw new Error("Unauthorized");
   }
 

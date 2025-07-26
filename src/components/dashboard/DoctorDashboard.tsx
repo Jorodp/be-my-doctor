@@ -43,6 +43,7 @@ import { DoctorAppointmentHistory } from '@/components/doctor/DoctorAppointmentH
 import { AppointmentActionsExtended } from '@/components/AppointmentActionsExtended';
 import { ClinicsAndAssistantsManager } from '@/components/ClinicsAndAssistantsManager';
 import { ConsultationWorkspace } from '@/components/ConsultationWorkspace';
+import { AssistantPaymentManager } from '@/components/AssistantPaymentManager';
 
 interface DoctorProfile {
   id: string;
@@ -588,7 +589,7 @@ const DoctorDashboardContent = () => {
 
         {/* Main Content Tabs */}
         <Tabs defaultValue="consultas" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-10 text-xs">
+          <TabsList className="grid w-full grid-cols-11 text-xs">
             <TabsTrigger value="consultas" className="flex items-center gap-1">
               <Timer className="h-3 w-3" />
               <span className="hidden sm:inline">Flujo de Consultas</span>
@@ -614,6 +615,11 @@ const DoctorDashboardContent = () => {
               <span className="hidden sm:inline">Citas de Hoy</span>
               <span className="sm:hidden">Hoy</span>
             </TabsTrigger>
+            <TabsTrigger value="payments" className="flex items-center gap-1">
+              <CreditCard className="h-3 w-3" />
+              <span className="hidden sm:inline">Gestión de Pagos</span>
+              <span className="sm:hidden">Pagos</span>
+            </TabsTrigger>
             <TabsTrigger value="ratings" className="flex items-center gap-1">
               <Star className="h-3 w-3" />
               <span className="hidden sm:inline">Calificaciones</span>
@@ -625,7 +631,7 @@ const DoctorDashboardContent = () => {
               <span className="sm:hidden">$$$</span>
             </TabsTrigger>
             <TabsTrigger value="subscription" className="flex items-center gap-1">
-              <CreditCard className="h-3 w-3" />
+              <UserCheck className="h-3 w-3" />
               <span className="hidden sm:inline">Suscripción</span>
               <span className="sm:hidden">Subs</span>
             </TabsTrigger>
@@ -760,6 +766,10 @@ const DoctorDashboardContent = () => {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="payments">
+            {user && <AssistantPaymentManager doctorId={user.id} />}
           </TabsContent>
 
 

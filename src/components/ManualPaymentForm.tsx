@@ -113,9 +113,8 @@ export function ManualPaymentForm({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="cash">Efectivo</SelectItem>
-              <SelectItem value="card">Tarjeta</SelectItem>
+              <SelectItem value="stripe">Tarjeta</SelectItem>
               <SelectItem value="transfer">Transferencia</SelectItem>
-              <SelectItem value="other">Otro</SelectItem>
             </SelectContent>
           </Select>
         </div>
