@@ -66,14 +66,24 @@ export function SubscriptionStatus() {
   const checkSubscription = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase.functions.invoke("payments", {
-        body: { action: "check-subscription" }
-      });
-
-      if (error) throw error;
+      console.log("SubscriptionStatus: Checking subscription for user:", user?.id);
       
-      if (data.hasActiveSubscription) {
-        setSubscription(data.subscription);
+      const { data, error } = await supabase.functions.invoke('verify-doctor-subscription');
+      if (error) {
+        console.error("SubscriptionStatus: Error from verify-doctor-subscription:", error);
+        throw error;
+      }
+      
+      console.log("SubscriptionStatus: Subscription response:", data);
+      
+      if (data?.subscribed && data?.status === 'active') {
+        setSubscription({
+          id: 'active-subscription',
+          plan: data.plan || 'active',
+          status: data.status,
+          ends_at: data.ends_at || '',
+          amount: data.amount || 0
+        });
       } else {
         setSubscription(null);
       }
@@ -245,28 +255,36 @@ export function SubscriptionStatus() {
                   <div className="flex items-center gap-2">
                     <Crown className="h-4 w-4 text-yellow-500" />
                     <Badge variant="default">
-                      {subscription.plan === "monthly" ? "Mensual" : "Anual"}
+                      {subscription.plan === "monthly" ? "Mensual" : 
+                       subscription.plan === "annual" ? "Anual" : "Activo"}
                     </Badge>
                   </div>
                 </div>
                 
-                <div className="space-y-2">
-                  <span className="text-sm font-medium text-muted-foreground">Monto</span>
-                  <span className="font-semibold text-lg">
-                    ${subscription.amount.toLocaleString()} MXN
-                  </span>
-                </div>
+                {subscription.amount > 0 && (
+                  <div className="space-y-2">
+                    <span className="text-sm font-medium text-muted-foreground">Monto</span>
+                    <span className="font-semibold text-lg">
+                      ${subscription.amount.toLocaleString()} MXN
+                    </span>
+                  </div>
+                )}
               </div>
 
-              <div className="space-y-2">
-                <span className="text-sm font-medium text-muted-foreground">Próxima renovación</span>
-                <div className="flex items-center gap-2">
-                  <CalendarDays className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm">
-                    {format(new Date(subscription.ends_at), "dd 'de' MMMM, yyyy", { locale: es })}
+              {subscription.ends_at && (
+                <div className="space-y-2">
+                  <span className="text-sm font-medium text-muted-foreground">
+                    {subscription.plan === "monthly" ? "Próxima renovación" : 
+                     subscription.plan === "annual" ? "Renovación anual" : "Activa hasta"}
                   </span>
+                  <div className="flex items-center gap-2">
+                    <CalendarDays className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm">
+                      {format(new Date(subscription.ends_at), "dd 'de' MMMM, yyyy", { locale: es })}
+                    </span>
+                  </div>
                 </div>
-              </div>
+              )}
 
               <Separator />
 
@@ -343,98 +361,121 @@ export function SubscriptionStatus() {
         </CardContent>
       </Card>
 
-      {/* Subscription Plans Card */}
-      {!subscription && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Planes de Suscripción</CardTitle>
-            <CardDescription>
-              Elige el plan que mejor se adapte a tus necesidades
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Monthly Plan */}
-              <div className="border rounded-lg p-4 space-y-4">
-                <div className="text-center">
-                  <h3 className="font-semibold text-lg">Plan Mensual</h3>
-                  <div className="mt-2">
-                    <span className="text-3xl font-bold">${prices.monthly.toLocaleString()}</span>
-                    <span className="text-muted-foreground"> MXN/mes</span>
-                  </div>
+      {/* Subscription Plans Card - Siempre mostrar los planes */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Planes de Suscripción</CardTitle>
+          <CardDescription>
+            {subscription ? 
+              "Puedes cambiar o renovar tu suscripción actual" : 
+              "Elige el plan que mejor se adapte a tus necesidades"
+            }
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Monthly Plan */}
+            <div className="border rounded-lg p-4 space-y-4">
+              <div className="text-center">
+                <h3 className="font-semibold text-lg">Plan Mensual</h3>
+                <div className="mt-2">
+                  <span className="text-3xl font-bold">${prices.monthly.toLocaleString()}</span>
+                  <span className="text-muted-foreground"> MXN/mes</span>
                 </div>
-                
-                <ul className="space-y-2 text-sm">
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                    Acceso completo a la plataforma
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                    Gestión ilimitada de citas
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                    Soporte técnico
-                  </li>
-                </ul>
-                
-                <Button 
-                  className="w-full" 
-                  onClick={() => createSubscription('monthly')}
-                  disabled={creatingSubscription}
-                >
-                  {creatingSubscription ? "Procesando..." : "Suscribirse Mensual"}
-                </Button>
               </div>
+              
+              <ul className="space-y-2 text-sm">
+                <li className="flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  Acceso completo a la plataforma
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  Gestión ilimitada de citas
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  Soporte técnico
+                </li>
+              </ul>
+              
+              <Button 
+                className="w-full" 
+                onClick={() => createSubscription('monthly')}
+                disabled={creatingSubscription}
+              >
+                {creatingSubscription ? "Procesando..." : 
+                 subscription ? "Cambiar a Mensual" : "Suscribirse Mensual"}
+              </Button>
+            </div>
 
-              {/* Annual Plan */}
-              <div className="border rounded-lg p-4 space-y-4 bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
-                <div className="text-center">
-                  <div className="flex items-center justify-center gap-2 mb-2">
-                    <Badge variant="default" className="bg-blue-600">Recomendado</Badge>
-                  </div>
-                  <h3 className="font-semibold text-lg">Plan Anual</h3>
-                  <div className="mt-2">
-                    <span className="text-3xl font-bold">${prices.annual.toLocaleString()}</span>
-                    <span className="text-muted-foreground"> MXN/año</span>
-                  </div>
-                  <p className="text-sm text-green-600 font-medium mt-1">
-                    Ahorra ${((prices.monthly * 12) - prices.annual).toLocaleString()} MXN
-                  </p>
+            {/* Annual Plan */}
+            <div className="border rounded-lg p-4 space-y-4 bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <Badge variant="default" className="bg-blue-600">Recomendado</Badge>
                 </div>
-                
-                <ul className="space-y-2 text-sm">
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                    Acceso completo a la plataforma
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                    Gestión ilimitada de citas
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                    Soporte técnico prioritario
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                    2 meses gratis incluidos
-                  </li>
-                </ul>
-                
+                <h3 className="font-semibold text-lg">Plan Anual</h3>
+                <div className="mt-2">
+                  <span className="text-3xl font-bold">${prices.annual.toLocaleString()}</span>
+                  <span className="text-muted-foreground"> MXN/año</span>
+                </div>
+                <p className="text-sm text-green-600 font-medium mt-1">
+                  Ahorra ${((prices.monthly * 12) - prices.annual).toLocaleString()} MXN
+                </p>
+              </div>
+              
+              <ul className="space-y-2 text-sm">
+                <li className="flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  Acceso completo a la plataforma
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  Gestión ilimitada de citas
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  Soporte técnico prioritario
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  2 meses gratis incluidos
+                </li>
+              </ul>
+              
+              <Button 
+                className="w-full bg-blue-600 hover:bg-blue-700" 
+                onClick={() => createSubscription('annual')}
+                disabled={creatingSubscription}
+              >
+                {creatingSubscription ? "Procesando..." : 
+                 subscription ? "Cambiar a Anual" : "Suscribirse Anual"}
+              </Button>
+            </div>
+          </div>
+
+          {/* Botón de pago físico */}
+          {physicalPaymentEnabled && (
+            <div className="mt-6 pt-6 border-t">
+              <div className="text-center space-y-4">
+                <h3 className="text-lg font-semibold">¿Prefieres pagar en efectivo o tarjeta?</h3>
+                <p className="text-muted-foreground">
+                  Solicita asistencia de un representante Be My Doctor para realizar el pago de manera presencial.
+                </p>
                 <Button 
-                  className="w-full bg-blue-600 hover:bg-blue-700" 
-                  onClick={() => createSubscription('annual')}
-                  disabled={creatingSubscription}
+                  variant="outline" 
+                  className="w-full max-w-md"
+                  onClick={handlePhysicalPaymentRequest}
                 >
-                  {creatingSubscription ? "Procesando..." : "Suscribirse Anual"}
+                  <HandCoins className="h-4 w-4 mr-2" />
+                  Solicitar Pago en Efectivo/Tarjeta
                 </Button>
               </div>
             </div>
-          </CardContent>
-        </Card>
-      )}
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
