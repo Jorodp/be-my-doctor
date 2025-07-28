@@ -84,15 +84,18 @@ serve(async (req) => {
       subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
       logStep("Active subscription found", { subscriptionId: subscription.id, endDate: subscriptionEnd });
       
-      // Determine subscription plan from price ID
+      // Determine subscription plan from price amount (más flexible que hardcoded IDs)
       const priceId = subscription.items.data[0].price.id;
       const price = await stripe.prices.retrieve(priceId);
       amount = price.unit_amount || 0;
       
-      if (priceId === "prod_Sgj1suU8Gudj23") {
+      // Determinar plan basado en el intervalo y cantidad
+      if (price.recurring?.interval === "month") {
         subscriptionPlan = "monthly";
-      } else if (priceId === "prod_Sgj2UIVQMZAbmU") {
+      } else if (price.recurring?.interval === "year") {
         subscriptionPlan = "annual";
+      } else {
+        subscriptionPlan = "custom";
       }
       logStep("Determined subscription plan", { priceId, amount, subscriptionPlan });
     } else {

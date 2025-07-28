@@ -25,38 +25,54 @@ export const useDoctorSubscription = () => {
       setLoading(true);
       console.log("useDoctorSubscription: Checking subscription for user:", user?.id);
       
-      // Consulta directa a la tabla subscriptions para incluir suscripciones manuales
-      const { data: subscriptions, error } = await supabase
-        .from('subscriptions')
-        .select('*')
+      // Primero verificar en doctor_profiles si tiene suscripción local activa
+      const { data: doctorProfile, error: profileError } = await supabase
+        .from('doctor_profiles')
+        .select('subscription_status, subscription_expires_at')
         .eq('user_id', user?.id)
-        .eq('status', 'active')
-        .order('created_at', { ascending: false });
+        .single();
 
-      if (error) {
-        console.error("useDoctorSubscription: Subscription query error:", error);
-        throw error;
+      if (!profileError && doctorProfile?.subscription_status === 'active') {
+        console.log("useDoctorSubscription: Found active subscription in doctor_profiles:", doctorProfile);
+        
+        // Verificar si la suscripción no ha expirado
+        const now = new Date();
+        const expiresAt = doctorProfile.subscription_expires_at ? new Date(doctorProfile.subscription_expires_at) : null;
+        
+        if (!expiresAt || expiresAt >= now) {
+          setSubscriptionData({
+            subscribed: true,
+            plan: 'active',
+            status: 'active',
+            ends_at: doctorProfile.subscription_expires_at || '',
+            amount: 0
+          });
+          setLoading(false);
+          return;
+        } else {
+          console.log("useDoctorSubscription: Local subscription expired, checking with Stripe");
+        }
       }
 
-      console.log("useDoctorSubscription: Subscriptions found:", subscriptions);
-
-      // Verificar si hay alguna suscripción activa y no expirada
-      const now = new Date();
-      const activeSubscription = subscriptions?.find(sub => {
-        const endsAt = new Date(sub.ends_at);
-        const isActive = sub.status === 'active' && endsAt >= now;
-        console.log(`useDoctorSubscription: Subscription ${sub.id}: status=${sub.status}, ends_at=${sub.ends_at}, active=${isActive}`);
-        return isActive;
-      });
-
-      if (activeSubscription) {
-        console.log("useDoctorSubscription: Active subscription found:", activeSubscription);
+      // Si no tiene suscripción local activa o está expirada, verificar con Stripe
+      console.log("useDoctorSubscription: Verifying with Stripe...");
+      const { data, error } = await supabase.functions.invoke('verify-doctor-subscription');
+      
+      if (error) {
+        console.error("useDoctorSubscription: Error from verify-doctor-subscription:", error);
+        throw error;
+      }
+      
+      console.log("useDoctorSubscription: Stripe verification response:", data);
+      
+      if (data?.subscribed && data?.status === 'active') {
+        console.log("useDoctorSubscription: Active subscription found from Stripe");
         setSubscriptionData({
           subscribed: true,
-          plan: activeSubscription.plan,
-          status: activeSubscription.status,
-          ends_at: activeSubscription.ends_at,
-          amount: activeSubscription.amount
+          plan: data.plan || 'active',
+          status: 'active',
+          ends_at: data.ends_at || '',
+          amount: data.amount || 0
         });
       } else {
         console.log("useDoctorSubscription: No active subscription found");

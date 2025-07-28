@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { useDoctorSubscription } from '@/hooks/useDoctorSubscription';
 import { supabase } from '@/integrations/supabase/client';
+import { handleError } from '@/utils/errorHandling';
 import { CheckCircle, XCircle, AlertCircle, PlayCircle } from 'lucide-react';
 
 interface TestResult {
@@ -70,7 +71,7 @@ export const SystemTester = () => {
       results.push({
         name: 'Conexión Base de Datos',
         status: 'fail',
-        message: `Error de conexión: ${error}`
+        message: `Error de conexión: ${handleError(error, { showToast: false, logError: false })}`
       });
     }
 
@@ -89,31 +90,68 @@ export const SystemTester = () => {
           message: error ? `Error al consultar doctores pendientes: ${error.message}` : 
                    `Consulta exitosa - ${pendingDoctors?.length || 0} doctores pendientes`
         });
+
+        // Test adicional: Probar función de aprobación
+        if (pendingDoctors && pendingDoctors.length > 0) {
+          try {
+            const { error: approvalError } = await supabase.rpc('admin_verify_doctor', {
+              doctor_id: 'test-id'
+            });
+            
+            results.push({
+              name: 'Función de Aprobación',
+              status: approvalError ? 'warning' : 'pass',
+              message: approvalError ? 
+                'La función existe pero falló (esperado con ID de prueba)' : 
+                'Función de aprobación disponible',
+              details: approvalError?.message
+            });
+          } catch (error) {
+            results.push({
+              name: 'Función de Aprobación',
+              status: 'fail',
+              message: 'Error accediendo a la función de aprobación'
+            });
+          }
+        }
       } catch (error) {
         results.push({
           name: 'Sistema de Aprobación',
           status: 'fail',
-          message: `Error en sistema de aprobación: ${error}`
+          message: `Error en sistema de aprobación: ${handleError(error, { showToast: false, logError: false })}`
         });
       }
     }
 
-    // Test 7: Edge functions disponibles
-    try {
-      const { data, error } = await supabase.functions.invoke('test-function');
-      results.push({
-        name: 'Edge Functions',
-        status: 'pass',
-        message: 'Edge functions funcionando',
-        details: 'Función de prueba respondió correctamente'
-      });
-    } catch (error) {
-      results.push({
-        name: 'Edge Functions',
-        status: 'warning',
-        message: 'Edge functions podrían no estar funcionando',
-        details: 'No se pudo conectar a función de prueba'
-      });
+    // Test 7: Edge functions críticas
+    const edgeFunctionTests = [
+      { name: 'test-function', description: 'Función de prueba básica' },
+      { name: 'verify-doctor-subscription', description: 'Verificación de suscripciones' },
+      { name: 'admin-profile-management', description: 'Gestión de perfiles' }
+    ];
+
+    for (const func of edgeFunctionTests) {
+      try {
+        const { data, error } = await supabase.functions.invoke(func.name, {
+          body: { test: true }
+        });
+        
+        results.push({
+          name: `Edge Function: ${func.name}`,
+          status: error ? 'fail' : 'pass',
+          message: error ? 
+            `Error en ${func.description}: ${error.message}` : 
+            `${func.description} funcionando`,
+          details: data ? `Respuesta: ${JSON.stringify(data).substring(0, 100)}...` : undefined
+        });
+      } catch (error) {
+        results.push({
+          name: `Edge Function: ${func.name}`,
+          status: 'fail',
+          message: `Error crítico en ${func.description}`,
+          details: handleError(error, { showToast: false, logError: false })
+        });
+      }
     }
 
     setTests(results);
