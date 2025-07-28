@@ -147,23 +147,12 @@ export const AdminDashboard = () => {
 
   const approveDoctor = async (doctorId: string) => {
     try {
-      // Get the admin's profile ID instead of auth user ID
-      const { data: adminProfile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('user_id', user?.id)
-        .single();
-
-      if (!adminProfile) {
-        throw new Error('Admin profile not found');
-      }
-
       const { error } = await supabase
         .from('doctor_profiles')
         .update({ 
           verification_status: 'verified',
-          verified_at: new Date().toISOString(),
-          verified_by: adminProfile.id
+          verified_at: new Date().toISOString()
+          // Removemos verified_by temporalmente hasta que sepamos la estructura correcta
         })
         .eq('id', doctorId);
 
@@ -187,22 +176,11 @@ export const AdminDashboard = () => {
 
   const rejectDoctor = async (doctorId: string) => {
     try {
-      // Get the admin's profile ID instead of auth user ID
-      const { data: adminProfile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('user_id', user?.id)
-        .single();
-
-      if (!adminProfile) {
-        throw new Error('Admin profile not found');
-      }
-
       const { error } = await supabase
         .from('doctor_profiles')
         .update({ 
-          verification_status: 'rejected',
-          verified_by: adminProfile.id
+          verification_status: 'rejected'
+          // Removemos verified_by temporalmente hasta que sepamos la estructura correcta
         })
         .eq('id', doctorId);
 
