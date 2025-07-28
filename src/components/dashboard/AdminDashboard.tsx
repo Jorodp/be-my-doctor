@@ -147,12 +147,23 @@ export const AdminDashboard = () => {
 
   const approveDoctor = async (doctorId: string) => {
     try {
+      // Get the admin's profile ID instead of auth user ID
+      const { data: adminProfile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user?.id)
+        .single();
+
+      if (!adminProfile) {
+        throw new Error('Admin profile not found');
+      }
+
       const { error } = await supabase
         .from('doctor_profiles')
         .update({ 
           verification_status: 'verified',
           verified_at: new Date().toISOString(),
-          verified_by: user?.id
+          verified_by: adminProfile.id
         })
         .eq('id', doctorId);
 
@@ -176,11 +187,22 @@ export const AdminDashboard = () => {
 
   const rejectDoctor = async (doctorId: string) => {
     try {
+      // Get the admin's profile ID instead of auth user ID
+      const { data: adminProfile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user?.id)
+        .single();
+
+      if (!adminProfile) {
+        throw new Error('Admin profile not found');
+      }
+
       const { error } = await supabase
         .from('doctor_profiles')
         .update({ 
           verification_status: 'rejected',
-          verified_by: user?.id
+          verified_by: adminProfile.id
         })
         .eq('id', doctorId);
 
@@ -327,27 +349,28 @@ export const AdminDashboard = () => {
           </Card>
         </div>
 
-        {/* Quick Access to Pending Actions */}
+        {/* Quick Access to Pending Actions - Solo mostrar si hay doctores pendientes */}
         {pendingDoctors.length > 0 && (
-          <Card className="border-orange-200 bg-orange-50">
+          <Card className="border-primary/20 bg-primary/5">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-orange-800">
+              <CardTitle className="flex items-center gap-2 text-primary">
                 <Clock className="h-5 w-5" />
-                Acciones Pendientes ({pendingDoctors.length})
+                Solicitudes de Verificación ({pendingDoctors.length})
               </CardTitle>
               <CardDescription>
-                Médicos que requieren verificación inmediata
+                Médicos que requieren verificación de documentos
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid gap-3">
                 {pendingDoctors.slice(0, 3).map((doctor) => (
-                  <div key={doctor.id} className="flex justify-between items-center p-3 bg-white rounded-lg border">
+                  <div key={doctor.id} className="flex justify-between items-center p-3 bg-background rounded-lg border">
                     <div className="flex items-center gap-3">
-                      <UserCheck className="h-4 w-4 text-orange-600" />
+                      <UserCheck className="h-4 w-4 text-primary" />
                       <div>
                         <span className="font-medium">{doctor.profiles?.full_name || 'N/A'}</span>
                         <div className="text-sm text-muted-foreground">{doctor.specialty}</div>
+                        <div className="text-xs text-muted-foreground">Cédula: {doctor.professional_license}</div>
                       </div>
                     </div>
                     <div className="flex gap-2">
@@ -361,8 +384,15 @@ export const AdminDashboard = () => {
                   </div>
                 ))}
                 {pendingDoctors.length > 3 && (
-                  <div className="text-center text-sm text-muted-foreground">
-                    Y {pendingDoctors.length - 3} más en la sección de Doctores...
+                  <div className="text-center">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => setActiveTab('requests')}
+                      className="mt-2"
+                    >
+                      Ver todas las solicitudes ({pendingDoctors.length})
+                    </Button>
                   </div>
                 )}
               </div>
