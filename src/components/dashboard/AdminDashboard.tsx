@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, UserCheck, Clock, Shield, Star, Calendar, Activity, CreditCard, FileText, DollarSign, UserPlus } from 'lucide-react';
+import { Users, UserCheck, Clock, Shield, Star, Calendar, Activity, CreditCard, FileText, DollarSign, UserPlus, TestTube } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
 import { DoctorListComponent } from '@/components/admin/DoctorListComponent';
@@ -14,6 +14,7 @@ import { AdminAppointments } from '@/components/admin/AdminAppointments';
 import { PaymentSettings } from '@/components/admin/PaymentSettings';
 import DoctorRegistrationRequests from '@/components/admin/DoctorRegistrationRequests';
 import PhysicalPaymentRequests from '@/components/admin/PhysicalPaymentRequests';
+import { SystemTester } from '@/components/SystemTester';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { DashboardLayout } from '@/components/ui/DashboardLayout';
@@ -147,28 +148,32 @@ export const AdminDashboard = () => {
 
   const approveDoctor = async (doctorId: string) => {
     try {
-      const { error } = await supabase
-        .from('doctor_profiles')
-        .update({ 
-          verification_status: 'verified',
-          verified_at: new Date().toISOString()
-          // Removemos verified_by temporalmente hasta que sepamos la estructura correcta
-        })
-        .eq('id', doctorId);
+      // Usar la función existente para verificar doctor que maneja correctamente las referencias
+      const { data, error } = await supabase.rpc('admin_verify_doctor', {
+        doctor_id: doctorId
+      });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error al aprobar médico:', error);
+        toast({
+          title: "Error",
+          description: `No se pudo aprobar al médico: ${error.message}`,
+          variant: "destructive",
+        });
+        return;
+      }
 
       toast({
         title: "Médico Aprobado",
         description: "El médico ha sido verificado exitosamente",
       });
-
+      
       fetchData();
     } catch (error) {
       console.error('Error approving doctor:', error);
       toast({
         title: "Error",
-        description: "No se pudo aprobar el médico",
+        description: "Error inesperado al aprobar al médico",
         variant: "destructive"
       });
     }
@@ -179,12 +184,20 @@ export const AdminDashboard = () => {
       const { error } = await supabase
         .from('doctor_profiles')
         .update({ 
-          verification_status: 'rejected'
-          // Removemos verified_by temporalmente hasta que sepamos la estructura correcta
+          verification_status: 'rejected',
+          verified_at: new Date().toISOString()
         })
         .eq('id', doctorId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error al rechazar médico:', error);
+        toast({
+          title: "Error",
+          description: `No se pudo rechazar al médico: ${error.message}`,
+          variant: "destructive",
+        });
+        return;
+      }
 
       toast({
         title: "Médico Rechazado",
@@ -196,7 +209,7 @@ export const AdminDashboard = () => {
       console.error('Error rejecting doctor:', error);
       toast({
         title: "Error",
-        description: "No se pudo rechazar el médico",
+        description: "Error inesperado al rechazar al médico",
         variant: "destructive"
       });
     }
@@ -380,13 +393,14 @@ export const AdminDashboard = () => {
 
         {/* Main Management Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="overview">Resumen</TabsTrigger>
             <TabsTrigger value="requests">Solicitudes</TabsTrigger>
             <TabsTrigger value="payments">Pagos Físicos</TabsTrigger>
             <TabsTrigger value="doctors">Doctores</TabsTrigger>
             <TabsTrigger value="patients">Pacientes</TabsTrigger>
             <TabsTrigger value="pricing">Precios</TabsTrigger>
+            <TabsTrigger value="testing">Pruebas</TabsTrigger>
           </TabsList>
 
 
@@ -438,7 +452,7 @@ export const AdminDashboard = () => {
                     <CardTitle>Acciones Rápidas</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                       <Button variant="outline" className="h-20 flex flex-col gap-2" onClick={() => setActiveTab('requests')}>
                         <UserPlus className="h-6 w-6" />
                         Nuevas Solicitudes
@@ -454,6 +468,10 @@ export const AdminDashboard = () => {
                       <Button variant="outline" className="h-20 flex flex-col gap-2" onClick={() => setActiveTab('pricing')}>
                         <DollarSign className="h-6 w-6" />
                         Configurar Precios
+                      </Button>
+                      <Button variant="outline" className="h-20 flex flex-col gap-2" onClick={() => setActiveTab('testing')}>
+                        <TestTube className="h-6 w-6" />
+                        Pruebas Sistema
                       </Button>
                     </div>
                   </CardContent>
@@ -499,6 +517,12 @@ export const AdminDashboard = () => {
                   <PaymentSettings />
                 </CardContent>
               </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="testing">
+            <div className="space-y-6">
+              <SystemTester />
             </div>
           </TabsContent>
         </Tabs>
