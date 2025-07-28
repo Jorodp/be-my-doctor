@@ -13,7 +13,17 @@ serve(async (req) => {
   try {
     console.log("TEST FUNCTION STARTED");
     
-    const body = await req.json();
+    let body = {};
+    try {
+      const text = await req.text();
+      if (text) {
+        body = JSON.parse(text);
+      }
+    } catch (e) {
+      // Si no hay body o no es JSON válido, usar objeto vacío
+      console.log("No valid JSON body received");
+    }
+    
     console.log("Body received:", body);
     
     return new Response(JSON.stringify({ 
