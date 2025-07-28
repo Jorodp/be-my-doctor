@@ -2,7 +2,7 @@ import React, { memo, useMemo, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { usePerformanceOptimization } from '@/hooks/usePerformanceOptimization';
+import { useDebounce } from '@/hooks/usePerformanceOptimization';
 
 // Componente optimizado para listas de doctores
 interface DoctorCardProps {
@@ -60,8 +60,6 @@ interface NotificationItemProps {
 }
 
 export const OptimizedNotificationItem = memo(({ notification, onMarkAsRead }: NotificationItemProps) => {
-  const { useDebounce } = usePerformanceOptimization();
-  
   const debouncedMarkAsRead = useDebounce((id: string) => {
     onMarkAsRead(id);
   }, 300);
