@@ -37,10 +37,22 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Generate secure random passwords
+    const generateSecurePassword = () => {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%';
+      let password = '';
+      for (let i = 0; i < 12; i++) {
+        password += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return password;
+    };
+
+    const adminPassword = generateSecurePassword();
+    
     // 1. Create Admin (jorodp@hotmail.com)
     const { data: adminUser, error: adminError } = await supabaseAdmin.auth.admin.createUser({
       email: 'jorodp@hotmail.com',
-      password: '058__coL',
+      password: adminPassword,
       email_confirm: true,
       user_metadata: {
         role: 'admin',
@@ -61,10 +73,12 @@ Deno.serve(async (req) => {
 
     if (adminProfileError) console.log('Admin profile error:', adminProfileError)
 
+    const patientPassword = generateSecurePassword();
+    
     // 2. Create Patient (paciente@paciente.com)
     const { data: patientUser, error: patientError } = await supabaseAdmin.auth.admin.createUser({
       email: 'paciente@paciente.com',
-      password: 'paciente123',
+      password: patientPassword,
       email_confirm: true,
       user_metadata: {
         role: 'patient',
@@ -85,10 +99,12 @@ Deno.serve(async (req) => {
 
     if (patientProfileError) console.log('Patient profile error:', patientProfileError)
 
+    const doctorPassword = generateSecurePassword();
+    
     // 3. Create Doctor (demo)
     const { data: doctorUser, error: doctorError } = await supabaseAdmin.auth.admin.createUser({
       email: 'doctor.demo@bemy.com',
-      password: 'Doctor123',
+      password: doctorPassword,
       email_confirm: true,
       user_metadata: {
         role: 'doctor',
@@ -123,10 +139,12 @@ Deno.serve(async (req) => {
 
     if (doctorProfError) console.log('Doctor professional profile error:', doctorProfError)
 
+    const assistantPassword = generateSecurePassword();
+    
     // 4. Create Medical Assistant (demo)
     const { data: assistantUser, error: assistantError } = await supabaseAdmin.auth.admin.createUser({
       email: 'asistente.demo@bemy.com',
-      password: 'Asistente123',
+      password: assistantPassword,
       email_confirm: true,
       user_metadata: {
         role: 'assistant',
@@ -152,7 +170,7 @@ Deno.serve(async (req) => {
     const demoDoctors = [
       {
         email: 'dr.garcia@bemy.com',
-        password: 'Doctor123',
+        password: generateSecurePassword(),
         full_name: 'Dr. Carlos García Hernández',
         specialty: 'Cardiología',
         license: '1234567',
@@ -165,7 +183,7 @@ Deno.serve(async (req) => {
       },
       {
         email: 'dr.martinez@bemy.com',
-        password: 'Doctor123',
+        password: generateSecurePassword(),
         full_name: 'Dra. Ana Martínez López',
         specialty: 'Dermatología',
         license: '2345678',
@@ -178,7 +196,7 @@ Deno.serve(async (req) => {
       },
       {
         email: 'dr.rodriguez@bemy.com',
-        password: 'Doctor123',
+        password: generateSecurePassword(),
         full_name: 'Dr. Luis Rodríguez Vega',
         specialty: 'Pediatría',
         license: '3456789',
@@ -191,7 +209,7 @@ Deno.serve(async (req) => {
       },
       {
         email: 'dr.fernandez@bemy.com',
-        password: 'Doctor123',
+        password: generateSecurePassword(),
         full_name: 'Dra. María Fernández Castro',
         specialty: 'Ginecología',
         license: '4567890',
@@ -204,7 +222,7 @@ Deno.serve(async (req) => {
       },
       {
         email: 'dr.santos@bemy.com',
-        password: 'Doctor123',
+        password: generateSecurePassword(),
         full_name: 'Dr. Roberto Santos Díaz',
         specialty: 'Medicina General',
         license: '5678901',
@@ -319,23 +337,27 @@ Deno.serve(async (req) => {
         admin: {
           id: adminUser.user?.id,
           email: 'jorodp@hotmail.com',
-          role: 'admin'
+          role: 'admin',
+          password: adminPassword
         },
         patient: {
           id: patientUser.user?.id,
           email: 'paciente@paciente.com',
-          role: 'patient'
+          role: 'patient',
+          password: patientPassword
         },
         doctor: {
           id: doctorUser.user?.id,
           email: doctorUser.user?.email,
-          role: 'doctor'
+          role: 'doctor',
+          password: doctorPassword
         },
         assistant: {
           id: assistantUser.user?.id,
           email: assistantUser.user?.email,
           role: 'assistant',
-          assigned_doctor_id: doctorUser.user?.id
+          assigned_doctor_id: doctorUser.user?.id,
+          password: assistantPassword
         },
         demo_doctors: createdDoctors
       }

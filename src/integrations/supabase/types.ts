@@ -3289,6 +3289,10 @@ export type Database = {
           | { p_user_id: string; p_role: string }
         Returns: boolean
       }
+      is_admin_user: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       is_assistant: {
         Args: { p_roles: string[] }
         Returns: boolean
@@ -3297,12 +3301,20 @@ export type Database = {
         Args: { p_assistant_user_id: string; p_doctor_user_id: string }
         Returns: boolean
       }
+      is_assistant_user: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       is_doctor: {
         Args: { p_roles: string[] }
         Returns: boolean
       }
       is_doctor_profile_complete: {
         Args: { doctor_user_id: string }
+        Returns: boolean
+      }
+      is_doctor_user: {
+        Args: Record<PropertyKey, never>
         Returns: boolean
       }
       is_internal: {
@@ -3411,6 +3423,10 @@ export type Database = {
           p_diff?: Json
           p_created_by_system?: boolean
         }
+        Returns: undefined
+      }
+      log_security_event: {
+        Args: { p_event_type: string; p_user_id: string; p_details?: Json }
         Returns: undefined
       }
       mark_patient_arrived: {
@@ -3741,6 +3757,10 @@ export type Database = {
       update_doctor_profile_completeness: {
         Args: { doctor_id: string }
         Returns: undefined
+      }
+      validate_medical_data: {
+        Args: { data: Json }
+        Returns: boolean
       }
       verify_doctor: {
         Args: { p_doctor_user_id: string; p_admin_user_id: string }

@@ -17,10 +17,10 @@ export const CreateDemoUsers = () => {
 
       toast({
         title: "Usuarios demo creados",
-        description: "Se han creado exitosamente las 4 cuentas demo",
+        description: "Se han creado exitosamente las cuentas demo. Revisa la consola para las contraseñas.",
       });
 
-      console.log('Usuarios creados:', data);
+      console.log('Usuarios creados con contraseñas seguras:', data);
     } catch (error) {
       console.error('Error:', error);
       toast({
@@ -50,10 +50,13 @@ export const CreateDemoUsers = () => {
           {isCreating ? 'Creando...' : 'Crear Usuarios Demo'}
         </Button>
         <div className="mt-4 text-xs text-muted-foreground">
-          <p><strong>Admin:</strong> jorodp@hotmail.com / Jorge123</p>
-          <p><strong>Doctor:</strong> doctor.demo@bemy.com / Doctor123</p>
-          <p><strong>Paciente:</strong> paciente.demo@bemy.com / Paciente123</p>
-          <p><strong>Asistente:</strong> asistente.demo@bemy.com / Asistente123</p>
+          <p><strong>Admin:</strong> jorodp@hotmail.com</p>
+          <p><strong>Doctor:</strong> doctor.demo@bemy.com</p>
+          <p><strong>Paciente:</strong> paciente@paciente.com</p>
+          <p><strong>Asistente:</strong> asistente.demo@bemy.com</p>
+          <p className="mt-2 text-orange-600 font-medium">
+            ⚠️ Las contraseñas se generan automáticamente y se muestran en la consola por seguridad.
+          </p>
         </div>
       </CardContent>
     </Card>
