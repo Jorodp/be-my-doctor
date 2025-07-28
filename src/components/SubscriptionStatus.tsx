@@ -68,6 +68,27 @@ export function SubscriptionStatus() {
       setLoading(true);
       console.log("SubscriptionStatus: Checking subscription for user:", user?.id);
       
+      // Primero verificar en doctor_profiles si tiene suscripción local activa
+      const { data: doctorProfile, error: profileError } = await supabase
+        .from('doctor_profiles')
+        .select('subscription_status, subscription_expires_at')
+        .eq('user_id', user?.id)
+        .single();
+
+      if (!profileError && doctorProfile?.subscription_status === 'active') {
+        console.log("SubscriptionStatus: Found active subscription in doctor_profiles:", doctorProfile);
+        setSubscription({
+          id: 'local-subscription',
+          plan: 'active',
+          status: 'active',
+          ends_at: doctorProfile.subscription_expires_at || '',
+          amount: 0
+        });
+        setLoading(false);
+        return;
+      }
+
+      // Si no tiene suscripción local activa, verificar con Stripe
       const { data, error } = await supabase.functions.invoke('verify-doctor-subscription');
       if (error) {
         console.error("SubscriptionStatus: Error from verify-doctor-subscription:", error);
@@ -78,7 +99,7 @@ export function SubscriptionStatus() {
       
       if (data?.subscribed && data?.status === 'active') {
         setSubscription({
-          id: 'active-subscription',
+          id: 'stripe-subscription',
           plan: data.plan || 'active',
           status: data.status,
           ends_at: data.ends_at || '',

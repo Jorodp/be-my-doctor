@@ -589,63 +589,75 @@ const DoctorDashboardContent = () => {
 
         {/* Main Content Tabs */}
         <Tabs defaultValue="consultas" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-11 text-xs">
-            <TabsTrigger value="consultas" className="flex items-center gap-1">
-              <Timer className="h-3 w-3" />
-              <span className="hidden sm:inline">Flujo de Consultas</span>
-              <span className="sm:hidden">Consultas</span>
-            </TabsTrigger>
-            <TabsTrigger value="notas" className="flex items-center gap-1">
-              <FileText className="h-3 w-3" />
-              <span className="hidden sm:inline">Notas Médicas</span>
-              <span className="sm:hidden">Notas</span>
-            </TabsTrigger>
-            <TabsTrigger value="schedule" className="flex items-center gap-1">
-              <Settings className="h-3 w-3" />
-              <span className="hidden sm:inline">Agenda</span>
-              <span className="sm:hidden">Agenda</span>
-            </TabsTrigger>
-            <TabsTrigger value="clinics" className="flex items-center gap-1">
-              <Building2 className="h-3 w-3" />
-              <span className="hidden sm:inline">Consultorios</span>
-              <span className="sm:hidden">Clinicas</span>
-            </TabsTrigger>
-            <TabsTrigger value="today" className="flex items-center gap-1">
-              <Clock className="h-3 w-3" />
-              <span className="hidden sm:inline">Citas de Hoy</span>
-              <span className="sm:hidden">Hoy</span>
-            </TabsTrigger>
-            <TabsTrigger value="payments" className="flex items-center gap-1">
-              <CreditCard className="h-3 w-3" />
-              <span className="hidden sm:inline">Gestión de Pagos</span>
-              <span className="sm:hidden">Pagos</span>
-            </TabsTrigger>
-            <TabsTrigger value="ratings" className="flex items-center gap-1">
-              <Star className="h-3 w-3" />
-              <span className="hidden sm:inline">Calificaciones</span>
-              <span className="sm:hidden">Rating</span>
-            </TabsTrigger>
-            <TabsTrigger value="income" className="flex items-center gap-1">
-              <DollarSign className="h-3 w-3" />
-              <span className="hidden sm:inline">Ingresos</span>
-              <span className="sm:hidden">$$$</span>
-            </TabsTrigger>
-            <TabsTrigger value="subscription" className="flex items-center gap-1">
-              <UserCheck className="h-3 w-3" />
-              <span className="hidden sm:inline">Suscripción</span>
-              <span className="sm:hidden">Subs</span>
-            </TabsTrigger>
-            <TabsTrigger value="chat" className="flex items-center gap-1">
-              <MessageSquare className="h-3 w-3" />
-              <span className="hidden sm:inline">Chat</span>
-              <span className="sm:hidden">Chat</span>
-            </TabsTrigger>
-            <TabsTrigger value="history" className="flex items-center gap-1">
-              <History className="h-3 w-3" />
-              <span className="hidden sm:inline">Historial</span>
-              <span className="sm:hidden">Hist</span>
-            </TabsTrigger>
-          </TabsList>
+          <div className="w-full overflow-x-auto">
+            <TabsList className="grid grid-cols-6 lg:grid-cols-11 gap-1 h-auto p-2 bg-muted/50 rounded-lg">
+              <TabsTrigger value="consultas" className="flex flex-col items-center gap-1 p-3 text-xs font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                <Timer className="h-4 w-4" />
+                <span className="hidden sm:block">Consultas</span>
+                <span className="sm:hidden">Cons</span>
+              </TabsTrigger>
+              
+              <TabsTrigger value="schedule" className="flex flex-col items-center gap-1 p-3 text-xs font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                <Settings className="h-4 w-4" />
+                <span className="hidden sm:block">Agenda</span>
+                <span className="sm:hidden">Agen</span>
+              </TabsTrigger>
+              
+              <TabsTrigger value="today" className="flex flex-col items-center gap-1 p-3 text-xs font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                <Clock className="h-4 w-4" />
+                <span className="hidden sm:block">Hoy</span>
+                <span className="sm:hidden">Hoy</span>
+              </TabsTrigger>
+              
+              <TabsTrigger value="clinics" className="flex flex-col items-center gap-1 p-3 text-xs font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                <Building2 className="h-4 w-4" />
+                <span className="hidden sm:block">Clinicas</span>
+                <span className="sm:hidden">Clin</span>
+              </TabsTrigger>
+              
+              <TabsTrigger value="payments" className="flex flex-col items-center gap-1 p-3 text-xs font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                <CreditCard className="h-4 w-4" />
+                <span className="hidden sm:block">Pagos</span>
+                <span className="sm:hidden">Pago</span>
+              </TabsTrigger>
+              
+              <TabsTrigger value="subscription" className="flex flex-col items-center gap-1 p-3 text-xs font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                <UserCheck className="h-4 w-4" />
+                <span className="hidden sm:block">Suscripción</span>
+                <span className="sm:hidden">Subs</span>
+              </TabsTrigger>
+              
+              <TabsTrigger value="ratings" className="flex flex-col items-center gap-1 p-3 text-xs font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm lg:flex">
+                <Star className="h-4 w-4" />
+                <span className="hidden sm:block">Rating</span>
+                <span className="sm:hidden">★</span>
+              </TabsTrigger>
+              
+              <TabsTrigger value="income" className="flex flex-col items-center gap-1 p-3 text-xs font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm lg:flex">
+                <DollarSign className="h-4 w-4" />
+                <span className="hidden sm:block">Ingresos</span>
+                <span className="sm:hidden">$</span>
+              </TabsTrigger>
+              
+              <TabsTrigger value="chat" className="flex flex-col items-center gap-1 p-3 text-xs font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm lg:flex">
+                <MessageSquare className="h-4 w-4" />
+                <span className="hidden sm:block">Chat</span>
+                <span className="sm:hidden">💬</span>
+              </TabsTrigger>
+              
+              <TabsTrigger value="history" className="flex flex-col items-center gap-1 p-3 text-xs font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm lg:flex">
+                <History className="h-4 w-4" />
+                <span className="hidden sm:block">Historial</span>
+                <span className="sm:hidden">📋</span>
+              </TabsTrigger>
+              
+              <TabsTrigger value="notas" className="flex flex-col items-center gap-1 p-3 text-xs font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm lg:flex">
+                <FileText className="h-4 w-4" />
+                <span className="hidden sm:block">Notas</span>
+                <span className="sm:hidden">📝</span>
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           <TabsContent value="consultas">
             <ConsultationFlowManager 
