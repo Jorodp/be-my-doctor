@@ -230,9 +230,17 @@ export default function Auth() {
               )}
               <div className="flex flex-col gap-3">
                 {registrationStatus === 'success' && (
-                  <Button onClick={() => setActiveTab('signin')} className="w-full">
-                    Ir a iniciar sesión
-                  </Button>
+                <Button 
+                  onClick={() => {
+                    setRegistrationStatus('idle');
+                    setRegistrationMessage('');
+                    setActiveTab('signin');
+                    setSignInEmail(signUpEmail); // Pre-llenar el email
+                  }} 
+                  className="w-full"
+                >
+                  Ir a iniciar sesión
+                </Button>
                 )}
                 <Button 
                   variant="outline" 
