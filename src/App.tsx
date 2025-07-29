@@ -29,6 +29,7 @@ import AdminDoctorsPage from "./pages/admin/doctores/index";
 import AdminDoctorDetailPage from "./pages/admin/doctores/detail";
 import ResetPassword from "./pages/ResetPassword";
 import EmailConfirmation from "./pages/EmailConfirmation";
+import AuthCallback from "./pages/AuthCallback";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 const queryClient = new QueryClient();
@@ -44,6 +45,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/email-confirmation" element={<EmailConfirmation />} />
             <Route path="/dashboard" element={<Dashboard />} />
