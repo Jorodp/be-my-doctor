@@ -1,271 +1,78 @@
-import React, { useEffect, useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
-import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
-import {
-  Clock,
-  Plus,
-  Trash2,
-  Building,
-  CalendarCheck,
-  CalendarX,
-  Settings,
-  Stethoscope,
-  User
-} from 'lucide-react';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogTrigger 
-} from '@/components/ui/dialog';
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { useAssistantClinics } from '@/hooks/useAssistantClinics';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { useAuth } from '@/hooks/useAuth';
-
-interface Availability {
-  id: string;
-  clinic_id: string;
-  weekday: number;
-  start_time: string;
-  end_time: string;
-  is_active: boolean;
-  slot_duration_minutes?: number;
-}
+import React, { useState, useEffect } from "react";
+import { UnifiedScheduleManager } from "@/components/UnifiedScheduleManager";
+import { Card, CardContent } from "@/components/ui/card";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { useAssistantClinics } from "@/hooks/useAssistantClinics";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { Building } from "lucide-react";
 
 interface AssistantScheduleManagerProps {
   doctorId?: string;
 }
 
-// Generar slots de tiempo cada 30 minutos de 06:00 a 22:00
-const timeSlots = Array.from({ length: 33 }, (_, i) => {
-  const hours = Math.floor(i / 2) + 6;
-  const minutes = (i % 2) * 30;
-  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-});
-
-export function AssistantScheduleManager({}: AssistantScheduleManagerProps) {
-  const { toast } = useToast();
+export function AssistantScheduleManager({ doctorId }: AssistantScheduleManagerProps) {
   const { user } = useAuth();
-  const [availability, setAvailability] = useState<Availability[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
-  const [selectedClinic, setSelectedClinic] = useState<string>('');
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [newStartTime, setNewStartTime] = useState('09:00');
-  const [newEndTime, setNewEndTime] = useState('17:00');
-  
-  // Obtener clínicas asignadas al asistente
+  const [assistantDoctorId, setAssistantDoctorId] = useState<string | null>(null);
   const { data: clinics = [], isLoading: clinicsLoading } = useAssistantClinics();
 
-  // Configurar clínica por defecto cuando cambien las clínicas
+  // Función para obtener el doctor asignado al asistente
+  const fetchAssignedDoctorId = async () => {
+    if (!user) return;
+
+    try {
+      // Primero intentar desde clinic_assistants
+      const { data: clinicAssignments } = await supabase
+        .from('clinic_assistants')
+        .select(`
+          clinic_id,
+          clinics!inner (
+            doctor_id,
+            profiles!inner (
+              user_id
+            )
+          )
+        `)
+        .eq('assistant_id', user.id)
+        .limit(1);
+
+      if (clinicAssignments && clinicAssignments.length > 0) {
+        const doctorUserId = (clinicAssignments[0] as any).clinics.profiles.user_id;
+        setAssistantDoctorId(doctorUserId);
+        return;
+      }
+
+      // Si no encontramos en clinic_assistants, intentar desde el perfil
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('assigned_doctor_id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (profile?.assigned_doctor_id) {
+        setAssistantDoctorId(profile.assigned_doctor_id);
+        return;
+      }
+
+      // Si no encontramos, intentar desde doctor_assistants
+      const { data: doctorAssignment } = await supabase
+        .from('doctor_assistants')
+        .select('doctor_id')
+        .eq('assistant_id', user.id)
+        .limit(1);
+
+      if (doctorAssignment && doctorAssignment.length > 0) {
+        setAssistantDoctorId(doctorAssignment[0].doctor_id);
+      }
+    } catch (error) {
+      console.error('Error fetching assigned doctor:', error);
+    }
+  };
+
+  // Cargar el doctor asignado al montar el componente
   useEffect(() => {
-    if (clinics.length > 0 && !selectedClinic) {
-      setSelectedClinic(clinics[0].id);
-    }
-  }, [clinics, selectedClinic]);
-
-  // Cargar disponibilidad cuando cambie la clínica seleccionada
-  useEffect(() => {
-    if (selectedClinic) {
-      fetchAvailability();
-    }
-  }, [selectedClinic]);
-
-
-  const fetchAvailability = async () => {
-    if (!selectedClinic) return;
-    
-    setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('availabilities')
-        .select('*')
-        .eq('clinic_id', selectedClinic)
-        .order('weekday')
-        .order('start_time');
-
-      if (error) throw error;
-
-      setAvailability(data || []);
-    } catch (error) {
-      console.error('Error fetching availability:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo cargar la disponibilidad",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const addTimeSlot = async () => {
-    if (!selectedDate) {
-      toast({
-        title: "Error",
-        description: "Selecciona una fecha en el calendario",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (!selectedClinic) {
-      toast({
-        title: "Error",
-        description: "Selecciona un consultorio",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (!newStartTime || !newEndTime) {
-      toast({
-        title: "Error",
-        description: "Selecciona las horas de inicio y fin",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (newStartTime >= newEndTime) {
-      toast({
-        title: "Error",
-        description: "La hora de inicio debe ser anterior a la hora de fin",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    try {
-      setSaving(true);
-      
-      // Convertir día de la semana (0=domingo, 1=lunes) a formato interno (0=lunes, 6=domingo)
-      const jsDay = selectedDate.getDay();
-      const weekday = jsDay === 0 ? 6 : jsDay - 1;
-
-      const { error } = await supabase
-        .from('availabilities')
-        .insert({
-          clinic_id: selectedClinic,
-          weekday: weekday,
-          start_time: newStartTime,
-          end_time: newEndTime,
-          is_active: true,
-          slot_duration_minutes: 60
-        });
-
-      if (error) throw error;
-
-      await fetchAvailability();
-      setDialogOpen(false);
-      setNewStartTime('09:00');
-      setNewEndTime('17:00');
-
-      toast({
-        title: "Éxito",
-        description: "Horario agregado correctamente"
-      });
-    } catch (error) {
-      console.error('Error adding time slot:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo agregar el horario",
-        variant: "destructive"
-      });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const toggleAvailability = async (availabilityId: string, currentStatus: boolean) => {
-    try {
-      const { error } = await supabase
-        .from('availabilities')
-        .update({ is_active: !currentStatus })
-        .eq('id', availabilityId);
-
-      if (error) throw error;
-
-      await fetchAvailability();
-
-      toast({
-        title: "Éxito",
-        description: `Horario ${!currentStatus ? 'habilitado' : 'deshabilitado'}`
-      });
-    } catch (error) {
-      console.error('Error toggling availability:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo actualizar la disponibilidad",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const deleteAvailability = async (availabilityId: string) => {
-    try {
-      const { error } = await supabase
-        .from('availabilities')
-        .delete()
-        .eq('id', availabilityId);
-
-      if (error) throw error;
-
-      await fetchAvailability();
-
-      toast({
-        title: "Éxito",
-        description: "Horario eliminado correctamente"
-      });
-    } catch (error) {
-      console.error('Error deleting availability:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo eliminar el horario",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const getDateAvailability = (date: Date) => {
-    if (!selectedClinic) return [];
-    
-    const jsDay = date.getDay();
-    const weekday = jsDay === 0 ? 6 : jsDay - 1;
-    
-    return availability.filter(slot => 
-      slot.clinic_id === selectedClinic && 
-      slot.weekday === weekday && 
-      slot.is_active
-    );
-  };
-
-  const getSelectedDateSlots = () => {
-    if (!selectedDate) return [];
-    return getDateAvailability(selectedDate);
-  };
-
-  const formatTime = (time: string) => {
-    return new Date(`2000-01-01T${time}`).toLocaleTimeString('es-ES', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
+    fetchAssignedDoctorId();
+  }, [user]);
 
   if (clinicsLoading) {
     return (
@@ -280,194 +87,38 @@ export function AssistantScheduleManager({}: AssistantScheduleManagerProps) {
       <Card>
         <CardContent className="text-center py-8">
           <Building className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-          <p className="text-lg font-semibold mb-2">Sin consultorios registrados</p>
+          <p className="text-lg font-semibold mb-2">Sin consultorios asignados</p>
           <p className="text-muted-foreground">
-            El doctor seleccionado no tiene consultorios registrados.
+            No tienes consultorios asignados para gestionar.
           </p>
         </CardContent>
       </Card>
     );
   }
 
-  const selectedClinicInfo = clinics.find(c => c.id === selectedClinic);
+  // Usar el doctorId pasado como prop o el asignado al asistente
+  const finalDoctorId = doctorId || assistantDoctorId;
 
-  return (
-    <div className="space-y-6">
-      {/* Selector de consultorio */}
+  if (!finalDoctorId) {
+    return (
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Building className="h-5 w-5" />
-            Gestión de Agenda
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-4 mb-4">
-            <div className="flex-1">
-              <label className="text-sm font-medium">Consultorio:</label>
-              <Select value={selectedClinic} onValueChange={setSelectedClinic}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {clinics.map(clinic => (
-                    <SelectItem key={clinic.id} value={clinic.id}>
-                      <div>
-                        <div className="font-medium">{clinic.name}</div>
-                        <div className="text-sm text-muted-foreground">
-                          {clinic.city}, {clinic.state}
-                        </div>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+        <CardContent className="text-center py-8">
+          <Building className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+          <p className="text-lg font-semibold mb-2">Doctor no asignado</p>
+          <p className="text-muted-foreground">
+            No se ha encontrado un doctor asignado para gestionar la agenda.
+          </p>
         </CardContent>
       </Card>
+    );
+  }
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Calendario */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CalendarCheck className="h-5 w-5" />
-              Calendario
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Calendar
-              mode="single"
-              selected={selectedDate}
-              onSelect={setSelectedDate}
-              className="rounded-md border w-full"
-            />
-          </CardContent>
-        </Card>
-
-        {/* Horarios del día seleccionado */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Clock className="h-5 w-5" />
-              Horarios disponibles
-              {selectedDate && (
-                <span className="text-sm font-normal text-muted-foreground">
-                  {selectedDate.toLocaleDateString('es-ES', { 
-                    weekday: 'long', 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric' 
-                  })}
-                </span>
-              )}
-            </CardTitle>
-            <div className="flex gap-2">
-              <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Agregar horario
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Agregar nuevo horario</DialogTitle>
-                    <DialogDescription>
-                      Configurar horario para {selectedClinicInfo?.name}
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-sm font-medium">Hora de inicio</label>
-                        <Select value={newStartTime} onValueChange={setNewStartTime}>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {timeSlots.map(time => (
-                              <SelectItem key={time} value={time}>{time}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium">Hora de fin</label>
-                        <Select value={newEndTime} onValueChange={setNewEndTime}>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {timeSlots.map(time => (
-                              <SelectItem key={time} value={time}>{time}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                    <div className="flex justify-end gap-2">
-                      <Button 
-                        variant="outline" 
-                        onClick={() => setDialogOpen(false)}
-                      >
-                        Cancelar
-                      </Button>
-                      <Button 
-                        onClick={addTimeSlot}
-                        disabled={saving}
-                      >
-                        {saving ? 'Agregando...' : 'Agregar'}
-                      </Button>
-                    </div>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {getSelectedDateSlots().length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <CalendarX className="h-8 w-8 mx-auto mb-2" />
-                  <p>No hay horarios configurados para este día</p>
-                </div>
-              ) : (
-                getSelectedDateSlots().map(slot => (
-                  <div key={slot.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <Clock className="h-4 w-4" />
-                      <span className="font-medium">
-                        {formatTime(slot.start_time)} - {formatTime(slot.end_time)}
-                      </span>
-                      <Badge variant={slot.is_active ? "default" : "secondary"}>
-                        {slot.is_active ? 'Activo' : 'Inactivo'}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => toggleAvailability(slot.id, slot.is_active)}
-                      >
-                        {slot.is_active ? <CalendarX className="h-4 w-4" /> : <CalendarCheck className="h-4 w-4" />}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => deleteAvailability(slot.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+  return (
+    <UnifiedScheduleManager
+      doctorId={finalDoctorId}
+      title="Gestión de Agenda del Doctor"
+      description="Administra los horarios de consulta. Los cambios se sincronizan automáticamente con el doctor y son visibles para los pacientes."
+      readOnly={false}
+    />
   );
 }

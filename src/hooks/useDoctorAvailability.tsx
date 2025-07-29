@@ -1,6 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
+// Hook deprecated - use useUnifiedDoctorAvailability from useUnifiedAvailability instead
+// Kept for backward compatibility
 export function useDoctorAvailability(doctorUserId: string) {
   return useQuery({
     queryKey: ["doctor-availability", doctorUserId],
@@ -39,13 +41,13 @@ export function useDoctorAvailability(doctorUserId: string) {
 
       if (availError) throw availError;
 
-  // Create a map of weekdays that have availability (JavaScript format: 0=domingo, 6=sábado)
-  const availabilityMap: { [key: number]: boolean } = {};
-  availabilities?.forEach(avail => {
-    // Convertir de formato interno (0=lunes, 6=domingo) a JavaScript (0=domingo, 6=sábado)
-    const jsWeekday = avail.weekday === 6 ? 0 : avail.weekday + 1;
-    availabilityMap[jsWeekday] = true;
-  });
+      // Create a map of weekdays that have availability (JavaScript format: 0=domingo, 6=sábado)
+      const availabilityMap: { [key: number]: boolean } = {};
+      availabilities?.forEach(avail => {
+        // Convertir de formato interno (0=lunes, 6=domingo) a JavaScript (0=domingo, 6=sábado)
+        const jsWeekday = avail.weekday === 6 ? 0 : avail.weekday + 1;
+        availabilityMap[jsWeekday] = true;
+      });
 
       return availabilityMap;
     },
