@@ -139,17 +139,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []); // Empty dependency array to run only once
 
   const signUp = async (email: string, password: string, role: UserRole = 'patient', additionalData: any = {}) => {
-    // Force production URL for bemy.com.mx domain
-    const currentHost = window.location.hostname;
-    const isProduction = currentHost === 'bemy.com.mx' || 
-                        currentHost.includes('bemy.com.mx') || 
-                        window.location.href.includes('bemy.com.mx');
+    // Always use the production URL since you're in production
+    const redirectUrl = 'https://bemy.com.mx/auth/callback';
     
-    const redirectUrl = isProduction 
-      ? 'https://bemy.com.mx/auth/callback'
-      : `${window.location.origin}/auth/callback`;
-    
-    console.log('SignUp redirect URL:', redirectUrl, 'Current host:', currentHost);
+    console.log('SignUp redirect URL:', redirectUrl);
     
     const { error } = await supabase.auth.signUp({
       email,
