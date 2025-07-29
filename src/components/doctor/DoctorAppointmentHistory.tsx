@@ -99,13 +99,14 @@ export const DoctorAppointmentHistory = () => {
             recommendations
           ),
           doctor_ratings (
-            stars,
+            rating,
             comment
           )
         `)
         .eq('doctor_user_id', user.id)
+        .lte('ends_at', toDate.toISOString())
         .gte('starts_at', fromDate.toISOString())
-        .lte('starts_at', toDate.toISOString())
+        .in('status', ['completed', 'cancelled'])
         .order('starts_at', { ascending: false });
 
       if (error) throw error;
@@ -114,7 +115,10 @@ export const DoctorAppointmentHistory = () => {
         ...appointment,
         patient_profile: appointment.profiles as any,
         consultation_notes: appointment.consultation_notes?.[0],
-        rating: appointment.doctor_ratings?.[0]
+        rating: appointment.doctor_ratings?.[0] ? {
+          stars: appointment.doctor_ratings[0].rating,
+          comment: appointment.doctor_ratings[0].comment
+        } : undefined
       })) || [];
 
       setAppointments(processedAppointments);
