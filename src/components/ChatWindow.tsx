@@ -86,24 +86,37 @@ export const ChatWindow = ({ conversationId, onConversationSelect }: ChatWindowP
       const { data, error } = await supabase
         .from('conversations')
         .select('*')
-        .order('updated_at', { ascending: false });
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
 
-      // Fetch profiles separately
-      const conversationsWithProfiles = await Promise.all(
-        data.map(async (conv) => {
-          const [patientProfile, doctorProfile, assistantProfile] = await Promise.all([
-            supabase.from('profiles').select('full_name, profile_image_url').eq('user_id', conv.patient_id).single(),
-            supabase.from('profiles').select('full_name, profile_image_url').eq('user_id', conv.doctor_id).single(),
-            conv.assistant_id ? supabase.from('profiles').select('full_name, profile_image_url').eq('user_id', conv.assistant_id).single() : null
+      // Get conversations where the user is involved (through appointments)
+      const userConversations = await Promise.all(
+        (data || []).map(async (conv) => {
+          // Get appointment details
+          const { data: appointment } = await supabase
+            .from('appointments')
+            .select('doctor_user_id, patient_user_id')
+            .eq('id', conv.appointment_id)
+            .single();
+
+          // Only include conversations where user is doctor or patient
+          if (!appointment || (appointment.doctor_user_id !== user.id && appointment.patient_user_id !== user.id)) {
+            return null;
+          }
+
+          // Get patient and doctor profiles
+          const [patientProfile, doctorProfile] = await Promise.all([
+            supabase.from('profiles').select('full_name, profile_image_url').eq('user_id', appointment.patient_user_id).single(),
+            supabase.from('profiles').select('full_name, profile_image_url').eq('user_id', appointment.doctor_user_id).single()
           ]);
 
+          // Get last message
           const { data: lastMsg } = await supabase
-            .from('messages')
+            .from('conversation_messages')
             .select('*')
             .eq('conversation_id', conv.id)
-            .order('created_at', { ascending: false })
+            .order('sent_at', { ascending: false })
             .limit(1)
             .single();
 
@@ -112,26 +125,36 @@ export const ChatWindow = ({ conversationId, onConversationSelect }: ChatWindowP
             const { data: senderProfile } = await supabase
               .from('profiles')
               .select('full_name, profile_image_url, role')
-              .eq('user_id', lastMsg.sender_id)
+              .eq('user_id', lastMsg.sender_user_id)
               .single();
 
             lastMessageWithSender = {
-              ...lastMsg,
+              id: lastMsg.id,
+              content: lastMsg.content,
+              sender_id: lastMsg.sender_user_id,
+              created_at: lastMsg.sent_at,
               sender: senderProfile
             };
           }
 
           return {
-            ...conv,
+            id: conv.id,
+            appointment_id: conv.appointment_id,
+            created_at: conv.created_at,
+            updated_at: conv.created_at,
+            patient_id: appointment.patient_user_id,
+            doctor_id: appointment.doctor_user_id,
             patient_profile: patientProfile.data,
             doctor_profile: doctorProfile.data,
-            assistant_profile: assistantProfile?.data || null,
+            assistant_profile: null,
             last_message: lastMessageWithSender
           };
         })
       );
 
-      setConversations(conversationsWithProfiles);
+      // Filter out null values
+      const validConversations = userConversations.filter(conv => conv !== null);
+      setConversations(validConversations);
     } catch (error) {
       console.error('Error fetching conversations:', error);
     } finally {
@@ -144,10 +167,10 @@ export const ChatWindow = ({ conversationId, onConversationSelect }: ChatWindowP
 
     try {
       const { data, error } = await supabase
-        .from('messages')
+        .from('conversation_messages')
         .select('*')
         .eq('conversation_id', conversationId)
-        .order('created_at', { ascending: true });
+        .order('sent_at', { ascending: true });
 
       if (error) throw error;
 
@@ -157,11 +180,14 @@ export const ChatWindow = ({ conversationId, onConversationSelect }: ChatWindowP
           const { data: senderProfile } = await supabase
             .from('profiles')
             .select('full_name, profile_image_url, role')
-            .eq('user_id', message.sender_id)
+            .eq('user_id', message.sender_user_id)
             .single();
 
           return {
-            ...message,
+            id: message.id,
+            content: message.content,
+            sender_id: message.sender_user_id,
+            created_at: message.sent_at,
             sender: senderProfile
           };
         })
@@ -183,7 +209,7 @@ export const ChatWindow = ({ conversationId, onConversationSelect }: ChatWindowP
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'messages',
+          table: 'conversation_messages',
           filter: `conversation_id=eq.${conversationId}`,
         },
         async (payload) => {
@@ -191,14 +217,14 @@ export const ChatWindow = ({ conversationId, onConversationSelect }: ChatWindowP
           const { data: senderProfile } = await supabase
             .from('profiles')
             .select('full_name, profile_image_url, role')
-            .eq('user_id', payload.new.sender_id)
+            .eq('user_id', payload.new.sender_user_id)
             .single();
 
           const newMessage: Message = {
             id: payload.new.id,
             content: payload.new.content,
-            sender_id: payload.new.sender_id,
-            created_at: payload.new.created_at,
+            sender_id: payload.new.sender_user_id,
+            created_at: payload.new.sent_at,
             sender: senderProfile
           };
 
@@ -218,20 +244,14 @@ export const ChatWindow = ({ conversationId, onConversationSelect }: ChatWindowP
     setSending(true);
     try {
       const { error } = await supabase
-        .from('messages')
+        .from('conversation_messages')
         .insert({
           conversation_id: conversationId,
-          sender_id: user.id,
+          sender_user_id: user.id,
           content: newMessage.trim(),
         });
 
       if (error) throw error;
-
-      // Update conversation updated_at
-      await supabase
-        .from('conversations')
-        .update({ updated_at: new Date().toISOString() })
-        .eq('id', conversationId);
 
       setNewMessage('');
     } catch (error) {

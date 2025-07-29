@@ -87,21 +87,7 @@ export const DoctorAppointmentHistory = () => {
           notes,
           consultation_duration_minutes,
           waiting_time_minutes,
-          patient_user_id,
-          profiles!appointments_patient_user_id_fkey (
-            full_name,
-            profile_image_url,
-            phone
-          ),
-          consultation_notes (
-            diagnosis,
-            prescription,
-            recommendations
-          ),
-          doctor_ratings (
-            rating,
-            comment
-          )
+          patient_user_id
         `)
         .eq('doctor_user_id', user.id)
         .lte('ends_at', toDate.toISOString())
@@ -111,15 +97,41 @@ export const DoctorAppointmentHistory = () => {
 
       if (error) throw error;
 
-      const processedAppointments = appointmentsData?.map(appointment => ({
-        ...appointment,
-        patient_profile: appointment.profiles as any,
-        consultation_notes: appointment.consultation_notes?.[0],
-        rating: appointment.doctor_ratings?.[0] ? {
-          stars: appointment.doctor_ratings[0].rating,
-          comment: appointment.doctor_ratings[0].comment
-        } : undefined
-      })) || [];
+      // Fetch patient profiles and consultation notes separately
+      const processedAppointments = await Promise.all(
+        (appointmentsData || []).map(async (appointment) => {
+          // Fetch patient profile
+          const { data: patientProfile } = await supabase
+            .from('profiles')
+            .select('full_name, profile_image_url, phone')
+            .eq('user_id', appointment.patient_user_id)
+            .single();
+
+          // Fetch consultation notes
+          const { data: consultationNotes } = await supabase
+            .from('consultation_notes')
+            .select('diagnosis, prescription, recommendations')
+            .eq('appointment_id', appointment.id)
+            .single();
+
+          // Fetch rating
+          const { data: rating } = await supabase
+            .from('doctor_ratings')
+            .select('rating, comment')
+            .eq('appointment_id', appointment.id)
+            .single();
+
+          return {
+            ...appointment,
+            patient_profile: patientProfile,
+            consultation_notes: consultationNotes,
+            rating: rating ? {
+              stars: rating.rating,
+              comment: rating.comment
+            } : undefined
+          };
+        })
+      );
 
       setAppointments(processedAppointments);
     } catch (error) {
@@ -149,22 +161,22 @@ export const DoctorAppointmentHistory = () => {
 
   const getOrCreateConversation = async (patientId: string) => {
     try {
+      // First check if conversation exists with appointment_id
       let { data: existingConversation } = await supabase
         .from('conversations')
         .select('id')
-        .eq('patient_id', patientId)
-        .eq('doctor_id', user!.id)
+        .eq('appointment_id', patientId) // Using appointment_id as the identifier
         .single();
 
       if (existingConversation) {
         return existingConversation.id;
       }
 
+      // If no conversation exists, create one using appointment_id
       const { data: newConversation, error } = await supabase
         .from('conversations')
         .insert({
-          patient_id: patientId,
-          doctor_id: user!.id
+          appointment_id: patientId // Using appointment_id instead of separate patient/doctor IDs
         })
         .select('id')
         .single();
@@ -178,7 +190,7 @@ export const DoctorAppointmentHistory = () => {
   };
 
   const handleChatClick = async (appointment: AppointmentHistory) => {
-    const conversationId = await getOrCreateConversation(appointment.patient_user_id);
+    const conversationId = await getOrCreateConversation(appointment.id); // Using appointment.id
     if (conversationId) {
       setSelectedConversation(conversationId);
       setSelectedPatient({

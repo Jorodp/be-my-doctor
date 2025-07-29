@@ -52,31 +52,29 @@ export const DoctorChatManager = () => {
 
     setLoading(true);
     try {
-      // Obtener pacientes únicos que han tenido citas con el doctor
-      const { data: appointmentsData, error: appointmentsError } = await supabase
+      // Obtener todas las citas del doctor para identificar pacientes
+      const { data: appointments, error: appointmentsError } = await supabase
         .from('appointments')
-        .select(`
-          patient_user_id,
-          starts_at,
-          status,
-          profiles!appointments_patient_user_id_fkey (
-            full_name,
-            profile_image_url
-          )
-        `)
+        .select('patient_user_id, starts_at, status')
         .eq('doctor_user_id', user.id)
         .order('starts_at', { ascending: false });
 
       if (appointmentsError) throw appointmentsError;
 
-      // Agrupar por paciente y obtener la última cita
+      // Crear mapa de pacientes únicos con su última cita
       const patientsMap = new Map<string, PatientWithLastAppointment>();
-      
-      appointmentsData?.forEach(appointment => {
+
+      for (const appointment of appointments || []) {
         const patientId = appointment.patient_user_id;
-        const profile = appointment.profiles as any;
         
         if (!patientsMap.has(patientId)) {
+          // Obtener perfil del paciente
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('full_name, profile_image_url')
+            .eq('user_id', patientId)
+            .single();
+
           patientsMap.set(patientId, {
             user_id: patientId,
             full_name: profile?.full_name || 'Paciente sin nombre',
@@ -85,21 +83,37 @@ export const DoctorChatManager = () => {
             last_appointment_status: appointment.status
           });
         }
-      });
+      }
 
-      // Obtener conversaciones existentes para cada paciente
+      // Obtener conversaciones existentes para cada paciente usando appointment_id
       const patientsArray = Array.from(patientsMap.values());
       
       for (const patient of patientsArray) {
-        const { data: conversation } = await supabase
-          .from('conversations')
-          .select('id')
-          .eq('patient_id', patient.user_id)
-          .eq('doctor_id', user.id)
-          .single();
+        // Find the most recent appointment for this patient
+        const recentAppointment = appointments?.find(app => app.patient_user_id === patient.user_id);
         
-        if (conversation) {
-          patient.conversation_id = conversation.id;
+        if (recentAppointment) {
+          // Get appointment ID for the most recent appointment
+          const { data: fullAppointment } = await supabase
+            .from('appointments')
+            .select('id')
+            .eq('patient_user_id', patient.user_id)
+            .eq('doctor_user_id', user.id)
+            .order('starts_at', { ascending: false })
+            .limit(1)
+            .single();
+
+          if (fullAppointment) {
+            const { data: conversation } = await supabase
+              .from('conversations')
+              .select('id')
+              .eq('appointment_id', fullAppointment.id)
+              .single();
+            
+            if (conversation) {
+              patient.conversation_id = conversation.id;
+            }
+          }
         }
       }
 
@@ -113,24 +127,36 @@ export const DoctorChatManager = () => {
 
   const getOrCreateConversation = async (patient: PatientWithLastAppointment) => {
     try {
-      // Verificar si ya existe una conversación
+      // Get the most recent appointment for this patient-doctor pair
+      const { data: appointment } = await supabase
+        .from('appointments')
+        .select('id')
+        .eq('patient_user_id', patient.user_id)
+        .eq('doctor_user_id', user!.id)
+        .order('starts_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (!appointment) {
+        throw new Error('No appointment found for this patient');
+      }
+
+      // Check if conversation exists for this appointment
       let { data: existingConversation } = await supabase
         .from('conversations')
         .select('id')
-        .eq('patient_id', patient.user_id)
-        .eq('doctor_id', user!.id)
+        .eq('appointment_id', appointment.id)
         .single();
 
       if (existingConversation) {
         return existingConversation.id;
       }
 
-      // Crear nueva conversación
+      // Create new conversation using appointment_id
       const { data: newConversation, error } = await supabase
         .from('conversations')
         .insert({
-          patient_id: patient.user_id,
-          doctor_id: user!.id
+          appointment_id: appointment.id
         })
         .select('id')
         .single();
