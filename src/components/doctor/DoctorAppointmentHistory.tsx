@@ -302,11 +302,10 @@ export const DoctorAppointmentHistory = () => {
                             <Calendar className="h-4 w-4" />
                             {(() => {
                               const date = new Date(appointment.starts_at);
-                              // Convertir de UTC a hora local de México si es necesario
-                              const offsetMinutes = date.getTimezoneOffset() + 360; // México es UTC-6
-                              const localDate = new Date(date.getTime() + (offsetMinutes * 60000));
+                              // México es UTC-6, así que restamos 6 horas de UTC para obtener hora local
+                              const mexicoDate = new Date(date.getTime() - (6 * 60 * 60 * 1000));
                               
-                              return localDate.toLocaleString('es-MX', {
+                              return mexicoDate.toLocaleString('es-MX', {
                                 year: 'numeric',
                                 month: 'short',
                                 day: 'numeric',
