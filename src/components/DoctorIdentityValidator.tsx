@@ -211,10 +211,14 @@ export const DoctorIdentityValidator: React.FC<DoctorIdentityValidatorProps> = (
                       </div>
                       {patient?.profile_image_url && (
                         <div className="border rounded-lg p-2 bg-muted">
-                          <Avatar className="h-20 w-20 mx-auto">
-                            <AvatarImage src={patient.profile_image_url} />
+                          <Avatar className="h-24 w-24 mx-auto">
+                            <AvatarImage 
+                              src={patient.profile_image_url} 
+                              alt="Foto del paciente"
+                              className="object-cover"
+                            />
                             <AvatarFallback>
-                              <User className="h-10 w-10" />
+                              <User className="h-12 w-12" />
                             </AvatarFallback>
                           </Avatar>
                         </div>
@@ -282,10 +286,18 @@ export const DoctorIdentityValidator: React.FC<DoctorIdentityValidatorProps> = (
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <PatientDocumentUploader
-                    patientUserId={patientUserId}
-                    onUploadComplete={handleUploadComplete}
-                  />
+                  <div className="space-y-4">
+                    <Alert variant="default">
+                      <AlertTriangle className="h-4 w-4" />
+                      <AlertDescription>
+                        Si los documentos existentes no coinciden con el paciente presente, puedes reemplazarlos usando los botones de abajo.
+                      </AlertDescription>
+                    </Alert>
+                    <PatientDocumentUploader
+                      patientUserId={patientUserId}
+                      onUploadComplete={handleUploadComplete}
+                    />
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
