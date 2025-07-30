@@ -105,11 +105,6 @@ export const AppointmentChatButton = ({
             </div>
           )}
         </div>
-        {isCompleted && (
-          <div className="text-sm text-muted-foreground bg-muted p-3 rounded">
-            Esta consulta ya finalizó. Puedes revisar el historial de mensajes pero no enviar nuevos.
-          </div>
-        )}
         {isScheduled && (
           <div className="text-sm text-muted-foreground bg-blue-50 p-3 rounded border border-blue-200">
             Estás chateando con el asistente de {doctorName}. Te ayudará con dudas sobre tu cita programada.

@@ -335,18 +335,14 @@ export const PatientDashboard = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         <Tabs defaultValue="proximas" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="proximas" className="flex items-center gap-2">
               <Calendar className="h-4 w-4" />
               Próximas Citas
             </TabsTrigger>
             <TabsTrigger value="historial" className="flex items-center gap-2">
               <History className="h-4 w-4" />
-              Historial
-            </TabsTrigger>
-            <TabsTrigger value="notas" className="flex items-center gap-2">
-              <Stethoscope className="h-4 w-4" />
-              Notas Médicas
+              Historial y Notas
             </TabsTrigger>
             <TabsTrigger value="perfil" className="flex items-center gap-2">
               <User className="h-4 w-4" />
@@ -424,11 +420,11 @@ export const PatientDashboard = () => {
           <TabsContent value="historial" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Historial de Citas</CardTitle>
+                <CardTitle>Historial de Citas y Notas Médicas</CardTitle>
                 <CardDescription>
                   {completedAppointments.length > 0 
                     ? `Tienes ${completedAppointments.length} consulta(s) completada(s)`
-                    : "Historial de citas médicas completadas"
+                    : "Historial de citas médicas completadas y sus notas"
                   }
                 </CardDescription>
               </CardHeader>
@@ -440,16 +436,19 @@ export const PatientDashboard = () => {
                     <p className="text-sm mt-2">Las consultas completadas aparecerán aquí</p>
                   </div>
                 ) : (
-                  <div className="space-y-4">
-                    {completedAppointments.map((appointment) => renderAppointmentCard(appointment, false))}
+                  <div className="space-y-6">
+                    {completedAppointments.map((appointment) => (
+                      <div key={appointment.id}>
+                        {renderAppointmentCard(appointment, false)}
+                        <div className="ml-4 mt-4">
+                          <ConsultationNotesViewer appointmentId={appointment.id} showAll={false} />
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
               </CardContent>
             </Card>
-          </TabsContent>
-
-          <TabsContent value="notas">
-            <ConsultationNotesViewer showAll={true} />
           </TabsContent>
 
           <TabsContent value="perfil">
