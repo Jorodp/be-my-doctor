@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { usePayments } from "@/hooks/usePayments";
 import { AppointmentCard } from "@/components/AppointmentCard";
 import { ManualPaymentForm } from "@/components/ManualPaymentForm";
+import { formatTimeInMexicoTZ, formatShortDateInMexicoTZ } from "@/utils/dateUtils";
 
 interface AssistantPaymentManagerProps {
   doctorId: string;

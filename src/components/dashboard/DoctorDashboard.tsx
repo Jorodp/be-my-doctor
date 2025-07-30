@@ -46,6 +46,7 @@ import { ClinicsAndAssistantsManager } from '@/components/ClinicsAndAssistantsMa
 import { ConsultationWorkspace } from '@/components/ConsultationWorkspace';
 import { AssistantPaymentManager } from '@/components/AssistantPaymentManager';
 import { useUnreadMessages } from '@/hooks/useUnreadMessages';
+import { DoctorReviewsSection } from '@/components/DoctorReviewsSection';
 
 interface DoctorProfile {
   id: string;
@@ -120,7 +121,7 @@ const DoctorDashboardContent = () => {
     monthlyRevenue: 0
   });
 
-  // Realtime updates para appointments
+  // Realtime updates para appointments y ratings
   useEffect(() => {
     if (!user) return;
 
@@ -138,6 +139,20 @@ const DoctorDashboardContent = () => {
           console.log('Appointment change detected:', payload);
           // Refresh all data when appointment changes
           fetchAllData();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // INSERT, UPDATE, DELETE
+          schema: 'public',
+          table: 'doctor_ratings',
+          filter: `doctor_user_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('Rating change detected:', payload);
+          // Refresh ratings when rating changes
+          fetchRatings();
         }
       )
       .subscribe();
@@ -338,6 +353,7 @@ const DoctorDashboardContent = () => {
       .from('doctor_ratings')
       .select('*')
       .eq('doctor_user_id', user.id)
+      .eq('visible', true)
       .order('created_at', { ascending: false })
       .limit(10);
 
@@ -365,7 +381,7 @@ const DoctorDashboardContent = () => {
     setRatings(ratingsWithNames);
     
     if (ratingsData && ratingsData.length > 0) {
-      const avg = ratingsData.reduce((sum, r) => sum + r.stars, 0) / ratingsData.length;
+      const avg = ratingsData.reduce((sum, r) => sum + r.rating, 0) / ratingsData.length;
       setAverageRating(Math.round(avg * 10) / 10);
     }
   };
@@ -777,63 +793,7 @@ const DoctorDashboardContent = () => {
 
 
           <TabsContent value="ratings">
-            <Card>
-              <CardHeader>
-                <CardTitle>Calificaciones Recientes</CardTitle>
-                <CardDescription>
-                  Últimas calificaciones de tus pacientes
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {ratings.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Star className="h-12 w-12 mx-auto mb-4" />
-                    <p>Aún no tienes calificaciones</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {ratings.map((rating) => (
-                      <div key={rating.id} className="border rounded-lg p-4">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-center gap-3">
-                            <Avatar>
-                              <AvatarFallback>
-                                <User className="h-5 w-5" />
-                              </AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <h4 className="font-medium">
-                                {rating.patient_name || 'Paciente anónimo'}
-                              </h4>
-                              <div className="flex items-center gap-1 mt-1">
-                                {[...Array(5)].map((_, i) => (
-                                  <Star 
-                                    key={i} 
-                                    className={`h-4 w-4 ${
-                                      i < rating.rating 
-                                        ? 'text-yellow-500 fill-current' 
-                                        : 'text-gray-300'
-                                    }`} 
-                                  />
-                                ))}
-                                <span className="text-sm text-muted-foreground ml-2">
-                                  {format(new Date(rating.created_at), 'd MMM yyyy', { locale: es })}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        {rating.comment && (
-                          <div className="mt-3 p-3 bg-muted rounded-md">
-                            <p className="text-sm italic">"{rating.comment}"</p>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            {user && <DoctorReviewsSection doctorUserId={user.id} />}
           </TabsContent>
 
           <TabsContent value="subscription">
