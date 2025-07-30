@@ -46,9 +46,35 @@ export const AppointmentChatButton = ({
     }
   }, [chatOpen]);
 
-  // Subscribe to new messages to show notifications
+  // Initialize conversation ID on component mount to enable notifications
+  useEffect(() => {
+    if (!conversationId && user) {
+      initializeConversation();
+    }
+  }, [user]);
+
+  const initializeConversation = async () => {
+    try {
+      // Check if conversation exists for this appointment
+      const { data: existingConversation } = await supabase
+        .from('conversations')
+        .select('id')
+        .eq('appointment_id', appointmentId)
+        .single();
+
+      if (existingConversation) {
+        setConversationId(existingConversation.id);
+      }
+    } catch (error) {
+      console.error('Error initializing conversation:', error);
+    }
+  };
+
+   // Subscribe to new messages to show notifications
   useEffect(() => {
     if (!conversationId || !user) return;
+
+    console.log('Setting up message subscription for conversation:', conversationId);
 
     const channel = supabase
       .channel(`unread-messages-${appointmentId}`)
@@ -61,9 +87,13 @@ export const AppointmentChatButton = ({
           filter: `conversation_id=eq.${conversationId}`,
         },
         (payload) => {
+          console.log('New message received:', payload.new);
           // Only count messages from others (not from current user)
           if (payload.new.sender_user_id !== user.id) {
+            console.log('Message from other user, incrementing count');
             setUnreadCount(prev => prev + 1);
+          } else {
+            console.log('Message from current user, ignoring');
           }
         }
       )
@@ -73,6 +103,7 @@ export const AppointmentChatButton = ({
     fetchUnreadCount();
 
     return () => {
+      console.log('Cleaning up message subscription');
       supabase.removeChannel(channel);
     };
   }, [conversationId, user, appointmentId]);
@@ -88,6 +119,7 @@ export const AppointmentChatButton = ({
     if (!conversationId || !user) return;
 
     try {
+      console.log('Fetching unread count for conversation:', conversationId);
       // Count messages from the last hour that are not from the current user
       const oneHourAgo = new Date();
       oneHourAgo.setHours(oneHourAgo.getHours() - 1);
@@ -99,6 +131,7 @@ export const AppointmentChatButton = ({
         .neq('sender_user_id', user.id)
         .gte('sent_at', oneHourAgo.toISOString());
 
+      console.log('Unread messages found:', unreadMessages?.length || 0);
       setUnreadCount(unreadMessages?.length || 0);
     } catch (error) {
       console.error('Error fetching unread count:', error);
