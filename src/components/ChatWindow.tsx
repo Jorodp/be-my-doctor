@@ -214,7 +214,30 @@ export const ChatWindow = ({ conversationId, onConversationSelect }: ChatWindowP
           filter: `conversation_id=eq.${conversationId}`,
         },
         async (payload) => {
-          // Fetch the complete message with sender info
+          // Avoid duplicates - check if message already exists (from optimistic update)
+          const existingMessage = messages.find(msg => 
+            msg.sender_id === payload.new.sender_user_id && 
+            msg.content === payload.new.content &&
+            Math.abs(new Date(msg.created_at).getTime() - new Date(payload.new.sent_at).getTime()) < 5000
+          );
+          
+          if (existingMessage) {
+            // Update the existing optimistic message with real data
+            setMessages((prev) => 
+              prev.map(msg => 
+                msg.id === existingMessage.id 
+                  ? {
+                      ...msg,
+                      id: payload.new.id,
+                      created_at: payload.new.sent_at
+                    }
+                  : msg
+              )
+            );
+            return;
+          }
+
+          // Fetch the complete message with sender info for new messages from others
           const { data: senderProfile } = await supabase
             .from('profiles')
             .select('full_name, profile_image_url, role')
@@ -243,20 +266,66 @@ export const ChatWindow = ({ conversationId, onConversationSelect }: ChatWindowP
     if (!newMessage.trim() || !conversationId || !user || sending) return;
 
     setSending(true);
+    const messageContent = newMessage.trim();
+    let optimisticMessage: Message | null = null;
+    
     try {
-      const { error } = await supabase
+      // Get current user profile for immediate display
+      const { data: userProfile } = await supabase
+        .from('profiles')
+        .select('full_name, profile_image_url, role')
+        .eq('user_id', user.id)
+        .single();
+
+      // Create optimistic message
+      optimisticMessage = {
+        id: `temp-${Date.now()}`,
+        content: messageContent,
+        sender_id: user.id,
+        created_at: new Date().toISOString(),
+        sender: userProfile
+      };
+
+      // Add message to state immediately for instant feedback
+      setMessages((prev) => [...prev, optimisticMessage]);
+      setNewMessage('');
+
+      // Send to database
+      const { data: insertedMessage, error } = await supabase
         .from('conversation_messages')
         .insert({
           conversation_id: conversationId,
           sender_user_id: user.id,
-          content: newMessage.trim(),
-        });
+          content: messageContent,
+        })
+        .select()
+        .single();
 
       if (error) throw error;
 
-      setNewMessage('');
+      // Replace optimistic message with real one
+      setMessages((prev) => 
+        prev.map(msg => 
+          msg.id === optimisticMessage!.id 
+            ? {
+                ...optimisticMessage!,
+                id: insertedMessage.id,
+                created_at: insertedMessage.sent_at
+              }
+            : msg
+        )
+      );
+
     } catch (error) {
       console.error('Error sending message:', error);
+      // Remove optimistic message on error if it was created
+      if (optimisticMessage) {
+        setMessages((prev) => 
+          prev.filter(msg => msg.id !== optimisticMessage!.id)
+        );
+      }
+      // Restore message content so user can try again
+      setNewMessage(messageContent);
     } finally {
       setSending(false);
     }
