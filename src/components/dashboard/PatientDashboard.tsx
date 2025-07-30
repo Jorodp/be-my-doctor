@@ -249,7 +249,7 @@ export const PatientDashboard = () => {
             </div>
             <div>
               <h4 className="font-medium">
-                {doctor?.full_name || 'Doctor'}
+                Dr. {doctor?.full_name || 'Doctor'}
               </h4>
               <p className="text-sm text-muted-foreground">
                 {doctor?.specialty || 'Medicina General'}
@@ -307,7 +307,7 @@ export const PatientDashboard = () => {
         {/* Chat button - only for completed and scheduled appointments */}
         <AppointmentChatButton
           appointmentId={appointment.id}
-          doctorName={doctor?.full_name || 'Doctor'}
+          doctorName={`Dr. ${doctor?.full_name}` || 'Doctor'}
           appointmentStatus={appointment.status}
         />
       </div>
@@ -377,7 +377,7 @@ export const PatientDashboard = () => {
                       )}
                     </div>
                     <div>
-                      <h3 className="font-semibold">{assignedDoctor.full_name}</h3>
+                      <h3 className="font-semibold">Dr. {assignedDoctor.full_name}</h3>
                       <p className="text-muted-foreground">{assignedDoctor.specialty}</p>
                     </div>
                   </div>

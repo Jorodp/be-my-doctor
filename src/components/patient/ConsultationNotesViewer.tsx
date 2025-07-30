@@ -138,11 +138,13 @@ export const ConsultationNotesViewer: React.FC<ConsultationNotesViewerProps> = (
         doctorName: note.doctor_profile?.full_name || 'Doctor',
         specialty: note.doctor_profile?.specialty || 'Medicina General',
         date: (() => {
+          // Las citas se almacenan como hora local de México pero marcadas como UTC
           const dateStr = (note.appointment?.starts_at || note.created_at).replace('Z', '').replace('+00:00', '');
           const localDate = new Date(dateStr);
           return localDate.toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' });
         })(),
         time: (() => {
+          // Las citas se almacenan como hora local de México pero marcadas como UTC
           const dateStr = (note.appointment?.starts_at || note.created_at).replace('Z', '').replace('+00:00', '');
           const localDate = new Date(dateStr);
           return localDate.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false });
@@ -219,13 +221,14 @@ export const ConsultationNotesViewer: React.FC<ConsultationNotesViewerProps> = (
                 </div>
                 <div>
                   <h3 className="font-semibold">
-                    {note.doctor_profile?.full_name || 'Doctor'}
+                    Dr. {note.doctor_profile?.full_name || 'Doctor'}
                   </h3>
                   <p className="text-sm text-muted-foreground">
                     {note.doctor_profile?.specialty || 'Medicina General'}
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {(() => {
+                      // Las citas se almacenan como hora local de México pero marcadas como UTC
                       const dateStr = (note.appointment?.starts_at || note.created_at).replace('Z', '').replace('+00:00', '');
                       const localDate = new Date(dateStr);
                       return localDate.toLocaleString('es-MX', {
@@ -257,7 +260,7 @@ export const ConsultationNotesViewer: React.FC<ConsultationNotesViewerProps> = (
                     <DialogHeader>
                       <DialogTitle className="flex items-center gap-2">
                         <FileText className="h-5 w-5" />
-                        Notas Médicas - {note.doctor_profile?.full_name}
+                        Notas Médicas - Dr. {note.doctor_profile?.full_name}
                       </DialogTitle>
                     </DialogHeader>
                     
@@ -268,13 +271,14 @@ export const ConsultationNotesViewer: React.FC<ConsultationNotesViewerProps> = (
                           <div>
                             <p className="text-sm font-medium">Doctor</p>
                             <p className="text-sm text-muted-foreground">
-                              {note.doctor_profile?.full_name} - {note.doctor_profile?.specialty}
+                              Dr. {note.doctor_profile?.full_name} - {note.doctor_profile?.specialty}
                             </p>
                           </div>
                           <div>
                             <p className="text-sm font-medium">Fecha de consulta</p>
                             <p className="text-sm text-muted-foreground">
                               {(() => {
+                                // Las citas se almacenan como hora local de México pero marcadas como UTC
                                 const dateStr = (note.appointment?.starts_at || note.created_at).replace('Z', '').replace('+00:00', '');
                                 const localDate = new Date(dateStr);
                                 return localDate.toLocaleString('es-MX', {
