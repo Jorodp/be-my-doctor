@@ -221,7 +221,7 @@ export const ConsultationNotesViewer: React.FC<ConsultationNotesViewerProps> = (
                 </div>
                 <div>
                   <h3 className="font-semibold">
-                    Dr. {note.doctor_profile?.full_name || 'Doctor'}
+                    {note.doctor_profile?.full_name?.startsWith('Dr.') ? note.doctor_profile.full_name : `Dr. ${note.doctor_profile?.full_name || 'Doctor'}`}
                   </h3>
                   <p className="text-sm text-muted-foreground">
                     {note.doctor_profile?.specialty || 'Medicina General'}
@@ -260,7 +260,7 @@ export const ConsultationNotesViewer: React.FC<ConsultationNotesViewerProps> = (
                     <DialogHeader>
                       <DialogTitle className="flex items-center gap-2">
                         <FileText className="h-5 w-5" />
-                        Notas Médicas - Dr. {note.doctor_profile?.full_name}
+                        Notas Médicas - {note.doctor_profile?.full_name?.startsWith('Dr.') ? note.doctor_profile.full_name : `Dr. ${note.doctor_profile?.full_name}`}
                       </DialogTitle>
                     </DialogHeader>
                     
@@ -271,7 +271,7 @@ export const ConsultationNotesViewer: React.FC<ConsultationNotesViewerProps> = (
                           <div>
                             <p className="text-sm font-medium">Doctor</p>
                             <p className="text-sm text-muted-foreground">
-                              Dr. {note.doctor_profile?.full_name} - {note.doctor_profile?.specialty}
+                              {note.doctor_profile?.full_name?.startsWith('Dr.') ? note.doctor_profile.full_name : `Dr. ${note.doctor_profile?.full_name}`} - {note.doctor_profile?.specialty}
                             </p>
                           </div>
                           <div>

@@ -21,196 +21,236 @@ export const generateConsultationPDF = (data: ConsultationData) => {
   const margin = 20;
   let currentY = 20;
 
-  // Define colors (RGB values)
-  const primaryColor = [34, 197, 94]; // Green primary
-  const secondaryColor = [107, 114, 128]; // Gray
-  const lightGray = [248, 250, 252];
-  const darkGray = [15, 23, 42];
+  // BE MY colors (brand colors)
+  const primaryColor = [0, 123, 255]; // BE MY Blue
+  const accentColor = [255, 193, 7]; // BE MY Yellow/Gold
+  const successColor = [40, 167, 69]; // BE MY Green
+  const darkColor = [33, 37, 41]; // Dark gray
+  const lightGray = [248, 249, 250];
 
-  // Header background
+  // Header with BE MY branding
   doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-  doc.rect(0, 0, pageWidth, 50, 'F');
+  doc.rect(0, 0, pageWidth, 60, 'F');
   
-  // Header content
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(24);
-  doc.setFont('helvetica', 'bold');
-  doc.text('Be My Doctor', margin, 25);
-  
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'normal');
-  doc.text('Plataforma Médica Integral', margin, 35);
-  
-  // Header right side - Document type
+  // Logo placeholder (you can add actual logo here)
+  doc.setFillColor(255, 255, 255);
+  doc.roundedRect(margin, 15, 30, 30, 5, 5, 'F');
+  doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
   doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
-  doc.text('RESUMEN DE CONSULTA', pageWidth - margin, 25, { align: 'right' });
+  doc.text('BE', margin + 8, 28);
+  doc.text('MY', margin + 8, 38);
   
-  doc.setFontSize(10);
+  // Header title
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(28);
+  doc.setFont('helvetica', 'bold');
+  doc.text('BE MY DOCTOR', margin + 40, 28);
+  
+  doc.setFontSize(14);
   doc.setFont('helvetica', 'normal');
-  doc.text(`Generado: ${new Date().toLocaleDateString('es-ES')}`, pageWidth - margin, 35, { align: 'right' });
+  doc.text('Plataforma Médica Digital', margin + 40, 38);
+  
+  // Document type
+  doc.setFontSize(18);
+  doc.setFont('helvetica', 'bold');
+  doc.text('RESUMEN DE CONSULTA', pageWidth - margin, 28, { align: 'right' });
+  
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Generado: ${new Date().toLocaleDateString('es-MX')}`, pageWidth - margin, 40, { align: 'right' });
 
-  currentY = 70;
+  currentY = 80;
 
-  // Reset text color for body
-  doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
-
-  // Patient Information Section
+  // Patient Information
   doc.setFillColor(lightGray[0], lightGray[1], lightGray[2]);
-  doc.roundedRect(margin, currentY - 5, pageWidth - 2 * margin, 30, 3, 3, 'F');
-  doc.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-  doc.setLineWidth(2);
-  doc.line(margin + 5, currentY + 5, margin + 60, currentY + 5);
+  doc.roundedRect(margin, currentY - 5, pageWidth - 2 * margin, 35, 5, 5, 'F');
+  doc.setDrawColor(accentColor[0], accentColor[1], accentColor[2]);
+  doc.setLineWidth(3);
+  doc.line(margin + 5, currentY + 8, margin + 70, currentY + 8);
+  
+  doc.setFontSize(16);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(darkColor[0], darkColor[1], darkColor[2]);
+  doc.text('👤 PACIENTE', margin + 5, currentY + 5);
   
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-  doc.text('PACIENTE', margin + 5, currentY + 5);
+  doc.text(`${data.patientName}`, margin + 5, currentY + 20);
   
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
-  doc.text(`${data.patientName}`, margin + 5, currentY + 18);
-  
-  currentY += 40;
+  currentY += 45;
 
-  // Doctor Information Section
+  // Doctor Information
   doc.setFillColor(lightGray[0], lightGray[1], lightGray[2]);
-  doc.roundedRect(margin, currentY - 5, pageWidth - 2 * margin, 40, 3, 3, 'F');
-  doc.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-  doc.setLineWidth(2);
-  doc.line(margin + 5, currentY + 5, margin + 60, currentY + 5);
+  doc.roundedRect(margin, currentY - 5, pageWidth - 2 * margin, 45, 5, 5, 'F');
+  doc.setDrawColor(successColor[0], successColor[1], successColor[2]);
+  doc.setLineWidth(3);
+  doc.line(margin + 5, currentY + 8, margin + 90, currentY + 8);
+  
+  doc.setFontSize(16);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(darkColor[0], darkColor[1], darkColor[2]);
+  doc.text('👨‍⚕️ MÉDICO TRATANTE', margin + 5, currentY + 5);
   
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-  doc.text('MÉDICO TRATANTE', margin + 5, currentY + 5);
+  const doctorName = data.doctorName.startsWith('Dr.') ? data.doctorName : `Dr. ${data.doctorName}`;
+  doc.text(doctorName, margin + 5, currentY + 20);
   
   doc.setFontSize(12);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
-  doc.text(`Dr. ${data.doctorName}`, margin + 5, currentY + 18);
-  
   doc.setFont('helvetica', 'normal');
-  doc.setTextColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
-  doc.text(`${data.specialty}`, margin + 5, currentY + 28);
+  doc.setTextColor(darkColor[0], darkColor[1], darkColor[2]);
+  doc.text(`${data.specialty}`, margin + 5, currentY + 32);
+  
+  currentY += 55;
+
+  // Consultation Details
+  doc.setFillColor(lightGray[0], lightGray[1], lightGray[2]);
+  doc.roundedRect(margin, currentY - 5, pageWidth - 2 * margin, 35, 5, 5, 'F');
+  doc.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+  doc.setLineWidth(3);
+  doc.line(margin + 5, currentY + 8, margin + 100, currentY + 8);
+  
+  doc.setFontSize(16);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(darkColor[0], darkColor[1], darkColor[2]);
+  doc.text('📅 DETALLES DE CONSULTA', margin + 5, currentY + 5);
+  
+  doc.setFontSize(13);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+  doc.text(`Fecha: ${data.date}`, margin + 5, currentY + 20);
+  doc.text(`Hora: ${data.time}`, margin + 100, currentY + 20);
   
   currentY += 50;
 
-  // Consultation Details Section
-  doc.setFillColor(lightGray[0], lightGray[1], lightGray[2]);
-  doc.roundedRect(margin, currentY - 5, pageWidth - 2 * margin, 30, 3, 3, 'F');
-  doc.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-  doc.setLineWidth(2);
-  doc.line(margin + 5, currentY + 5, margin + 80, currentY + 5);
-  
-  doc.setFontSize(14);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-  doc.text('DETALLES DE CONSULTA', margin + 5, currentY + 5);
-  
-  doc.setFontSize(11);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
-  doc.text(`📅 Fecha: ${data.date}`, margin + 5, currentY + 18);
-  doc.text(`🕒 Hora: ${data.time}`, margin + 100, currentY + 18);
-  
-  currentY += 40;
-
-  // Medical Information Sections
-  const addMedicalSection = (title: string, content: string, icon: string) => {
+  // Medical Information Sections with improved styling
+  const addMedicalSection = (title: string, content: string, icon: string, bgColor: number[]) => {
     if (!content) return;
     
-    // Section header
-    doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-    doc.roundedRect(margin, currentY, pageWidth - 2 * margin, 12, 2, 2, 'F');
+    // Calculate content height first
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'normal');
+    const contentLines = doc.splitTextToSize(content, pageWidth - 2 * margin - 16);
+    const sectionHeight = Math.max(35, contentLines.length * 5 + 25);
     
-    doc.setFontSize(12);
+    // Section header with gradient effect
+    doc.setFillColor(bgColor[0], bgColor[1], bgColor[2]);
+    doc.roundedRect(margin, currentY, pageWidth - 2 * margin, 15, 3, 3, 'F');
+    
+    doc.setFontSize(13);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(255, 255, 255);
-    doc.text(`${icon} ${title}`, margin + 5, currentY + 8);
+    doc.text(`${icon} ${title}`, margin + 8, currentY + 10);
     
     currentY += 20;
     
-    // Section content
+    // Content with border
+    doc.setDrawColor(bgColor[0], bgColor[1], bgColor[2]);
+    doc.setLineWidth(1);
+    doc.roundedRect(margin, currentY, pageWidth - 2 * margin, sectionHeight - 20, 3, 3, 'S');
+    
+    doc.setFillColor(255, 255, 255);
+    doc.roundedRect(margin + 1, currentY + 1, pageWidth - 2 * margin - 2, sectionHeight - 22, 3, 3, 'F');
+    
     doc.setFontSize(11);
     doc.setFont('helvetica', 'normal');
-    doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
-    const contentLines = doc.splitTextToSize(content, pageWidth - 2 * margin - 10);
-    doc.text(contentLines, margin + 5, currentY);
-    currentY += contentLines.length * 5 + 15;
+    doc.setTextColor(darkColor[0], darkColor[1], darkColor[2]);
+    doc.text(contentLines, margin + 8, currentY + 12);
+    
+    currentY += sectionHeight;
   };
 
   if (data.diagnosis) {
-    addMedicalSection('DIAGNÓSTICO', data.diagnosis, '🔍');
+    addMedicalSection('DIAGNÓSTICO', data.diagnosis, '🔍', [220, 53, 69]); // Red
   }
 
   if (data.prescription) {
-    addMedicalSection('PRESCRIPCIÓN MÉDICA', data.prescription, '💊');
+    addMedicalSection('PRESCRIPCIÓN MÉDICA', data.prescription, '💊', [40, 167, 69]); // Green
   }
 
   if (data.recommendations) {
-    addMedicalSection('RECOMENDACIONES', data.recommendations, '📋');
+    addMedicalSection('RECOMENDACIONES', data.recommendations, '📋', [111, 66, 193]); // Purple
   }
 
   if (data.followUpDate) {
     currentY += 5;
-    doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-    doc.roundedRect(margin, currentY, pageWidth - 2 * margin, 12, 2, 2, 'F');
+    doc.setFillColor(accentColor[0], accentColor[1], accentColor[2]);
+    doc.roundedRect(margin, currentY, pageWidth - 2 * margin, 18, 5, 5, 'F');
     
-    doc.setFontSize(12);
+    doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(255, 255, 255);
-    doc.text(`📅 PRÓXIMA CITA: ${data.followUpDate}`, margin + 5, currentY + 8);
-    currentY += 20;
+    doc.setTextColor(darkColor[0], darkColor[1], darkColor[2]);
+    doc.text(`📅 PRÓXIMA CITA: ${data.followUpDate}`, margin + 8, currentY + 12);
+    currentY += 25;
   }
 
-  // Rating Section
+  // Rating Section with stars
   if (data.rating) {
     currentY += 10;
-    doc.setFillColor(254, 240, 138); // Yellow background
+    doc.setFillColor(255, 248, 220); // Light yellow
     doc.roundedRect(margin, currentY - 5, pageWidth - 2 * margin, 
-                   data.ratingComment ? 35 : 25, 3, 3, 'F');
+                   data.ratingComment ? 40 : 30, 5, 5, 'F');
+    
+    doc.setDrawColor(accentColor[0], accentColor[1], accentColor[2]);
+    doc.setLineWidth(2);
+    doc.roundedRect(margin, currentY - 5, pageWidth - 2 * margin, 
+                   data.ratingComment ? 40 : 30, 5, 5, 'S');
+    
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(darkColor[0], darkColor[1], darkColor[2]);
+    doc.text('⭐ CALIFICACIÓN DE LA CONSULTA', margin + 8, currentY + 8);
     
     doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(146, 64, 14); // Amber text
-    doc.text('⭐ CALIFICACIÓN DE LA CONSULTA', margin + 5, currentY + 5);
-    
-    doc.setFontSize(11);
     doc.setFont('helvetica', 'normal');
-    doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
     
-    // Generate stars
+    // Generate stars with better styling
     const stars = '⭐'.repeat(data.rating) + '☆'.repeat(5 - data.rating);
-    doc.text(`${stars} (${data.rating}/5)`, margin + 5, currentY + 15);
+    doc.text(`${stars} (${data.rating}/5 estrellas)`, margin + 8, currentY + 20);
     
     if (data.ratingComment) {
-      currentY += 10;
-      const commentLines = doc.splitTextToSize(data.ratingComment, pageWidth - 2 * margin - 10);
-      doc.text(commentLines, margin + 5, currentY + 15);
-      currentY += commentLines.length * 5;
+      currentY += 12;
+      const commentLines = doc.splitTextToSize(`"${data.ratingComment}"`, pageWidth - 2 * margin - 16);
+      doc.setFont('helvetica', 'italic');
+      doc.text(commentLines, margin + 8, currentY + 20);
     }
-    currentY += 15;
+    currentY += 30;
   }
 
-  // Footer
-  const footerY = pageHeight - 25;
-  doc.setFillColor(darkGray[0], darkGray[1], darkGray[2]);
-  doc.rect(0, footerY - 5, pageWidth, 30, 'F');
+  // Modern footer with BE MY branding
+  const footerY = pageHeight - 30;
+  doc.setFillColor(darkColor[0], darkColor[1], darkColor[2]);
+  doc.rect(0, footerY - 5, pageWidth, 35, 'F');
   
+  // Footer logo
+  doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+  doc.roundedRect(margin, footerY, 25, 20, 3, 3, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'bold');
+  doc.text('BE MY', margin + 3, footerY + 12);
+  
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(255, 255, 255);
+  doc.text('BE MY DOCTOR - Plataforma Médica Digital', margin + 30, footerY + 8);
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  doc.setTextColor(255, 255, 255);
-  doc.text('Be My Doctor - Plataforma Médica Integral', margin, footerY + 5);
-  doc.text('www.bemy.com.mx', margin, footerY + 15);
+  doc.text('🌐 www.bemydoctor.mx | 📧 contacto@bemydoctor.mx', margin + 30, footerY + 16);
   
-  doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-  doc.text('Documento médico oficial', pageWidth - margin, footerY + 5, { align: 'right' });
+  doc.setTextColor(accentColor[0], accentColor[1], accentColor[2]);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Documento Médico Oficial', pageWidth - margin, footerY + 8, { align: 'right' });
   doc.setTextColor(255, 255, 255);
-  doc.text(`Generado el ${new Date().toLocaleString('es-ES')}`, pageWidth - margin, footerY + 15, { align: 'right' });
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Generado: ${new Date().toLocaleString('es-MX')}`, pageWidth - margin, footerY + 16, { align: 'right' });
 
-  // Save the PDF
-  const fileName = `Be_My_Doctor_Consulta_${data.patientName.replace(/\s+/g, '_')}_${data.date.replace(/\//g, '-')}.pdf`;
+  // Save with better filename
+  const cleanPatientName = data.patientName.replace(/[^a-zA-Z0-9]/g, '_');
+  const cleanDate = data.date.replace(/[^0-9]/g, '');
+  const fileName = `BE_MY_DOCTOR_Consulta_${cleanPatientName}_${cleanDate}.pdf`;
   doc.save(fileName);
 };
