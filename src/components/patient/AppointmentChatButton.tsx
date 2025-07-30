@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ChatWindow } from '@/components/ChatWindow';
-import { MessageSquare } from 'lucide-react';
+import { MessageSquare, Bell } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
@@ -22,6 +22,7 @@ export const AppointmentChatButton = ({
   const [chatOpen, setChatOpen] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   // Don't show chat button for cancelled appointments
   if (appointmentStatus === 'cancelled') {
@@ -44,6 +45,65 @@ export const AppointmentChatButton = ({
       getOrCreateConversation();
     }
   }, [chatOpen]);
+
+  // Subscribe to new messages to show notifications
+  useEffect(() => {
+    if (!conversationId || !user) return;
+
+    const channel = supabase
+      .channel(`unread-messages-${appointmentId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'conversation_messages',
+          filter: `conversation_id=eq.${conversationId}`,
+        },
+        (payload) => {
+          // Only count messages from others (not from current user)
+          if (payload.new.sender_user_id !== user.id) {
+            setUnreadCount(prev => prev + 1);
+          }
+        }
+      )
+      .subscribe();
+
+    // Fetch initial unread count
+    fetchUnreadCount();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [conversationId, user, appointmentId]);
+
+  // Reset unread count when chat is opened
+  useEffect(() => {
+    if (chatOpen && unreadCount > 0) {
+      setUnreadCount(0);
+    }
+  }, [chatOpen]);
+
+  const fetchUnreadCount = async () => {
+    if (!conversationId || !user) return;
+
+    try {
+      // Count messages from the last hour that are not from the current user
+      const oneHourAgo = new Date();
+      oneHourAgo.setHours(oneHourAgo.getHours() - 1);
+
+      const { data: unreadMessages } = await supabase
+        .from('conversation_messages')
+        .select('id')
+        .eq('conversation_id', conversationId)
+        .neq('sender_user_id', user.id)
+        .gte('sent_at', oneHourAgo.toISOString());
+
+      setUnreadCount(unreadMessages?.length || 0);
+    } catch (error) {
+      console.error('Error fetching unread count:', error);
+    }
+  };
 
   const getOrCreateConversation = async () => {
     setLoading(true);
@@ -76,14 +136,24 @@ export const AppointmentChatButton = ({
   return (
     <Dialog open={chatOpen} onOpenChange={setChatOpen}>
       <DialogTrigger asChild>
-        <Button 
-          variant="outline" 
-          size="sm"
-          className="mt-2"
-        >
-          <MessageSquare className="w-4 h-4 mr-2" />
-          {chatLabel}
-        </Button>
+        <div className="relative">
+          <Button 
+            variant="outline" 
+            size="sm"
+            className="mt-2"
+          >
+            <MessageSquare className="w-4 h-4 mr-2" />
+            {chatLabel}
+          </Button>
+          {unreadCount > 0 && (
+            <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center animate-pulse">
+              {unreadCount > 9 ? '9+' : unreadCount}
+            </div>
+          )}
+          {unreadCount > 0 && (
+            <Bell className="absolute -top-2 -left-2 h-4 w-4 text-blue-600 animate-bounce" />
+          )}
+        </div>
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[80vh]">
         <DialogHeader>
