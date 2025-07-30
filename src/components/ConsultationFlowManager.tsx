@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ConsultationProgress } from '@/components/ConsultationProgress';
 import { ConsultationWorkspace } from '@/components/ConsultationWorkspace';
+import { DoctorIdentityValidator } from '@/components/DoctorIdentityValidator';
 import {
   Users, 
   Clock, 
@@ -16,7 +17,8 @@ import {
   Timer,
   Stethoscope,
   CheckCircle,
-  Phone
+  Phone,
+  Shield
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -62,6 +64,8 @@ export const ConsultationFlowManager: React.FC<ConsultationFlowManagerProps> = (
   const [loading, setLoading] = useState<string | null>(null);
   const [consultationWorkspaceOpen, setConsultationWorkspaceOpen] = useState(false);
   const [activeAppointment, setActiveAppointment] = useState<Appointment | null>(null);
+  const [identityValidatorOpen, setIdentityValidatorOpen] = useState(false);
+  const [validatingAppointment, setValidatingAppointment] = useState<Appointment | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -115,12 +119,19 @@ export const ConsultationFlowManager: React.FC<ConsultationFlowManagerProps> = (
 
     // Check if identity is validated
     if (!appointment.identity_validated) {
-      toast({
-        title: "Validación Requerida",
-        description: "La identidad del paciente debe estar validada antes de iniciar la consulta",
-        variant: "destructive"
-      });
-      return;
+      // If doctor role, allow them to validate identity first
+      if (userRole === 'doctor') {
+        setValidatingAppointment(appointment);
+        setIdentityValidatorOpen(true);
+        return;
+      } else {
+        toast({
+          title: "Validación Requerida",
+          description: "La identidad del paciente debe estar validada antes de iniciar la consulta",
+          variant: "destructive"
+        });
+        return;
+      }
     }
     
     setLoading(appointmentId);
@@ -318,6 +329,18 @@ export const ConsultationFlowManager: React.FC<ConsultationFlowManagerProps> = (
     setConsultationWorkspaceOpen(true);
   };
 
+  const handleIdentityValidationComplete = () => {
+    // Refresh appointments and then start consultation
+    onAppointmentUpdate();
+    if (validatingAppointment) {
+      // Use setTimeout to ensure the appointment update has been processed
+      setTimeout(() => {
+        startConsultation(validatingAppointment.id);
+      }, 500);
+    }
+    setValidatingAppointment(null);
+  };
+
   const getTimelineSteps = (appointment: Appointment) => {
     return [
       {
@@ -435,6 +458,13 @@ export const ConsultationFlowManager: React.FC<ConsultationFlowManagerProps> = (
                                 </span>
                               )}
                             </div>
+                            {/* Identity validation status */}
+                            {appointment.consultation_status === 'waiting' && !appointment.identity_validated && (
+                              <div className="flex items-center gap-1 text-amber-600 text-xs mt-1">
+                                <Shield className="h-3 w-3" />
+                                <span>Identidad sin validar</span>
+                              </div>
+                            )}
                           </div>
                         </div>
                         
@@ -531,6 +561,20 @@ export const ConsultationFlowManager: React.FC<ConsultationFlowManagerProps> = (
             setActiveAppointment(null);
             onAppointmentUpdate();
           }}
+        />
+      )}
+
+      {/* Doctor Identity Validator Modal */}
+      {validatingAppointment && (
+        <DoctorIdentityValidator
+          isOpen={identityValidatorOpen}
+          onClose={() => {
+            setIdentityValidatorOpen(false);
+            setValidatingAppointment(null);
+          }}
+          appointmentId={validatingAppointment.id}
+          patientUserId={validatingAppointment.patient_user_id}
+          onValidationComplete={handleIdentityValidationComplete}
         />
       )}
     </Card>
