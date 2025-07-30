@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ChatWindow } from '@/components/ChatWindow';
-import { Search, MessageSquare, User } from 'lucide-react';
+import { Search, MessageSquare, User, Bell } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
@@ -20,6 +20,8 @@ interface PatientWithLastAppointment {
   last_appointment_date: string;
   last_appointment_status: string;
   conversation_id?: string;
+  unread_messages: number;
+  last_message_time?: string;
 }
 
 export const DoctorChatManager = () => {
@@ -31,6 +33,32 @@ export const DoctorChatManager = () => {
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState<PatientWithLastAppointment | null>(null);
+
+  // Subscribe to real-time message updates
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('doctor-chat-notifications')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'conversation_messages'
+        },
+        async (payload) => {
+          console.log('New message detected:', payload);
+          // Refresh patients list to update unread counts
+          fetchPatients();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
 
   useEffect(() => {
     fetchPatients();
@@ -80,12 +108,13 @@ export const DoctorChatManager = () => {
             full_name: profile?.full_name || 'Paciente sin nombre',
             profile_image_url: profile?.profile_image_url,
             last_appointment_date: appointment.starts_at,
-            last_appointment_status: appointment.status
+            last_appointment_status: appointment.status,
+            unread_messages: 0
           });
         }
       }
 
-      // Obtener conversaciones existentes para cada paciente usando appointment_id
+      // Obtener conversaciones existentes y contar mensajes no leídos
       const patientsArray = Array.from(patientsMap.values());
       
       for (const patient of patientsArray) {
@@ -112,10 +141,35 @@ export const DoctorChatManager = () => {
             
             if (conversation) {
               patient.conversation_id = conversation.id;
+              
+              // Count unread messages (messages from patient after the last hour)
+              const oneHourAgo = new Date();
+              oneHourAgo.setHours(oneHourAgo.getHours() - 1);
+              
+              const { data: unreadMessages } = await supabase
+                .from('conversation_messages')
+                .select('sent_at')
+                .eq('conversation_id', conversation.id)
+                .neq('sender_user_id', user.id) // Messages not from doctor
+                .gte('sent_at', oneHourAgo.toISOString())
+                .order('sent_at', { ascending: false });
+
+              patient.unread_messages = unreadMessages?.length || 0;
+              
+              if (unreadMessages && unreadMessages.length > 0) {
+                patient.last_message_time = unreadMessages[0].sent_at;
+              }
             }
           }
         }
       }
+
+      // Sort patients: those with unread messages first, then by last appointment date
+      patientsArray.sort((a, b) => {
+        if (a.unread_messages > 0 && b.unread_messages === 0) return -1;
+        if (a.unread_messages === 0 && b.unread_messages > 0) return 1;
+        return new Date(b.last_appointment_date).getTime() - new Date(a.last_appointment_date).getTime();
+      });
 
       setPatients(patientsArray);
     } catch (error) {
@@ -247,39 +301,59 @@ export const DoctorChatManager = () => {
               </p>
             </div>
           ) : (
-            <div className="space-y-3 max-h-96 overflow-y-auto">
-              {filteredPatients.map((patient) => (
-                <div
-                  key={patient.user_id}
-                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <Avatar>
-                      <AvatarImage src={patient.profile_image_url} />
-                      <AvatarFallback>
-                        <User className="h-5 w-5" />
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <h4 className="font-medium">{patient.full_name}</h4>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-xs text-muted-foreground">
-                          Última cita: {format(new Date(patient.last_appointment_date), 'd MMM yyyy', { locale: es })}
-                        </span>
-                        <Badge variant={getStatusBadgeVariant(patient.last_appointment_status)}>
-                          {getStatusText(patient.last_appointment_status)}
-                        </Badge>
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                {filteredPatients.map((patient) => (
+                  <div
+                    key={patient.user_id}
+                    className={`flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors ${
+                      patient.unread_messages > 0 ? 'border-blue-500 bg-blue-50' : ''
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="relative">
+                        <Avatar>
+                          <AvatarImage src={patient.profile_image_url} />
+                          <AvatarFallback>
+                            <User className="h-5 w-5" />
+                          </AvatarFallback>
+                        </Avatar>
+                        {patient.unread_messages > 0 && (
+                          <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center animate-pulse">
+                            {patient.unread_messages > 9 ? '9+' : patient.unread_messages}
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-medium">{patient.full_name}</h4>
+                          {patient.unread_messages > 0 && (
+                            <Bell className="h-4 w-4 text-blue-600 animate-pulse" />
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-xs text-muted-foreground">
+                            Última cita: {format(new Date(patient.last_appointment_date), 'd MMM yyyy', { locale: es })}
+                          </span>
+                          <Badge variant={getStatusBadgeVariant(patient.last_appointment_status)}>
+                            {getStatusText(patient.last_appointment_status)}
+                          </Badge>
+                        </div>
+                        {patient.unread_messages > 0 && patient.last_message_time && (
+                          <div className="text-xs text-blue-600 font-medium">
+                            Nuevo mensaje: {format(new Date(patient.last_message_time), 'HH:mm', { locale: es })}
+                          </div>
+                        )}
                       </div>
                     </div>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleChatClick(patient)}
-                  >
-                    <MessageSquare className="h-4 w-4 mr-2" />
-                    Chat
-                  </Button>
+                    <Button
+                      variant={patient.unread_messages > 0 ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => handleChatClick(patient)}
+                      className={patient.unread_messages > 0 ? "bg-blue-600 hover:bg-blue-700" : ""}
+                    >
+                      <MessageSquare className="h-4 w-4 mr-2" />
+                      {patient.unread_messages > 0 ? `Chat (${patient.unread_messages})` : 'Chat'}
+                    </Button>
                 </div>
               ))}
             </div>

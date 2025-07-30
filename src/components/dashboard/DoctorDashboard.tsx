@@ -45,6 +45,7 @@ import { AppointmentActionsExtended } from '@/components/AppointmentActionsExten
 import { ClinicsAndAssistantsManager } from '@/components/ClinicsAndAssistantsManager';
 import { ConsultationWorkspace } from '@/components/ConsultationWorkspace';
 import { AssistantPaymentManager } from '@/components/AssistantPaymentManager';
+import { useUnreadMessages } from '@/hooks/useUnreadMessages';
 
 interface DoctorProfile {
   id: string;
@@ -102,6 +103,7 @@ export const DoctorDashboard = () => {
 const DoctorDashboardContent = () => {
   const { user, doctorProfile } = useAuth();
   const { toast } = useToast();
+  const { unreadCount, markAsRead } = useUnreadMessages();
   
   // State
   const [loading, setLoading] = useState(true);
@@ -591,11 +593,24 @@ const DoctorDashboardContent = () => {
         {/* Main Content Tabs */}
         <Tabs defaultValue="consultas" className="space-y-6">
           <div className="w-full overflow-x-auto">
-            <TabsList className="grid grid-cols-6 lg:grid-cols-9 gap-1 h-auto p-2 bg-muted/50 rounded-lg w-full">
+            <TabsList className="grid grid-cols-6 lg:grid-cols-10 gap-1 h-auto p-2 bg-muted/50 rounded-lg w-full">
               <TabsTrigger value="consultas" className="flex flex-col items-center gap-1 p-3 text-xs font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm">
                 <Timer className="h-4 w-4" />
                 <span className="hidden sm:block">Consultas</span>
                 <span className="sm:hidden">Cons</span>
+              </TabsTrigger>
+              
+              <TabsTrigger value="chat" className="flex flex-col items-center gap-1 p-3 text-xs font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm relative">
+                <div className="relative">
+                  <MessageSquare className="h-4 w-4" />
+                  {unreadCount > 0 && (
+                    <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center animate-pulse">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </div>
+                  )}
+                </div>
+                <span className="hidden sm:block">Chat</span>
+                <span className="sm:hidden">💬</span>
               </TabsTrigger>
               
               <TabsTrigger value="schedule" className="flex flex-col items-center gap-1 p-3 text-xs font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm">
@@ -647,6 +662,10 @@ const DoctorDashboardContent = () => {
               </TabsTrigger>
             </TabsList>
           </div>
+          <TabsContent value="chat" onClick={() => markAsRead()}>
+            <DoctorChatManager />
+          </TabsContent>
+
           <TabsContent value="consultas">
             <ConsultationFlowManager 
               appointments={todayAppointments}
