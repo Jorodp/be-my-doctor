@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { ChatWindow } from '@/components/ChatWindow';
+import { EnhancedChatInterface } from '@/components/doctor/EnhancedChatInterface';
 import { 
   Search, 
   Calendar, 
@@ -22,6 +22,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { format, subDays, startOfDay, endOfDay } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { formatInMexicoTZ } from '@/utils/dateUtils';
+import { debugTimezone } from '@/utils/timezoneDebug';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface AppointmentHistory {
@@ -57,9 +58,8 @@ export const DoctorAppointmentHistory = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [dateFilter, setDateFilter] = useState<string>('30');
   const [loading, setLoading] = useState(true);
-  const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
-  const [selectedPatient, setSelectedPatient] = useState<{ name: string; id: string } | null>(null);
+  const [selectedAppointment, setSelectedAppointment] = useState<AppointmentHistory | null>(null);
 
   useEffect(() => {
     fetchAppointmentHistory();
@@ -160,46 +160,13 @@ export const DoctorAppointmentHistory = () => {
     setFilteredAppointments(filtered);
   };
 
-  const getOrCreateConversation = async (patientId: string) => {
-    try {
-      // First check if conversation exists with appointment_id
-      let { data: existingConversation } = await supabase
-        .from('conversations')
-        .select('id')
-        .eq('appointment_id', patientId) // Using appointment_id as the identifier
-        .single();
-
-      if (existingConversation) {
-        return existingConversation.id;
-      }
-
-      // If no conversation exists, create one using appointment_id
-      const { data: newConversation, error } = await supabase
-        .from('conversations')
-        .insert({
-          appointment_id: patientId // Using appointment_id instead of separate patient/doctor IDs
-        })
-        .select('id')
-        .single();
-
-      if (error) throw error;
-      return newConversation.id;
-    } catch (error) {
-      console.error('Error getting conversation:', error);
-      return null;
-    }
-  };
-
   const handleChatClick = async (appointment: AppointmentHistory) => {
-    const conversationId = await getOrCreateConversation(appointment.id); // Using appointment.id
-    if (conversationId) {
-      setSelectedConversation(conversationId);
-      setSelectedPatient({
-        name: appointment.patient_profile?.full_name || 'Paciente',
-        id: appointment.patient_user_id
-      });
-      setChatOpen(true);
+    if (appointment.status !== 'completed') {
+      return; // Solo permitir chat en citas completadas
     }
+    
+    setSelectedAppointment(appointment);
+    setChatOpen(true);
   };
 
   const getStatusBadgeVariant = (status: string) => {
@@ -305,7 +272,11 @@ export const DoctorAppointmentHistory = () => {
             </div>
           ) : (
             <div className="space-y-4 max-h-96 overflow-y-auto">
-              {filteredAppointments.map((appointment) => (
+              {filteredAppointments.map((appointment) => {
+                // Debug temporal para verificar el problema de timezone
+                const debugInfo = debugTimezone(appointment.starts_at, `Appointment ${appointment.id}`);
+                
+                return (
                 <div
                   key={appointment.id}
                   className="border rounded-lg p-4 hover:bg-muted/50 transition-colors"
@@ -404,31 +375,26 @@ export const DoctorAppointmentHistory = () => {
                     </div>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
 
-        {/* Dialog para el chat */}
-        <Dialog open={chatOpen} onOpenChange={setChatOpen}>
-          <DialogContent className="max-w-2xl max-h-[80vh]">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <MessageSquare className="h-5 w-5 text-primary" />
-                Chat con {selectedPatient?.name}
-              </DialogTitle>
-            </DialogHeader>
-            <div className="flex-1 overflow-hidden">
-              {selectedConversation ? (
-                <ChatWindow conversationId={selectedConversation} />
-              ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  No se pudo cargar la conversación
-                </div>
-              )}
-            </div>
-          </DialogContent>
-        </Dialog>
+        {/* Enhanced Chat Interface */}
+        {selectedAppointment && (
+          <EnhancedChatInterface
+            isOpen={chatOpen}
+            onClose={() => {
+              setChatOpen(false);
+              setSelectedAppointment(null);
+            }}
+            appointmentId={selectedAppointment.id}
+            patientName={selectedAppointment.patient_profile?.full_name || 'Paciente'}
+            patientId={selectedAppointment.patient_user_id}
+            doctorId={user?.id || ''}
+          />
+        )}
       </CardContent>
     </Card>
   );

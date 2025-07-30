@@ -591,7 +591,7 @@ const DoctorDashboardContent = () => {
         {/* Main Content Tabs */}
         <Tabs defaultValue="consultas" className="space-y-6">
           <div className="w-full overflow-x-auto">
-            <TabsList className="grid grid-cols-6 lg:grid-cols-11 gap-1 h-auto p-2 bg-muted/50 rounded-lg">
+            <TabsList className="grid grid-cols-6 lg:grid-cols-9 gap-1 h-auto p-2 bg-muted/50 rounded-lg">
               <TabsTrigger value="consultas" className="flex flex-col items-center gap-1 p-3 text-xs font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm">
                 <Timer className="h-4 w-4" />
                 <span className="hidden sm:block">Consultas</span>
@@ -639,27 +639,14 @@ const DoctorDashboardContent = () => {
                 <span className="hidden sm:block">Ingresos</span>
                 <span className="sm:hidden">$</span>
               </TabsTrigger>
-              
-              <TabsTrigger value="chat" className="flex flex-col items-center gap-1 p-3 text-xs font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm lg:flex">
-                <MessageSquare className="h-4 w-4" />
-                <span className="hidden sm:block">Chat</span>
-                <span className="sm:hidden">💬</span>
-              </TabsTrigger>
+            </TabsList>
+          </div>
               
               <TabsTrigger value="history" className="flex flex-col items-center gap-1 p-3 text-xs font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm lg:flex">
                 <History className="h-4 w-4" />
                 <span className="hidden sm:block">Historial</span>
                 <span className="sm:hidden">📋</span>
               </TabsTrigger>
-              
-              <TabsTrigger value="notas" className="flex flex-col items-center gap-1 p-3 text-xs font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm lg:flex">
-                <FileText className="h-4 w-4" />
-                <span className="hidden sm:block">Notas</span>
-                <span className="sm:hidden">📝</span>
-              </TabsTrigger>
-            </TabsList>
-          </div>
-
           <TabsContent value="consultas">
             <ConsultationFlowManager 
               appointments={todayAppointments}
@@ -668,22 +655,6 @@ const DoctorDashboardContent = () => {
             />
           </TabsContent>
 
-          <TabsContent value="notas">
-            <Card>
-              <CardHeader>
-                <CardTitle>Notas Médicas</CardTitle>
-                <CardDescription>
-                  Las notas médicas se gestionan durante el flujo de consultas activas.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-8 text-muted-foreground">
-                  <FileText className="h-12 w-12 mx-auto mb-4" />
-                  <p>Ve a la pestaña "Flujo de Consultas" para gestionar notas médicas durante las consultas.</p>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
 
           <TabsContent value="schedule">
             <Card>
@@ -861,9 +832,6 @@ const DoctorDashboardContent = () => {
           </TabsContent>
 
 
-          <TabsContent value="chat">
-            <DoctorChatManager />
-          </TabsContent>
 
           <TabsContent value="income">
             <Card>
