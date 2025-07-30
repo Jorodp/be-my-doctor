@@ -347,15 +347,22 @@ export const DoctorChatManager = () => {
                         )}
                       </div>
                     </div>
-                    <Button
-                      variant={patient.unread_messages > 0 ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => handleChatClick(patient)}
-                      className={patient.unread_messages > 0 ? "bg-blue-600 hover:bg-blue-700" : ""}
-                    >
-                      <MessageSquare className="h-4 w-4 mr-2" />
-                      {patient.unread_messages > 0 ? `Chat (${patient.unread_messages})` : 'Chat'}
-                    </Button>
+                    <div className="relative">
+                      <Button
+                        variant={patient.unread_messages > 0 ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => handleChatClick(patient)}
+                        className={patient.unread_messages > 0 ? "bg-blue-600 hover:bg-blue-700" : ""}
+                      >
+                        <MessageSquare className="h-4 w-4 mr-2" />
+                        {patient.unread_messages > 0 ? `Chat (${patient.unread_messages})` : 'Chat'}
+                      </Button>
+                      {patient.unread_messages > 0 && (
+                        <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center animate-pulse z-10">
+                          {patient.unread_messages > 9 ? '9+' : patient.unread_messages}
+                        </div>
+                      )}
+                    </div>
                 </div>
               ))}
             </div>
