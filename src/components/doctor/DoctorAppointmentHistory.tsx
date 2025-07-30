@@ -300,15 +300,21 @@ export const DoctorAppointmentHistory = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-muted-foreground mb-3">
                           <div className="flex items-center gap-2">
                             <Calendar className="h-4 w-4" />
-                            {new Date(appointment.starts_at).toLocaleString('es-MX', {
-                              timeZone: 'America/Mexico_City',
-                              year: 'numeric',
-                              month: 'short', 
-                              day: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit',
-                              hour12: false
-                            })}
+                            {(() => {
+                              // Las citas se almacenan como hora local de México pero marcadas como UTC
+                              // Por eso las tomamos tal como están sin conversión de timezone
+                              const dateStr = appointment.starts_at.replace('Z', '').replace('+00:00', '');
+                              const localDate = new Date(dateStr);
+                              
+                              return localDate.toLocaleString('es-MX', {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                hour12: false
+                              });
+                            })()}
                           </div>
                           
                           {appointment.consultation_duration_minutes && (
