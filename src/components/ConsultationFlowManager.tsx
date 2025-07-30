@@ -312,7 +312,8 @@ export const ConsultationFlowManager: React.FC<ConsultationFlowManagerProps> = (
   };
 
   const formatTime = (dateString: string) => {
-    return formatTimeInMexicoTZ(dateString);
+    const result = formatTimeInMexicoTZ(dateString);
+    return result;
   };
 
   const getWaitingTime = (appointment: Appointment) => {
