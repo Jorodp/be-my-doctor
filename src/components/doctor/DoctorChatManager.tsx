@@ -80,11 +80,12 @@ export const DoctorChatManager = () => {
 
     setLoading(true);
     try {
-      // Obtener todas las citas del doctor para identificar pacientes
+      // Obtener solo las citas completadas del doctor para permitir chat
       const { data: appointments, error: appointmentsError } = await supabase
         .from('appointments')
         .select('patient_user_id, starts_at, status')
         .eq('doctor_user_id', user.id)
+        .eq('status', 'completed')
         .order('starts_at', { ascending: false });
 
       if (appointmentsError) throw appointmentsError;
@@ -181,18 +182,19 @@ export const DoctorChatManager = () => {
 
   const getOrCreateConversation = async (patient: PatientWithLastAppointment) => {
     try {
-      // Get the most recent appointment for this patient-doctor pair
+      // Get the most recent completed appointment for this patient-doctor pair
       const { data: appointment } = await supabase
         .from('appointments')
         .select('id')
         .eq('patient_user_id', patient.user_id)
         .eq('doctor_user_id', user!.id)
+        .eq('status', 'completed')
         .order('starts_at', { ascending: false })
         .limit(1)
         .single();
 
       if (!appointment) {
-        throw new Error('No appointment found for this patient');
+        throw new Error('No hay citas completadas con este paciente');
       }
 
       // Check if conversation exists for this appointment
@@ -206,17 +208,17 @@ export const DoctorChatManager = () => {
         return existingConversation.id;
       }
 
-      // Create new conversation using appointment_id
-      const { data: newConversation, error } = await supabase
-        .from('conversations')
-        .insert({
-          appointment_id: appointment.id
-        })
-        .select('id')
-        .single();
+      // Create new conversation using the edge function
+      const { data: createResponse, error: createError } = await supabase.functions.invoke('create-conversation', {
+        body: {
+          appointment_id: appointment.id,
+          patient_id: patient.user_id,
+          doctor_id: user!.id
+        }
+      });
 
-      if (error) throw error;
-      return newConversation.id;
+      if (createError) throw createError;
+      return createResponse.conversation_id;
     } catch (error) {
       console.error('Error getting conversation:', error);
       return null;
@@ -276,7 +278,7 @@ export const DoctorChatManager = () => {
           Chat con Pacientes
         </CardTitle>
         <CardDescription>
-          Comunícate directamente con tus pacientes
+          Chat disponible solo para citas completadas
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -297,7 +299,7 @@ export const DoctorChatManager = () => {
             <div className="text-center py-8 text-muted-foreground">
               <MessageSquare className="h-12 w-12 mx-auto mb-4" />
               <p>
-                {searchTerm ? 'No se encontraron pacientes' : 'No tienes pacientes aún'}
+                {searchTerm ? 'No se encontraron pacientes' : 'No tienes citas completadas aún'}
               </p>
             </div>
           ) : (
