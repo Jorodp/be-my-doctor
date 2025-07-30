@@ -2,8 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Calendar, Clock, User, DollarSign, CheckCircle, AlertTriangle } from 'lucide-react';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { formatShortDateInMexicoTZ, formatTimeInMexicoTZ } from '@/utils/dateUtils';
 
 interface AppointmentCardProps {
   appointment: {
@@ -83,7 +82,7 @@ export const AppointmentCard = ({
           <CardTitle className="text-lg">
             <div className="flex items-center gap-2">
               <Calendar className="h-5 w-5" />
-              {format(new Date(appointment.starts_at), 'PPP', { locale: es })}
+              {formatShortDateInMexicoTZ(appointment.starts_at)}
             </div>
           </CardTitle>
           <Badge className={getStatusColor(appointment.status)}>
@@ -98,8 +97,8 @@ export const AppointmentCard = ({
             <div className="flex items-center gap-2 text-sm">
               <Clock className="h-4 w-4" />
               <span>
-                {format(new Date(appointment.starts_at), 'HH:mm')} - 
-                {format(new Date(appointment.ends_at), 'HH:mm')}
+                {formatTimeInMexicoTZ(appointment.starts_at)} - 
+                {formatTimeInMexicoTZ(appointment.ends_at)}
               </span>
             </div>
             

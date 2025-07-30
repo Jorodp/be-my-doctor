@@ -23,7 +23,8 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { format, differenceInMinutes } from 'date-fns';
+import { differenceInMinutes } from 'date-fns';
+import { formatTimeInMexicoTZ, formatDateTimeInMexicoTZ } from '@/utils/dateUtils';
 import { es } from 'date-fns/locale';
 
 interface Appointment {
@@ -88,7 +89,7 @@ export const ConsultationFlowManager: React.FC<ConsultationFlowManagerProps> = (
 
       toast({
         title: "Paciente registrado",
-        description: `Paciente marcado como presente a las ${format(new Date(arrivalTime), 'HH:mm')}`,
+        description: `Paciente marcado como presente a las ${formatTimeInMexicoTZ(arrivalTime)}`,
       });
 
       onAppointmentUpdate();
@@ -311,7 +312,7 @@ export const ConsultationFlowManager: React.FC<ConsultationFlowManagerProps> = (
   };
 
   const formatTime = (dateString: string) => {
-    return format(new Date(dateString), 'HH:mm', { locale: es });
+    return formatTimeInMexicoTZ(dateString);
   };
 
   const getWaitingTime = (appointment: Appointment) => {

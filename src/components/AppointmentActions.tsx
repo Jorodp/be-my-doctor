@@ -32,7 +32,8 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
-import { format, addDays, setHours, setMinutes, parseISO, isBefore } from 'date-fns';
+import { addDays, setHours, setMinutes, parseISO, isBefore } from 'date-fns';
+import { formatDateInMexicoTZ, formatTimeInMexicoTZ, formatDateTimeInMexicoTZ, formatShortDateInMexicoTZ, isToday } from '@/utils/dateUtils';
 import { es } from 'date-fns/locale';
 import {
   CalendarIcon,
@@ -221,7 +222,7 @@ export function AppointmentActions({
       // Add cancellation reason to notes if provided
       if (cancelReason.trim()) {
         const existingNotes = appointment.notes || '';
-        const cancelNote = `[Cancelada por ${userRole} el ${format(new Date(), 'dd/MM/yyyy HH:mm', { locale: es })}]: ${cancelReason}`;
+        const cancelNote = `[Cancelada por ${userRole} el ${formatDateTimeInMexicoTZ(new Date())}]: ${cancelReason}`;
         updateData.notes = existingNotes ? `${existingNotes}\n\n${cancelNote}` : cancelNote;
       }
 
@@ -304,7 +305,7 @@ export function AppointmentActions({
       // Add reschedule reason to notes if provided
       if (rescheduleReason.trim()) {
         const existingNotes = appointment.notes || '';
-        const rescheduleNote = `[Reprogramada por ${userRole} el ${format(new Date(), 'dd/MM/yyyy HH:mm', { locale: es })}]: ${rescheduleReason}`;
+        const rescheduleNote = `[Reprogramada por ${userRole} el ${formatDateTimeInMexicoTZ(new Date())}]: ${rescheduleReason}`;
         updateData.notes = existingNotes ? `${existingNotes}\n\n${rescheduleNote}` : rescheduleNote;
       }
 
@@ -329,7 +330,7 @@ export function AppointmentActions({
 
       toast({
         title: "Cita Reprogramada",
-        description: `Cita reprogramada para el ${format(newStartDateTime, 'dd/MM/yyyy', { locale: es })} a las ${selectedTime}`
+        description: `Cita reprogramada para el ${formatDateInMexicoTZ(newStartDateTime)} a las ${selectedTime}`
       });
 
       setRescheduleDialogOpen(false);
@@ -355,7 +356,7 @@ export function AppointmentActions({
   }
 
   const appointmentDateTime = new Date(appointment.starts_at);
-  const isToday = format(appointmentDateTime, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
+  const appointmentIsToday = isToday(appointmentDateTime);
 
   return (
     <div className="flex gap-2">
@@ -383,9 +384,9 @@ export function AppointmentActions({
                   {showPatientName && appointment.patient_profile && (
                     <p><strong>Paciente:</strong> {appointment.patient_profile.full_name}</p>
                   )}
-                  <p><strong>Fecha:</strong> {format(appointmentDateTime, 'dd/MM/yyyy', { locale: es })}</p>
-                  <p><strong>Hora:</strong> {format(appointmentDateTime, 'HH:mm')}</p>
-                  {isToday && (
+                  <p><strong>Fecha:</strong> {formatDateInMexicoTZ(appointmentDateTime)}</p>
+                  <p><strong>Hora:</strong> {formatTimeInMexicoTZ(appointmentDateTime)}</p>
+                  {appointmentIsToday && (
                     <Badge variant="destructive" className="text-xs">
                       ¡Cita para hoy!
                     </Badge>
@@ -441,8 +442,8 @@ export function AppointmentActions({
               {showPatientName && appointment.patient_profile && (
                 <p><strong>Paciente:</strong> {appointment.patient_profile.full_name}</p>
               )}
-              <p><strong>Fecha:</strong> {format(appointmentDateTime, 'dd/MM/yyyy', { locale: es })}</p>
-              <p><strong>Hora:</strong> {format(appointmentDateTime, 'HH:mm')}</p>
+              <p><strong>Fecha:</strong> {formatDateInMexicoTZ(appointmentDateTime)}</p>
+              <p><strong>Hora:</strong> {formatTimeInMexicoTZ(appointmentDateTime)}</p>
             </div>
 
             {/* New date selection */}
@@ -459,7 +460,7 @@ export function AppointmentActions({
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
                     {selectedDate ? (
-                      format(selectedDate, "PPP", { locale: es })
+                      formatShortDateInMexicoTZ(selectedDate)
                     ) : (
                       <span>Selecciona una fecha</span>
                     )}

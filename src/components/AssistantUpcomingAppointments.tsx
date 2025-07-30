@@ -9,7 +9,7 @@ import { AppointmentActionsExtended } from '@/components/AppointmentActionsExten
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { format } from 'date-fns';
+import { formatDateInMexicoTZ, formatTimeInMexicoTZ, formatDateTimeInMexicoTZ } from '@/utils/dateUtils';
 import { es } from 'date-fns/locale';
 import {
   Calendar,
@@ -146,7 +146,7 @@ export function AssistantUpcomingAppointments({ doctorId }: AssistantUpcomingApp
       const appointment = appointments.find(a => a.id === appointmentId);
       if (!appointment) return;
 
-      const verificationNote = `[Identidad verificada por asistente el ${format(new Date(), 'dd/MM/yyyy HH:mm', { locale: es })}]`;
+      const verificationNote = `[Identidad verificada por asistente el ${formatDateTimeInMexicoTZ(new Date())}]`;
       const existingNotes = appointment.notes || '';
       const updatedNotes = existingNotes ? `${existingNotes}\n\n${verificationNote}` : verificationNote;
 
@@ -303,11 +303,11 @@ export function AssistantUpcomingAppointments({ doctorId }: AssistantUpcomingApp
                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
                       <div className="flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
-                        {format(new Date(appointment.starts_at), 'dd/MM/yyyy', { locale: es })}
+                        {formatDateInMexicoTZ(appointment.starts_at)}
                       </div>
                       <div className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
-                        {format(new Date(appointment.starts_at), 'HH:mm')} - {format(new Date(appointment.ends_at), 'HH:mm')}
+                        {formatTimeInMexicoTZ(appointment.starts_at)} - {formatTimeInMexicoTZ(appointment.ends_at)}
                       </div>
                       {appointment.clinics && (
                         <div className="flex items-center gap-1">
@@ -391,7 +391,7 @@ export function AssistantUpcomingAppointments({ doctorId }: AssistantUpcomingApp
                               <div className="text-center">
                                 <p className="font-medium">{selectedPatient.patient_profile?.full_name}</p>
                                 <p className="text-sm text-muted-foreground">
-                                  {format(new Date(selectedPatient.starts_at), 'dd/MM/yyyy HH:mm', { locale: es })}
+                                  {formatDateTimeInMexicoTZ(selectedPatient.starts_at)}
                                 </p>
                               </div>
 

@@ -23,7 +23,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useSignedUrl } from '@/hooks/useSignedUrl';
-import { format } from 'date-fns';
+import { formatTimeInMexicoTZ, formatDateTimeInMexicoTZ } from '@/utils/dateUtils';
 import { es } from 'date-fns/locale';
 import { UploadPatientFiles } from '@/components/UploadPatientFiles';
 import { PatientDocumentUploader } from '@/components/PatientDocumentUploader';
@@ -217,9 +217,7 @@ export const AssistantTodayAppointments = ({ doctorId }: AssistantTodayAppointme
   };
 
   const formatTime = (dateString: string) => {
-    // Asegurar formato correcto de hora en zona local
-    const date = new Date(dateString);
-    return format(date, 'HH:mm', { locale: es });
+    return formatTimeInMexicoTZ(dateString);
   };
 
   const getStatusBadge = (appointment: Appointment) => {
@@ -444,7 +442,7 @@ export const AssistantTodayAppointments = ({ doctorId }: AssistantTodayAppointme
                               <ShieldCheck className="h-4 w-4 text-green-600" />
                               <AlertDescription className="text-green-800">
                                 Identidad validada el {appointment.identity_validated_at ? 
-                                  format(new Date(appointment.identity_validated_at), 'dd/MM/yyyy HH:mm', { locale: es }) 
+                                  formatDateTimeInMexicoTZ(appointment.identity_validated_at)
                                   : 'fecha no disponible'}
                               </AlertDescription>
                             </Alert>
