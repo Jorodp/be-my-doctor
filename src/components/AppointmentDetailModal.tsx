@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { formatTimeInMexicoTZ, formatDateTimeInMexicoTZ, formatInMexicoTZ } from '@/utils/dateUtils';
 import {
   User,
   Calendar,
@@ -233,7 +234,7 @@ export function AppointmentDetailModal({
                   <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm">
-                      {format(new Date(appointment.starts_at), 'HH:mm')} - {format(new Date(appointment.ends_at), 'HH:mm')}
+                      {formatTimeInMexicoTZ(appointment.starts_at)} - {formatTimeInMexicoTZ(appointment.ends_at)}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
@@ -294,7 +295,7 @@ export function AppointmentDetailModal({
                           <div className="flex justify-between items-start">
                             <h4 className="font-medium">Consulta</h4>
                             <span className="text-sm text-muted-foreground">
-                              {format(new Date(note.created_at), 'dd/MM/yyyy HH:mm')}
+                              {formatDateTimeInMexicoTZ(note.created_at)}
                             </span>
                           </div>
                           
@@ -349,7 +350,7 @@ export function AppointmentDetailModal({
                               {message.sender_profile?.full_name || 'Usuario'}
                             </span>
                             <span className="text-xs text-muted-foreground">
-                              {format(new Date(message.sent_at), 'dd/MM/yyyy HH:mm')}
+                              {formatDateTimeInMexicoTZ(message.sent_at)}
                             </span>
                           </div>
                           <p className="text-sm">{message.content}</p>

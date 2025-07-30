@@ -9,6 +9,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { formatTimeInMexicoTZ, formatInMexicoTZ } from '@/utils/dateUtils';
 import {
   FileText,
   Eye,
@@ -221,7 +222,7 @@ export const ConsultationNotesViewer: React.FC<ConsultationNotesViewerProps> = (
                             {format(new Date(note.appointment.starts_at), 'PPP', { locale: es })}
                           </span>
                           <Badge variant="outline">
-                            {format(new Date(note.appointment.starts_at), 'HH:mm')}
+                            {formatTimeInMexicoTZ(note.appointment.starts_at)}
                           </Badge>
                         </div>
                         
@@ -314,7 +315,7 @@ export const ConsultationNotesViewer: React.FC<ConsultationNotesViewerProps> = (
                       <strong>Fecha:</strong> {format(new Date(selectedNote.appointment.starts_at), 'PPP', { locale: es })}
                     </div>
                     <div>
-                      <strong>Hora:</strong> {format(new Date(selectedNote.appointment.starts_at), 'HH:mm')}
+                      <strong>Hora:</strong> {formatTimeInMexicoTZ(selectedNote.appointment.starts_at)}
                     </div>
                     {selectedNote.appointment.doctor_profile && (
                       <>

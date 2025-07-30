@@ -21,6 +21,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { format, subDays, startOfDay, endOfDay } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { formatInMexicoTZ } from '@/utils/dateUtils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface AppointmentHistory {
@@ -331,7 +332,7 @@ export const DoctorAppointmentHistory = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-muted-foreground mb-3">
                           <div className="flex items-center gap-2">
                             <Calendar className="h-4 w-4" />
-                            {format(new Date(appointment.starts_at), "d MMM yyyy 'a las' HH:mm", { locale: es })}
+                            {formatInMexicoTZ(appointment.starts_at, "d MMM yyyy 'a las' HH:mm")}
                           </div>
                           
                           {appointment.consultation_duration_minutes && (
@@ -390,14 +391,16 @@ export const DoctorAppointmentHistory = () => {
                     </div>
                     
                     <div className="flex flex-col gap-2 ml-4">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleChatClick(appointment)}
-                      >
-                        <MessageSquare className="h-4 w-4 mr-2" />
-                        Chat
-                      </Button>
+                      {appointment.status === 'completed' && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleChatClick(appointment)}
+                        >
+                          <MessageSquare className="h-4 w-4 mr-2" />
+                          Chat
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </div>

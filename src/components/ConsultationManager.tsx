@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { formatTimeInMexicoTZ } from '@/utils/dateUtils';
 import { 
   Clock, 
   User, 
@@ -330,8 +331,8 @@ export const ConsultationManager = ({
                       <div className="flex items-center gap-3 text-sm text-muted-foreground">
                         <Clock className="h-4 w-4" />
                         <span>
-                          {format(new Date(appointment.starts_at), 'HH:mm', { locale: es })} - 
-                          {format(new Date(appointment.ends_at), 'HH:mm', { locale: es })}
+                          {formatTimeInMexicoTZ(appointment.starts_at)} - 
+                          {formatTimeInMexicoTZ(appointment.ends_at)}
                         </span>
                         {appointment.patient_profile?.phone && (
                           <>

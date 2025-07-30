@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Send, MessageCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { formatDateTimeInMexicoTZ, formatTimeInMexicoTZ } from '@/utils/dateUtils';
 
 interface Message {
   id: string;
@@ -382,7 +383,7 @@ export const ChatWindow = ({ conversationId, onConversationSelect }: ChatWindowP
                         </p>
                       )}
                       <p className="text-xs text-muted-foreground mt-1">
-                        {format(new Date(conversation.updated_at), 'dd/MM/yyyy HH:mm', { locale: es })}
+                        {formatDateTimeInMexicoTZ(conversation.updated_at)}
                       </p>
                     </div>
                   </div>
@@ -436,7 +437,7 @@ export const ChatWindow = ({ conversationId, onConversationSelect }: ChatWindowP
                           <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                         </Card>
                         <span className="text-xs text-muted-foreground mt-1">
-                          {format(new Date(message.created_at), 'HH:mm', { locale: es })}
+                          {formatTimeInMexicoTZ(message.created_at)}
                         </span>
                       </div>
                     </div>
