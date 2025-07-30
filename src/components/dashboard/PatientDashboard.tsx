@@ -215,7 +215,19 @@ export const PatientDashboard = () => {
   };
 
   const formatAppointmentTime = (dateString: string) => {
-    return formatInMexicoTZ(dateString, "d 'de' MMMM 'a las' HH:mm");
+    // Las citas se almacenan como hora local de México pero marcadas como UTC
+    // Por eso las tomamos tal como están sin conversión de timezone
+    const dateStr = dateString.replace('Z', '').replace('+00:00', '');
+    const localDate = new Date(dateStr);
+    
+    return localDate.toLocaleString('es-MX', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    });
   };
 
   const renderAppointmentCard = (appointment: Appointment, showActions = false) => {
@@ -237,7 +249,7 @@ export const PatientDashboard = () => {
             </div>
             <div>
               <h4 className="font-medium">
-                Dr. {doctor?.full_name || 'Doctor'}
+                {doctor?.full_name || 'Doctor'}
               </h4>
               <p className="text-sm text-muted-foreground">
                 {doctor?.specialty || 'Medicina General'}

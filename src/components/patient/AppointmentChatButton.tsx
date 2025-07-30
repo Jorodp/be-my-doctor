@@ -32,12 +32,12 @@ export const AppointmentChatButton = ({
   const isScheduled = appointmentStatus === 'scheduled';
   
   const chatLabel = isCompleted 
-    ? `Chatear con Dr. ${doctorName}` 
-    : `Chatear con asistente de Dr. ${doctorName}`;
-    
+    ? `Chatear con ${doctorName}` 
+    : `Chatear con asistente de ${doctorName}`;
+     
   const dialogTitle = isCompleted 
-    ? `Chat con Dr. ${doctorName}` 
-    : `Chat con asistente de Dr. ${doctorName}`;
+    ? `Chat con ${doctorName}` 
+    : `Chat con asistente de ${doctorName}`;
 
   useEffect(() => {
     if (chatOpen && !conversationId) {
@@ -58,15 +58,13 @@ export const AppointmentChatButton = ({
       if (existingConversation) {
         setConversationId(existingConversation.id);
       } else {
-        // Create new conversation
-        const { data: newConversation, error } = await supabase
-          .from('conversations')
-          .insert({ appointment_id: appointmentId })
-          .select('id')
-          .single();
+        // Create new conversation using edge function to bypass RLS
+        const { data, error } = await supabase.functions.invoke('create-conversation', {
+          body: { appointmentId }
+        });
 
         if (error) throw error;
-        setConversationId(newConversation.id);
+        setConversationId(data.conversationId);
       }
     } catch (error) {
       console.error('Error getting conversation:', error);
@@ -114,7 +112,7 @@ export const AppointmentChatButton = ({
         )}
         {isScheduled && (
           <div className="text-sm text-muted-foreground bg-blue-50 p-3 rounded border border-blue-200">
-            Estás chateando con el asistente de Dr. {doctorName}. Te ayudará con dudas sobre tu cita programada.
+            Estás chateando con el asistente de {doctorName}. Te ayudará con dudas sobre tu cita programada.
           </div>
         )}
       </DialogContent>

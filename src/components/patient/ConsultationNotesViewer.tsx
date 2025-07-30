@@ -137,8 +137,16 @@ export const ConsultationNotesViewer: React.FC<ConsultationNotesViewerProps> = (
         patientName: patientProfile?.full_name || 'Paciente',
         doctorName: note.doctor_profile?.full_name || 'Doctor',
         specialty: note.doctor_profile?.specialty || 'Medicina General',
-        date: format(new Date(note.appointment?.starts_at || note.created_at), "d 'de' MMMM, yyyy", { locale: es }),
-        time: format(new Date(note.appointment?.starts_at || note.created_at), "HH:mm", { locale: es }),
+        date: (() => {
+          const dateStr = (note.appointment?.starts_at || note.created_at).replace('Z', '').replace('+00:00', '');
+          const localDate = new Date(dateStr);
+          return localDate.toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' });
+        })(),
+        time: (() => {
+          const dateStr = (note.appointment?.starts_at || note.created_at).replace('Z', '').replace('+00:00', '');
+          const localDate = new Date(dateStr);
+          return localDate.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false });
+        })(),
         diagnosis: note.diagnosis,
         prescription: note.prescription,
         recommendations: note.recommendations,
@@ -217,7 +225,18 @@ export const ConsultationNotesViewer: React.FC<ConsultationNotesViewerProps> = (
                     {note.doctor_profile?.specialty || 'Medicina General'}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {format(new Date(note.appointment?.starts_at || note.created_at), "d 'de' MMMM, yyyy 'a las' HH:mm", { locale: es })}
+                    {(() => {
+                      const dateStr = (note.appointment?.starts_at || note.created_at).replace('Z', '').replace('+00:00', '');
+                      const localDate = new Date(dateStr);
+                      return localDate.toLocaleString('es-MX', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: false
+                      });
+                    })()}
                   </p>
                 </div>
               </div>
@@ -255,7 +274,18 @@ export const ConsultationNotesViewer: React.FC<ConsultationNotesViewerProps> = (
                           <div>
                             <p className="text-sm font-medium">Fecha de consulta</p>
                             <p className="text-sm text-muted-foreground">
-                              {format(new Date(note.appointment?.starts_at || note.created_at), "d 'de' MMMM, yyyy 'a las' HH:mm", { locale: es })}
+                              {(() => {
+                                const dateStr = (note.appointment?.starts_at || note.created_at).replace('Z', '').replace('+00:00', '');
+                                const localDate = new Date(dateStr);
+                                return localDate.toLocaleString('es-MX', {
+                                  year: 'numeric',
+                                  month: 'long',
+                                  day: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                  hour12: false
+                                });
+                              })()}
                             </p>
                           </div>
                         </div>
