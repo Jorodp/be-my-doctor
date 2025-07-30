@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { format, addDays, setHours, setMinutes } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { formatDateTimeInMexicoTZ } from '@/utils/dateUtils';
 import { cn } from '@/lib/utils';
 import {
   Calendar as CalendarIcon,
@@ -253,7 +254,7 @@ export function AppointmentActionsExtended({
       )}
       
       <div className="text-xs text-muted-foreground">
-        {format(new Date(appointment.starts_at), 'dd/MM/yyyy HH:mm')}
+        {formatDateTimeInMexicoTZ(appointment.starts_at)}
       </div>
 
       {appointment.status === 'scheduled' && (
