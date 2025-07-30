@@ -143,22 +143,32 @@ export const DoctorChatManager = () => {
             if (conversation) {
               patient.conversation_id = conversation.id;
               
-              // Count unread messages (messages from patient after the last hour)
+              // Count unread messages (messages from patients after the last hour)
               const oneHourAgo = new Date();
               oneHourAgo.setHours(oneHourAgo.getHours() - 1);
               
               const { data: unreadMessages } = await supabase
                 .from('conversation_messages')
-                .select('sent_at')
+                .select(`
+                  sent_at,
+                  sender_user_id,
+                  profiles!conversation_messages_sender_user_id_fkey(role)
+                `)
                 .eq('conversation_id', conversation.id)
                 .neq('sender_user_id', user.id) // Messages not from doctor
                 .gte('sent_at', oneHourAgo.toISOString())
                 .order('sent_at', { ascending: false });
 
-              patient.unread_messages = unreadMessages?.length || 0;
+               // Filter messages to only include those from patients
+               const patientMessages = unreadMessages?.filter(message => {
+                 const profile = Array.isArray(message.profiles) ? message.profiles[0] : message.profiles;
+                 return profile?.role === 'patient';
+               }) || [];
+
+              patient.unread_messages = patientMessages.length;
               
-              if (unreadMessages && unreadMessages.length > 0) {
-                patient.last_message_time = unreadMessages[0].sent_at;
+              if (patientMessages.length > 0) {
+                patient.last_message_time = patientMessages[0].sent_at;
               }
             }
           }

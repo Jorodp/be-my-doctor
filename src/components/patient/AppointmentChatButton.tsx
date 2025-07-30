@@ -86,12 +86,23 @@ export const AppointmentChatButton = ({
           table: 'conversation_messages',
           filter: `conversation_id=eq.${conversationId}`,
         },
-        (payload) => {
+        async (payload) => {
           console.log('New message received:', payload.new);
-          // Only count messages from others (not from current user)
+          // Only count messages from doctors (not from current user and sender must be doctor)
           if (payload.new.sender_user_id !== user.id) {
-            console.log('Message from other user, incrementing count');
-            setUnreadCount(prev => prev + 1);
+            // Check if sender is a doctor
+            const { data: senderProfile } = await supabase
+              .from('profiles')
+              .select('role')
+              .eq('user_id', payload.new.sender_user_id)
+              .single();
+            
+            if (senderProfile?.role === 'doctor') {
+              console.log('Message from doctor, incrementing count');
+              setUnreadCount(prev => prev + 1);
+            } else {
+              console.log('Message not from doctor, ignoring');
+            }
           } else {
             console.log('Message from current user, ignoring');
           }
@@ -120,19 +131,29 @@ export const AppointmentChatButton = ({
 
     try {
       console.log('Fetching unread count for conversation:', conversationId);
-      // Count messages from the last hour that are not from the current user
+      // Count messages from the last hour that are from doctors (not from current user)
       const oneHourAgo = new Date();
       oneHourAgo.setHours(oneHourAgo.getHours() - 1);
 
       const { data: unreadMessages } = await supabase
         .from('conversation_messages')
-        .select('id')
+        .select(`
+          id,
+          sender_user_id,
+          profiles!conversation_messages_sender_user_id_fkey(role)
+        `)
         .eq('conversation_id', conversationId)
         .neq('sender_user_id', user.id)
         .gte('sent_at', oneHourAgo.toISOString());
 
-      console.log('Unread messages found:', unreadMessages?.length || 0);
-      setUnreadCount(unreadMessages?.length || 0);
+      // Filter messages to only include those from doctors
+      const doctorMessages = unreadMessages?.filter(message => {
+        const profile = Array.isArray(message.profiles) ? message.profiles[0] : message.profiles;
+        return profile?.role === 'doctor';
+      }) || [];
+
+      console.log('Doctor messages found:', doctorMessages.length);
+      setUnreadCount(doctorMessages.length);
     } catch (error) {
       console.error('Error fetching unread count:', error);
     }
