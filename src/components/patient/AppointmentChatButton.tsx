@@ -123,18 +123,16 @@ export const AppointmentChatButton = ({
   useEffect(() => {
     if (chatOpen && unreadCount > 0) {
       setUnreadCount(0);
+      // Mark messages as read when chat is opened
+      markConversationMessagesAsRead();
     }
   }, [chatOpen]);
 
-  const fetchUnreadCount = async () => {
+  const markConversationMessagesAsRead = async () => {
     if (!conversationId || !user) return;
 
     try {
-      console.log('Fetching unread count for conversation:', conversationId);
-      // Count messages from the last hour that are from doctors (not from current user)
-      const oneHourAgo = new Date();
-      oneHourAgo.setHours(oneHourAgo.getHours() - 1);
-
+      // Get all unread messages from doctors in this conversation
       const { data: unreadMessages } = await supabase
         .from('conversation_messages')
         .select(`
@@ -143,17 +141,85 @@ export const AppointmentChatButton = ({
           profiles!conversation_messages_sender_user_id_fkey(role)
         `)
         .eq('conversation_id', conversationId)
+        .neq('sender_user_id', user.id);
+
+      if (!unreadMessages) return;
+
+      // Filter to only doctor messages
+      const doctorMessages = unreadMessages.filter(message => {
+        const profile = Array.isArray(message.profiles) ? message.profiles[0] : message.profiles;
+        return profile?.role === 'doctor';
+      });
+
+      // Mark each doctor message as read
+      const readPromises = doctorMessages.map(message =>
+        supabase
+          .from('message_reads')
+          .upsert({
+            message_id: message.id,
+            user_id: user.id
+          }, {
+            onConflict: 'message_id,user_id'
+          })
+      );
+
+      await Promise.all(readPromises);
+      console.log(`Marked ${doctorMessages.length} doctor messages as read`);
+    } catch (error) {
+      console.error('Error marking conversation messages as read:', error);
+    }
+  };
+
+  const fetchUnreadCount = async () => {
+    if (!conversationId || !user) return;
+
+    try {
+      console.log('Fetching unread count for conversation:', conversationId);
+      
+      // Get messages from doctors in the last hour that haven't been read by current user
+      const oneHourAgo = new Date();
+      oneHourAgo.setHours(oneHourAgo.getHours() - 1);
+
+      const { data: unreadMessages } = await supabase
+        .from('conversation_messages')
+        .select(`
+          id,
+          sender_user_id,
+          sent_at,
+          profiles!conversation_messages_sender_user_id_fkey(role)
+        `)
+        .eq('conversation_id', conversationId)
         .neq('sender_user_id', user.id)
         .gte('sent_at', oneHourAgo.toISOString());
 
-      // Filter messages to only include those from doctors
-      const doctorMessages = unreadMessages?.filter(message => {
+      if (!unreadMessages) {
+        setUnreadCount(0);
+        return;
+      }
+
+      // Filter to only doctor messages
+      const doctorMessages = unreadMessages.filter(message => {
         const profile = Array.isArray(message.profiles) ? message.profiles[0] : message.profiles;
         return profile?.role === 'doctor';
-      }) || [];
+      });
 
-      console.log('Doctor messages found:', doctorMessages.length);
-      setUnreadCount(doctorMessages.length);
+      // Check which of these messages haven't been read by the current user
+      const unreadPromises = doctorMessages.map(async (message) => {
+        const { data: readStatus } = await supabase
+          .from('message_reads')
+          .select('id')
+          .eq('message_id', message.id)
+          .eq('user_id', user.id)
+          .single();
+
+        return !readStatus; // Return true if not read
+      });
+
+      const unreadResults = await Promise.all(unreadPromises);
+      const actualUnreadCount = unreadResults.filter(Boolean).length;
+
+      console.log('Actual unread doctor messages:', actualUnreadCount);
+      setUnreadCount(actualUnreadCount);
     } catch (error) {
       console.error('Error fetching unread count:', error);
     }

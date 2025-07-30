@@ -10,12 +10,15 @@ import { Send, MessageCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { formatDateTimeInMexicoTZ, formatTimeInMexicoTZ } from '@/utils/dateUtils';
+import { CheckCheck, Check } from 'lucide-react';
 
 interface Message {
   id: string;
   content: string;
   sender_id: string;
   created_at: string;
+  is_read?: boolean;
+  read_at?: string;
   sender?: {
     full_name: string | null;
     profile_image_url?: string | null;
@@ -77,6 +80,7 @@ export const ChatWindow = ({ conversationId, onConversationSelect }: ChatWindowP
     if (conversationId) {
       fetchMessages();
       subscribeToMessages();
+      markMessagesAsRead();
     }
   }, [conversationId]);
 
@@ -175,7 +179,7 @@ export const ChatWindow = ({ conversationId, onConversationSelect }: ChatWindowP
 
       if (error) throw error;
 
-      // Fetch sender profiles for each message
+      // Fetch sender profiles and read status for each message
       const messagesWithSenders = await Promise.all(
         (data || []).map(async (message) => {
           const { data: senderProfile } = await supabase
@@ -184,11 +188,21 @@ export const ChatWindow = ({ conversationId, onConversationSelect }: ChatWindowP
             .eq('user_id', message.sender_user_id)
             .single();
 
+          // Check if current user has read this message
+          const { data: readStatus } = await supabase
+            .from('message_reads')
+            .select('read_at')
+            .eq('message_id', message.id)
+            .eq('user_id', user?.id || '')
+            .single();
+
           return {
             id: message.id,
             content: message.content,
             sender_id: message.sender_user_id,
             created_at: message.sent_at,
+            is_read: !!readStatus,
+            read_at: readStatus?.read_at,
             sender: senderProfile
           };
         })
@@ -260,6 +274,57 @@ export const ChatWindow = ({ conversationId, onConversationSelect }: ChatWindowP
     return () => {
       supabase.removeChannel(channel);
     };
+  };
+
+  // Mark messages as read when conversation is opened
+  const markMessagesAsRead = async () => {
+    if (!conversationId || !user) return;
+
+    try {
+      // Get all messages in this conversation that are not from current user
+      const { data: unreadMessages } = await supabase
+        .from('conversation_messages')
+        .select('id, sender_user_id')
+        .eq('conversation_id', conversationId)
+        .neq('sender_user_id', user.id);
+
+      if (!unreadMessages || unreadMessages.length === 0) return;
+
+      // Filter out messages that are already marked as read
+      const messagesToMark = [];
+      for (const message of unreadMessages) {
+        const { data: existingRead } = await supabase
+          .from('message_reads')
+          .select('id')
+          .eq('message_id', message.id)
+          .eq('user_id', user.id)
+          .single();
+
+        if (!existingRead) {
+          messagesToMark.push({
+            message_id: message.id,
+            user_id: user.id
+          });
+        }
+      }
+
+      // Insert read status for unread messages
+      if (messagesToMark.length > 0) {
+        const { error } = await supabase
+          .from('message_reads')
+          .insert(messagesToMark);
+
+        if (error) {
+          console.error('Error marking messages as read:', error);
+        } else {
+          console.log(`Marked ${messagesToMark.length} messages as read`);
+          // Refresh messages to update read status
+          fetchMessages();
+        }
+      }
+    } catch (error) {
+      console.error('Error in markMessagesAsRead:', error);
+    }
   };
 
   const sendMessage = async () => {
@@ -505,9 +570,20 @@ export const ChatWindow = ({ conversationId, onConversationSelect }: ChatWindowP
                         }`}>
                           <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                         </Card>
-                        <span className="text-xs text-muted-foreground mt-1">
-                          {formatTimeInMexicoTZ(message.created_at)}
-                        </span>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-xs text-muted-foreground">
+                            {formatTimeInMexicoTZ(message.created_at)}
+                          </span>
+                          {isOwnMessage && (
+                            <div className="text-xs text-muted-foreground">
+                              {message.is_read ? (
+                                <CheckCheck className="h-3 w-3 text-blue-500" />
+                              ) : (
+                                <Check className="h-3 w-3" />
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
