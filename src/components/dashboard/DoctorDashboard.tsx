@@ -591,7 +591,7 @@ const DoctorDashboardContent = () => {
         {/* Main Content Tabs */}
         <Tabs defaultValue="consultas" className="space-y-6">
           <div className="w-full overflow-x-auto">
-            <TabsList className="grid grid-cols-6 lg:grid-cols-9 gap-1 h-auto p-2 bg-muted/50 rounded-lg">
+            <TabsList className="grid grid-cols-6 lg:grid-cols-9 gap-1 h-auto p-2 bg-muted/50 rounded-lg w-full">
               <TabsTrigger value="consultas" className="flex flex-col items-center gap-1 p-3 text-xs font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm">
                 <Timer className="h-4 w-4" />
                 <span className="hidden sm:block">Consultas</span>
@@ -634,19 +634,19 @@ const DoctorDashboardContent = () => {
                 <span className="sm:hidden">★</span>
               </TabsTrigger>
               
-              <TabsTrigger value="income" className="flex flex-col items-center gap-1 p-3 text-xs font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm lg:flex">
+               <TabsTrigger value="income" className="flex flex-col items-center gap-1 p-3 text-xs font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm lg:flex">
                 <DollarSign className="h-4 w-4" />
                 <span className="hidden sm:block">Ingresos</span>
                 <span className="sm:hidden">$</span>
               </TabsTrigger>
-            </TabsList>
-          </div>
               
               <TabsTrigger value="history" className="flex flex-col items-center gap-1 p-3 text-xs font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm lg:flex">
                 <History className="h-4 w-4" />
                 <span className="hidden sm:block">Historial</span>
                 <span className="sm:hidden">📋</span>
               </TabsTrigger>
+            </TabsList>
+          </div>
           <TabsContent value="consultas">
             <ConsultationFlowManager 
               appointments={todayAppointments}
