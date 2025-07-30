@@ -235,7 +235,7 @@ export const ConsultationFlowManager: React.FC<ConsultationFlowManagerProps> = (
             size="sm"
             onClick={() => markPatientArrived(appointment.id)}
             disabled={loading === appointment.id}
-            className="gap-2 animate-pulse border-blue-200 text-blue-700 hover:bg-blue-50"
+            className="gap-2 border-blue-300 text-blue-700 hover:bg-blue-50 bg-blue-25 shadow-sm"
           >
             <UserCheck className="h-4 w-4" />
             {loading === appointment.id ? 'Registrando...' : 'Paciente llegó'}
@@ -258,7 +258,7 @@ export const ConsultationFlowManager: React.FC<ConsultationFlowManagerProps> = (
           );
         }
         return (
-          <Badge variant="secondary" className="gap-1 bg-yellow-100 text-yellow-800 animate-pulse">
+          <Badge variant="secondary" className="gap-1 bg-yellow-100 text-yellow-800 border border-yellow-300 shadow-sm">
             <Timer className="h-3 w-3" />
             Esperando
           </Badge>
@@ -451,7 +451,7 @@ export const ConsultationFlowManager: React.FC<ConsultationFlowManagerProps> = (
                             <div 
                               key={step.label}
                               className={`text-center p-3 rounded-lg transition-all duration-300 ${
-                                step.active ? 'bg-blue-50 border-2 border-blue-200 animate-pulse' : 
+                                step.active ? 'bg-blue-50 border-2 border-blue-300 ring-2 ring-blue-200' : 
                                 step.completed ? 'bg-green-50 border border-green-200' : 
                                 'bg-gray-50 border border-gray-200'
                               }`}
