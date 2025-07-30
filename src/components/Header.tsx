@@ -8,6 +8,7 @@ const Header = () => {
   const {
     user,
     userRole,
+    profile,
     signOut
   } = useAuth();
   return <header className="bg-background/95 backdrop-blur-sm border-b border-border sticky top-0 z-50">
@@ -42,7 +43,7 @@ const Header = () => {
           <div className="hidden md:flex items-center space-x-4">
             {user && userRole ? <>
                 <span className="text-sm text-muted-foreground">
-                  Hola, Usuario
+                  Hola, {profile?.full_name || 'Usuario'}
                 </span>
                 <Link to="/dashboard">
                   <Button variant="outline">Dashboard</Button>
@@ -86,7 +87,7 @@ const Header = () => {
             <div className="pt-4 space-y-2">
               {user && userRole ? <>
                   <div className="text-sm text-muted-foreground px-3 py-2">
-                    Hola, Usuario
+                    Hola, {profile?.full_name || 'Usuario'}
                   </div>
                   <Link to="/dashboard">
                     <Button variant="outline" className="w-full">Dashboard</Button>
