@@ -15,6 +15,7 @@ import { Calendar, FileText, User, Clock, CheckCircle, Stethoscope, XCircle, Edi
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { formatInMexicoTZ } from '@/utils/dateUtils';
 
 interface Appointment {
   id: string;
@@ -48,6 +49,36 @@ export const PatientDashboard = () => {
       fetchAllAppointments();
     }
   }, [user]);
+
+  useEffect(() => {
+    // Check for unrated completed appointments
+    if (completedAppointments.length > 0) {
+      checkForUnratedAppointments();
+    }
+  }, [completedAppointments]);
+
+  const checkForUnratedAppointments = async () => {
+    if (!user || completedAppointments.length === 0) return;
+
+    try {
+      // Check if the most recent completed appointment has a rating
+      const mostRecentCompleted = completedAppointments[0];
+      
+      const { data: existingRating } = await supabase
+        .from('doctor_ratings')
+        .select('id')
+        .eq('appointment_id', mostRecentCompleted.id)
+        .eq('patient_user_id', user.id)
+        .single();
+
+      // If no rating exists for the most recent completed appointment, show the validator
+      if (!existingRating) {
+        setValidatorOpen(true);
+      }
+    } catch (error) {
+      console.error('Error checking for unrated appointments:', error);
+    }
+  };
 
   const fetchAllAppointments = async () => {
     if (!user) return;
@@ -184,8 +215,7 @@ export const PatientDashboard = () => {
   };
 
   const formatAppointmentTime = (dateString: string) => {
-    const date = new Date(dateString);
-    return format(date, "d 'de' MMMM 'a las' HH:mm", { locale: es });
+    return formatInMexicoTZ(dateString, "d 'de' MMMM 'a las' HH:mm");
   };
 
   const renderAppointmentCard = (appointment: Appointment, showActions = false) => {

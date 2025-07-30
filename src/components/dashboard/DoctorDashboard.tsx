@@ -32,6 +32,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
 import { format, addDays, startOfDay, endOfDay } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { formatTimeInMexicoTZ, formatInMexicoTZ } from '@/utils/dateUtils';
 import { DashboardLayout } from '@/components/ui/DashboardLayout';
 import { SubscriptionGuard } from '@/components/SubscriptionGuard';
 import { ConsultationFlowManager } from '@/components/ConsultationFlowManager';
@@ -447,11 +448,11 @@ const DoctorDashboardContent = () => {
   };
 
   const formatTime = (dateString: string) => {
-    return format(new Date(dateString), 'HH:mm', { locale: es });
+    return formatTimeInMexicoTZ(dateString);
   };
 
   const formatDate = (dateString: string) => {
-    return format(new Date(dateString), "d 'de' MMMM", { locale: es });
+    return formatInMexicoTZ(dateString, "d 'de' MMMM");
   };
 
   if (loading) {
