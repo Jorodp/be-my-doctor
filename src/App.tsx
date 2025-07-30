@@ -30,6 +30,7 @@ import AdminDoctorDetailPage from "./pages/admin/doctores/detail";
 import ResetPassword from "./pages/ResetPassword";
 import EmailConfirmation from "./pages/EmailConfirmation";
 import AuthCallback from "./pages/AuthCallback";
+import PrescriptionTest from "./pages/PrescriptionTest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 const queryClient = new QueryClient();
@@ -161,6 +162,7 @@ const App = () => (
             />
             <Route path="/emergency-logout" element={<EmergencyLogout />} />
             <Route path="/customer-support" element={<CustomerSupport />} />
+            <Route path="/prescription-test" element={<PrescriptionTest />} />
             <Route path="/unauthorized" element={<Unauthorized />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
