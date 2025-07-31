@@ -20,6 +20,8 @@ export function useDoctorReviews(doctorUserId: string, page: number = 1, limit: 
   return useQuery({
     queryKey: ["doctor-reviews", doctorUserId, page, limit],
     queryFn: async (): Promise<DoctorReviewsData> => {
+      console.log('🔍 Fetching reviews for doctor:', doctorUserId, 'page:', page, 'limit:', limit);
+      
       // Obtener estadísticas del doctor
       const { data: doctorProfile, error: profileError } = await supabase
         .from("doctor_profiles")
@@ -29,7 +31,7 @@ export function useDoctorReviews(doctorUserId: string, page: number = 1, limit: 
 
       if (profileError) throw profileError;
 
-      // Obtener reseñas paginadas
+      // Obtener reseñas paginadas - removemos el filtro visible para ver todas
       const offset = (page - 1) * limit;
       const { data: ratingsData, error: ratingsError } = await supabase
         .from("doctor_ratings")
@@ -39,12 +41,15 @@ export function useDoctorReviews(doctorUserId: string, page: number = 1, limit: 
           comment,
           created_at,
           edited,
-          patient_user_id
+          patient_user_id,
+          visible
         `)
         .eq("doctor_user_id", doctorUserId)
-        .eq("visible", true)
         .order("created_at", { ascending: false })
         .range(offset, offset + limit - 1);
+
+      console.log('📊 Raw ratings data:', ratingsData);
+      console.log('❗ Ratings error:', ratingsError);
 
       if (ratingsError) throw ratingsError;
 
@@ -54,6 +59,8 @@ export function useDoctorReviews(doctorUserId: string, page: number = 1, limit: 
         .from("profiles")
         .select("user_id, full_name")
         .in("user_id", patientIds);
+
+      console.log('👥 Patients data:', patientsData);
 
       if (patientsError) throw patientsError;
 
@@ -68,6 +75,8 @@ export function useDoctorReviews(doctorUserId: string, page: number = 1, limit: 
         patient_name: patientsMap.get(rating.patient_user_id) || "Usuario anónimo",
         edited: rating.edited
       })) || [];
+
+      console.log('✅ Final reviews:', reviews);
 
       return {
         reviews,
