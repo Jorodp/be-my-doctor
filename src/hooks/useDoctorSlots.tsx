@@ -1,6 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format, parse, addHours, startOfDay } from "date-fns";
+import { 
+  dayjs, 
+  convertUTCToMexicoTZ, 
+  convertMexicoTZToUTC, 
+  createMexicoTZDate,
+  MEXICO_TIMEZONE 
+} from "@/utils/dayjsConfig";
 
 export interface TimeSlot {
   start_time: string;
@@ -50,7 +57,9 @@ export function useDoctorSlots(doctorUserId: string, selectedDate: Date | undefi
       if (!selectedDate) return [];
 
       // Convertir de JavaScript weekday (0=domingo, 6=sábado) a formato interno (0=lunes, 6=domingo)
-      const jsDay = selectedDate.getDay();
+      // Usar dayjs para manejar correctamente la zona horaria
+      const selectedDateMX = dayjs.tz(selectedDate, MEXICO_TIMEZONE);
+      const jsDay = selectedDateMX.day();
       const internalWeekday = jsDay === 0 ? 6 : jsDay - 1;
       
       // First, get doctor's profile to get internal ID
@@ -80,7 +89,8 @@ export function useDoctorSlots(doctorUserId: string, selectedDate: Date | undefi
       }
 
       const slots: DoctorSlot[] = [];
-      const dateStr = format(selectedDate, 'yyyy-MM-dd');
+      // Usar dayjs para formatear la fecha en zona horaria de México
+      const dateStr = selectedDateMX.format('YYYY-MM-DD');
 
       // For each clinic, get availability and generate slots
       for (const clinic of clinics) {
@@ -112,22 +122,26 @@ export function useDoctorSlots(doctorUserId: string, selectedDate: Date | undefi
         }
       }
 
-      // Check existing appointments for each clinic
+      // Check existing appointments for each clinic usando zona horaria México
+      const startOfDayMX = selectedDateMX.startOf('day');
+      const endOfDayMX = selectedDateMX.endOf('day');
+      
       const { data: appointments, error: apptError } = await supabase
         .from('appointments')
         .select('starts_at, clinic_id')
         .eq('doctor_user_id', doctorUserId)
-        .gte('starts_at', startOfDay(selectedDate).toISOString())
-        .lt('starts_at', startOfDay(addHours(selectedDate, 24)).toISOString())
+        .gte('starts_at', startOfDayMX.utc().toISOString())
+        .lt('starts_at', endOfDayMX.utc().toISOString())
         .in('status', ['scheduled', 'completed']);
 
       if (apptError) throw apptError;
 
-      // Mark occupied slots per clinic
+      // Mark occupied slots per clinic usando zona horaria correcta
       const occupiedSlots = new Set(
         appointments?.map(apt => {
-          const time = new Date(apt.starts_at);
-          return `${apt.clinic_id}-${format(time, 'HH:mm:ss')}`;
+          // Convertir la fecha UTC a zona horaria de México
+          const appointmentTimeMX = convertUTCToMexicoTZ(apt.starts_at);
+          return `${apt.clinic_id}-${appointmentTimeMX.format('HH:mm:ss')}`;
         }) || []
       );
 
@@ -159,16 +173,22 @@ export function useBookAppointment() {
       patientUserId: string;
       notes?: string;
     }) => {
-      // Check for conflicts first
+      // Check for conflicts first usando dayjs con zona horaria correcta
       // Validar y asegurar formato correcto
       const normalizedStartTime = startTime.includes(':00:00') ? startTime.substring(0, 5) : 
                                   startTime.length === 5 ? startTime : `${startTime}:00`;
       
-      // Crear fecha en zona horaria local (México) y convertir a UTC para guardar
-      const localDate = new Date(`${date}T${normalizedStartTime}:00`);
-      const appointmentDateTime = localDate.toISOString();
+      // Crear fecha en zona horaria de México y convertir a UTC para guardar en Supabase
+      const localDateTimeMX = createMexicoTZDate(date, normalizedStartTime);
+      const appointmentDateTime = localDateTimeMX.utc().toISOString();
       
-      console.log('Creating appointment with:', { date, startTime, normalizedStartTime, localDate, appointmentDateTime });
+      console.log('Creating appointment with timezone awareness:', { 
+        date, 
+        startTime, 
+        normalizedStartTime, 
+        localDateTimeMX: localDateTimeMX.format(), 
+        appointmentDateTime 
+      });
       
       const { data: existingAppointments, error: checkError } = await supabase
         .from('appointments')
@@ -184,9 +204,9 @@ export function useBookAppointment() {
         throw new Error('Este horario ya está ocupado en este consultorio');
       }
 
-      // Create the appointment
-      // Usar la fecha ya creada en zona local
-      const endDateTime = new Date(localDate.getTime() + 60 * 60000); // 1 hour
+      // Create the appointment usando dayjs
+      // Calcular hora de fin (1 hora después) en zona horaria de México
+      const endDateTimeMX = localDateTimeMX.add(1, 'hour');
 
       const { data, error } = await supabase
         .from('appointments')
@@ -194,8 +214,8 @@ export function useBookAppointment() {
           doctor_user_id: doctorUserId,
           patient_user_id: patientUserId,
           clinic_id: clinicId,
-          starts_at: localDate.toISOString(),
-          ends_at: endDateTime.toISOString(),
+          starts_at: localDateTimeMX.utc().toISOString(),
+          ends_at: endDateTimeMX.utc().toISOString(),
           status: 'scheduled',
           notes: notes || null
         })

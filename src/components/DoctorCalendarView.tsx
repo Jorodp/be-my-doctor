@@ -6,6 +6,13 @@ import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { Clock, Calendar as CalendarIcon } from "lucide-react";
 import { format, startOfDay, isSameDay, isToday } from "date-fns";
 import { es } from "date-fns/locale";
+import { 
+  dayjs, 
+  convertUTCToMexicoTZ, 
+  formatUTCToMexicoTime, 
+  getNowInMexicoTZ,
+  MEXICO_TIMEZONE 
+} from "@/utils/dayjsConfig";
 import { useDoctorSlots, useBookAppointment } from "@/hooks/useDoctorSlots";
 import { useDoctorClinics } from "@/hooks/useDoctorClinics";
 import { useDoctorAvailability } from "@/hooks/useDoctorAvailability";
@@ -13,6 +20,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
+import { TimeSlotCard } from "@/components/TimeSlotCard";
 
 interface DoctorCalendarViewProps {
   doctorId?: string;
@@ -35,6 +43,10 @@ export function DoctorCalendarView({ doctorId }: DoctorCalendarViewProps) {
     return availabilityMap[dayOfWeek] || false;
   };
 
+  /**
+   * Formatea tiempo a HH:mm considerando que ya viene en zona horaria correcta
+   * desde el hook que maneja la conversión de UTC a México
+   */
   const formatTime = (time: string) => {
     return time.slice(0, 5); // HH:mm
   };
@@ -166,17 +178,25 @@ export function DoctorCalendarView({ doctorId }: DoctorCalendarViewProps) {
               }}
               modifiersStyles={{
                 available: {
-                  backgroundColor: 'hsl(var(--primary))',
+                  backgroundColor: 'hsl(var(--primary) / 0.9)',
                   color: 'hsl(var(--primary-foreground))',
                   borderRadius: '8px',
-                  fontWeight: '600'
+                  fontWeight: '600',
+                  border: '2px solid hsl(var(--primary))',
+                  boxShadow: '0 2px 4px hsl(var(--primary) / 0.3)'
                 }
               }}
               classNames={{
-                day_today: "bg-orange-400 text-white border-2 border-orange-600 rounded-lg font-bold"
+                day_today: "bg-orange-400 text-white border-2 border-orange-600 rounded-lg font-bold shadow-lg",
+                day_selected: "bg-primary text-primary-foreground border-2 border-primary-dark shadow-md"
               }}
               locale={es}
-              disabled={(date) => date < startOfDay(new Date())}
+              disabled={(date) => {
+                // Usar dayjs para comparar correctamente con zona horaria de México
+                const todayMX = getNowInMexicoTZ().startOf('day');
+                const dateMX = dayjs.tz(date, MEXICO_TIMEZONE).startOf('day');
+                return dateMX.isBefore(todayMX);
+              }}
             />
           </div>
           
@@ -225,63 +245,35 @@ export function DoctorCalendarView({ doctorId }: DoctorCalendarViewProps) {
                 </div>
               </div>
 
-              <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
+              <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
                 {slots.filter(slot => slot.available).length > 0 ? (
                   <>
+                    {/* Información sobre horarios */}
+                    <div className="mb-4 p-3 bg-primary/5 rounded-lg border border-primary/20">
+                      <div className="flex items-center gap-2 text-sm text-primary">
+                        <Clock className="w-4 h-4" />
+                        <span className="font-medium">
+                          {slots.filter(slot => slot.available).length} horarios disponibles (horario de México)
+                        </span>
+                      </div>
+                    </div>
+
                     {slots.filter(slot => slot.available).map((slot, index) => {
                       const slotId = `${slot.clinic_id}-${slot.start_time}-${slot.end_time}`;
                       const isSelected = selectedSlot === slot.start_time && selectedClinic === slot.clinic_id;
                       
                       return (
-                        <div
+                        <TimeSlotCard
                           key={slotId}
-                          className={`group flex items-center justify-between p-4 rounded-xl border-2 transition-all duration-200 cursor-pointer ${
-                            isSelected
-                              ? 'bg-primary/10 border-primary shadow-md'
-                              : 'bg-gradient-to-r from-background to-primary/5 border-primary/20 hover:border-primary/40 hover:shadow-sm'
-                          }`}
-                          onClick={() => handleSlotSelect(slot.start_time, slot.clinic_id)}
-                        >
-                          <div className="flex items-center gap-4">
-                            <div className={`w-3 h-3 rounded-full ${
-                              isSelected ? 'bg-primary' : 'bg-primary/60'
-                            }`}></div>
-                            <div className="flex flex-col gap-1">
-                              <div className="flex items-center gap-3">
-                                <Badge 
-                                  variant={isSelected ? "default" : "outline"} 
-                                  className={`text-base px-3 py-1 ${
-                                    isSelected 
-                                      ? "bg-primary text-primary-foreground shadow-sm"
-                                      : "border-primary/40 text-primary font-medium"
-                                  }`}
-                                >
-                                  {formatTime(slot.start_time)} - {formatTime(slot.end_time)}
-                                </Badge>
-                              </div>
-                              {selectedClinic === 'all' && (
-                                <div className="text-sm text-muted-foreground flex items-center gap-2">
-                                  <div className="w-1.5 h-1.5 bg-primary/60 rounded-full"></div>
-                                  <span className="font-medium">{slot.clinic_name}</span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                          
-                          <Button 
-                            size="sm" 
-                            className={`px-6 transition-all duration-200 ${
-                              isSelected ? 'shadow-md' : ''
-                            }`}
-                            variant={isSelected ? "default" : "outline"}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleSlotSelect(slot.start_time, slot.clinic_id);
-                            }}
-                          >
-                            {isSelected ? "✓ Seleccionado" : "Seleccionar"}
-                          </Button>
-                        </div>
+                          startTime={slot.start_time}
+                          endTime={slot.end_time}
+                          clinicName={slot.clinic_name}
+                          clinicId={slot.clinic_id}
+                          isSelected={isSelected}
+                          isAvailable={slot.available}
+                          showClinic={selectedClinic === 'all'}
+                          onSelect={handleSlotSelect}
+                        />
                       );
                     })}
                     
