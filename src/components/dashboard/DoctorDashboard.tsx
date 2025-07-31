@@ -781,10 +781,10 @@ const DoctorDashboardContent = () => {
                             </div>
 
                              <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                               <div className="flex items-center gap-1">
-                                 <Clock className="h-3 w-3" />
-                                 {formatTime(appointment.starts_at)} - {formatTime(appointment.ends_at)}
-                               </div>
+                                <div className="flex items-center gap-1">
+                                  <Clock className="h-3 w-3" />
+                                  {formatInMexicoTZ(appointment.starts_at, 'HH:mm')} - {formatInMexicoTZ(appointment.ends_at, 'HH:mm')}
+                                </div>
                                {appointment.patient_profile?.phone && (
                                  <div className="flex items-center gap-1">
                                    <Phone className="h-3 w-3" />
