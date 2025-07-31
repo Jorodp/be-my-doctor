@@ -15,6 +15,7 @@ import { PaymentSettings } from '@/components/admin/PaymentSettings';
 import DoctorRegistrationRequests from '@/components/admin/DoctorRegistrationRequests';
 import PhysicalPaymentRequests from '@/components/admin/PhysicalPaymentRequests';
 import { SystemTester } from '@/components/SystemTester';
+import { RevenueOverview } from '@/components/admin/RevenueOverview';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { DashboardLayout } from '@/components/ui/DashboardLayout';
@@ -393,8 +394,9 @@ export const AdminDashboard = () => {
 
         {/* Main Management Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-7">
+          <TabsList className="grid w-full grid-cols-8">
             <TabsTrigger value="overview">Resumen</TabsTrigger>
+            <TabsTrigger value="revenue">Ingresos</TabsTrigger>
             <TabsTrigger value="requests">Solicitudes</TabsTrigger>
             <TabsTrigger value="payments">Pagos Físicos</TabsTrigger>
             <TabsTrigger value="doctors">Doctores</TabsTrigger>
@@ -478,6 +480,10 @@ export const AdminDashboard = () => {
                 </Card>
               </div>
             </div>
+          </TabsContent>
+
+          <TabsContent value="revenue">
+            <RevenueOverview />
           </TabsContent>
 
           <TabsContent value="requests">
