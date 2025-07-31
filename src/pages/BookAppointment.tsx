@@ -212,9 +212,10 @@ export default function BookAppointment() {
 
     setBookingLoading(true);
     try {
+      // Crear fecha en zona horaria local (México)
       const appointmentStart = new Date(selectedDate);
       const [hours, minutes] = selectedTime.split(':');
-      appointmentStart.setHours(parseInt(hours), parseInt(minutes), 0);
+      appointmentStart.setHours(parseInt(hours), parseInt(minutes), 0, 0);
       
       const appointmentEnd = new Date(appointmentStart);
       appointmentEnd.setHours(appointmentStart.getHours() + 1); // 1 hour appointment

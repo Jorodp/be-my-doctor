@@ -488,10 +488,7 @@ const DoctorDashboardContent = () => {
   };
 
   const formatTime = (dateString: string) => {
-    console.log('📅 DoctorDashboard formatTime input:', dateString);
-    const result = formatTimeInMexicoTZ(dateString);
-    console.log('📅 DoctorDashboard formatTime result:', result);
-    return result;
+    return formatTimeInMexicoTZ(dateString);
   };
 
   const formatDate = (dateString: string) => {

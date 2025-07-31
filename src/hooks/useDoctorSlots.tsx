@@ -160,11 +160,15 @@ export function useBookAppointment() {
       notes?: string;
     }) => {
       // Check for conflicts first
-      // Validate and ensure correct format: startTime should be like "14:00" or "14:00:00"
+      // Validar y asegurar formato correcto
       const normalizedStartTime = startTime.includes(':00:00') ? startTime.substring(0, 5) : 
                                   startTime.length === 5 ? startTime : `${startTime}:00`;
-      const appointmentDateTime = `${date}T${normalizedStartTime}:00.000Z`;
-      console.log('Creating appointment with:', { date, startTime, normalizedStartTime, appointmentDateTime });
+      
+      // Crear fecha en zona horaria local (México) y convertir a UTC para guardar
+      const localDate = new Date(`${date}T${normalizedStartTime}:00`);
+      const appointmentDateTime = localDate.toISOString();
+      
+      console.log('Creating appointment with:', { date, startTime, normalizedStartTime, localDate, appointmentDateTime });
       
       const { data: existingAppointments, error: checkError } = await supabase
         .from('appointments')
@@ -181,9 +185,8 @@ export function useBookAppointment() {
       }
 
       // Create the appointment
-      // Ensure consistent datetime format using the normalized start time
-      const startDateTime = new Date(`${date}T${normalizedStartTime}:00.000Z`);
-      const endDateTime = new Date(startDateTime.getTime() + 60 * 60000); // 1 hour
+      // Usar la fecha ya creada en zona local
+      const endDateTime = new Date(localDate.getTime() + 60 * 60000); // 1 hour
 
       const { data, error } = await supabase
         .from('appointments')
@@ -191,7 +194,7 @@ export function useBookAppointment() {
           doctor_user_id: doctorUserId,
           patient_user_id: patientUserId,
           clinic_id: clinicId,
-          starts_at: startDateTime.toISOString(),
+          starts_at: localDate.toISOString(),
           ends_at: endDateTime.toISOString(),
           status: 'scheduled',
           notes: notes || null
