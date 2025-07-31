@@ -22,6 +22,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { format } from 'date-fns';
+import { formatDateInMexicoTZ } from '@/utils/dateUtils';
 import { es } from 'date-fns/locale';
 import { ConsultationNotesForm } from './ConsultationNotesForm';
 import { useDoctorAPI } from '@/hooks/useDoctorAPI';
@@ -278,7 +279,7 @@ export function ConsultationWorkspace({
                       <Calendar className="h-4 w-4 text-muted-foreground" />
                       <span>
                         {patientProfile.date_of_birth 
-                          ? format(new Date(patientProfile.date_of_birth), 'dd/MM/yyyy', { locale: es })
+                          ? formatDateInMexicoTZ(patientProfile.date_of_birth)
                           : 'No especificada'
                         }
                       </span>
@@ -307,7 +308,7 @@ export function ConsultationWorkspace({
                       <div key={history.id} className="border rounded-lg p-3">
                         <div className="flex justify-between items-start mb-2">
                           <span className="text-sm font-medium">
-                            {format(new Date(history.ends_at), 'dd/MM/yyyy', { locale: es })}
+                            {formatDateInMexicoTZ(history.ends_at)}
                           </span>
                           <Badge variant="secondary" className="text-xs">
                             Completada

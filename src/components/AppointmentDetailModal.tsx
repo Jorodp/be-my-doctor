@@ -383,7 +383,7 @@ export function AppointmentDetailModal({
                           <div>
                             <p className="font-medium">${payment.amount}</p>
                             <p className="text-sm text-muted-foreground">
-                              {payment.payment_method} • {format(new Date(payment.created_at), 'dd/MM/yyyy')}
+                              {payment.payment_method} • {formatDateTimeInMexicoTZ(payment.created_at)}
                             </p>
                           </div>
                           <Badge variant={payment.status === 'completed' ? 'default' : 'secondary'}>

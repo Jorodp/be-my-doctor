@@ -219,7 +219,7 @@ export const ConsultationNotesViewer: React.FC<ConsultationNotesViewerProps> = (
                         <div className="flex items-center gap-2">
                           <Calendar className="h-4 w-4 text-muted-foreground" />
                           <span className="font-medium">
-                            {format(new Date(note.appointment.starts_at), 'PPP', { locale: es })}
+                            {formatInMexicoTZ(note.appointment.starts_at, 'PPP')}
                           </span>
                           <Badge variant="outline">
                             {formatTimeInMexicoTZ(note.appointment.starts_at)}
@@ -262,7 +262,7 @@ export const ConsultationNotesViewer: React.FC<ConsultationNotesViewerProps> = (
                           <div className="flex items-center gap-2">
                             <CalendarClock className="h-4 w-4 text-muted-foreground" />
                             <span className="text-sm">
-                              <strong>Seguimiento:</strong> {format(new Date(note.follow_up_date), 'PPP', { locale: es })}
+                              <strong>Seguimiento:</strong> {formatInMexicoTZ(note.follow_up_date, 'PPP')}
                             </span>
                           </div>
                         )}
@@ -312,7 +312,7 @@ export const ConsultationNotesViewer: React.FC<ConsultationNotesViewerProps> = (
                 <CardContent className="pt-6">
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
-                      <strong>Fecha:</strong> {format(new Date(selectedNote.appointment.starts_at), 'PPP', { locale: es })}
+                      <strong>Fecha:</strong> {formatInMexicoTZ(selectedNote.appointment.starts_at, 'PPP')}
                     </div>
                     <div>
                       <strong>Hora:</strong> {formatTimeInMexicoTZ(selectedNote.appointment.starts_at)}
@@ -386,7 +386,7 @@ export const ConsultationNotesViewer: React.FC<ConsultationNotesViewerProps> = (
                   <Card>
                     <CardContent className="pt-6">
                       <p className="text-sm">
-                        {format(new Date(selectedNote.follow_up_date), 'PPP', { locale: es })}
+                        {formatInMexicoTZ(selectedNote.follow_up_date, 'PPP')}
                       </p>
                     </CardContent>
                   </Card>
@@ -397,9 +397,9 @@ export const ConsultationNotesViewer: React.FC<ConsultationNotesViewerProps> = (
 
               {/* Footer con fechas */}
               <div className="text-xs text-muted-foreground space-y-1">
-                <p>Consulta creada: {format(new Date(selectedNote.created_at), 'PPpp', { locale: es })}</p>
+                <p>Consulta creada: {formatInMexicoTZ(selectedNote.created_at, 'PPpp')}</p>
                 {selectedNote.updated_at !== selectedNote.created_at && (
-                  <p>Última actualización: {format(new Date(selectedNote.updated_at), 'PPpp', { locale: es })}</p>
+                  <p>Última actualización: {formatInMexicoTZ(selectedNote.updated_at, 'PPpp')}</p>
                 )}
               </div>
 

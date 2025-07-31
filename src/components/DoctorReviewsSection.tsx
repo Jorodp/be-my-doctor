@@ -6,6 +6,7 @@ import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { Star, MessageCircle, ChevronLeft, ChevronRight } from "lucide-react";
 import { useDoctorReviews } from "@/hooks/useDoctorReviews";
 import { format } from "date-fns";
+import { formatInMexicoTZ } from "@/utils/dateUtils";
 import { es } from "date-fns/locale";
 
 interface DoctorReviewsSectionProps {
@@ -124,7 +125,7 @@ export function DoctorReviewsSection({ doctorUserId }: DoctorReviewsSectionProps
                         )}
                       </div>
                       <span className="text-xs text-muted-foreground">
-                        {format(new Date(review.created_at), "d MMM yyyy", { locale: es })}
+                        {formatInMexicoTZ(review.created_at, "d MMM yyyy")}
                       </span>
                     </div>
 

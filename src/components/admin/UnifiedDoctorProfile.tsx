@@ -29,6 +29,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
 import { useAdminProfileAPI } from '@/hooks/useAdminProfileAPI';
 import { format } from 'date-fns';
+import { formatDateTimeInMexicoTZ } from '@/utils/dateUtils';
 import { es } from 'date-fns/locale';
 
 import { EditDoctorProfile } from './EditDoctorProfile';
@@ -341,7 +342,7 @@ export const UnifiedDoctorProfile = ({
                     <div>
                       <p className="text-sm text-muted-foreground">Fecha de Registro</p>
                       <p className="font-medium">
-                        {format(new Date(data.profile.created_at), 'dd/MM/yyyy', { locale: es })}
+                        {formatDateTimeInMexicoTZ(data.profile.created_at)}
                       </p>
                     </div>
                   </div>
@@ -436,7 +437,7 @@ export const UnifiedDoctorProfile = ({
                       <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
                         <div>
                           <p className="font-medium">
-                            {format(new Date(appointment.starts_at), 'dd/MM/yyyy HH:mm', { locale: es })}
+                            {formatDateTimeInMexicoTZ(appointment.starts_at)}
                           </p>
                           <p className="text-sm text-muted-foreground">
                             Paciente: {appointment.patient_user_id.slice(0, 8)}...

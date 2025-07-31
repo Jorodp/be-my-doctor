@@ -19,6 +19,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
 import { useAdminProfileAPI } from '@/hooks/useAdminProfileAPI';
 import { format } from 'date-fns';
+import { formatInMexicoTZ } from '@/utils/dateUtils';
 import { es } from 'date-fns/locale';
 
 interface Appointment {
@@ -90,8 +91,7 @@ export const DoctorAppointmentsDrawer = ({
 
   const formatDateTime = (dateString: string) => {
     try {
-      const date = new Date(dateString);
-      return format(date, "dd 'de' MMMM, yyyy 'a las' HH:mm", { locale: es });
+      return formatInMexicoTZ(dateString, "dd 'de' MMMM, yyyy 'a las' HH:mm");
     } catch (error) {
       return dateString;
     }
