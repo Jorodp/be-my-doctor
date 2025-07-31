@@ -41,7 +41,8 @@ export default function DoctorSearch() {
   const fetchDoctors = async () => {
     setLoading(true);
     
-    let query = supabase
+    // Primero obtener los doctores básicos
+    const { data: doctorProfilesData, error: doctorError } = await supabase
       .from("doctor_profiles")
       .select(`
         user_id,
@@ -49,57 +50,93 @@ export default function DoctorSearch() {
         profile_image_url,
         rating_avg,
         rating_count,
-        experience_years,
-        profile:profiles!inner(
-          full_name,
-          user_id
-        ),
-        clinics:clinics(
-          city
-        )
+        experience_years
       `)
       .eq("verification_status", "verified")
       .eq("subscription_status", "active")
       .eq("profile_complete", true)
       .limit(50);
 
-    // Aplicar filtros si existen
-    if (filters.name) {
-      query = query.ilike("profile.full_name", `%${filters.name}%`);
-    }
-    if (filters.specialty) {
-      query = query.ilike("specialty", `%${filters.specialty}%`);
-    }
-    if (filters.location) {
-      query = query.ilike("clinics.city", `%${filters.location}%`);
+    if (doctorError) {
+      console.error("Error al buscar doctores:", doctorError);
+      setLoading(false);
+      return;
     }
 
-    const { data, error } = await query;
-    
-    if (error) {
-      console.error("Error al buscar doctores:", error);
-    } else {
-      console.log("DOCTORS DATA (mira en consola la forma):", data);
-      
-      // Transformar datos para mantener compatibilidad
-      const transformedDoctors = data?.map(doctor => ({
-        doctor_user_id: doctor.user_id,
-        full_name: doctor.profile?.[0]?.full_name || '',
-        specialty: doctor.specialty,
-        profile_image_url: doctor.profile_image_url,
-        rating_avg: doctor.rating_avg,
-        rating_count: doctor.rating_count,
-        experience_years: doctor.experience_years,
-        city: doctor.clinics?.[0]?.city || ''
-      })) || [];
-      
-      // Eliminar duplicados basados en doctor_user_id
-      const uniqueDoctors = transformedDoctors.filter((doctor, index, self) => 
-        index === self.findIndex(d => d.doctor_user_id === doctor.doctor_user_id)
-      );
-      
-      setDoctors(uniqueDoctors);
+    if (!doctorProfilesData || doctorProfilesData.length === 0) {
+      console.log("No se encontraron doctores");
+      setDoctors([]);
+      setLoading(false);
+      return;
     }
+
+    console.log("Doctor profiles encontrados:", doctorProfilesData);
+
+    // Obtener los IDs de usuario para buscar perfiles
+    const userIds = doctorProfilesData.map(d => d.user_id);
+
+    // Obtener información de perfiles
+    const { data: profilesData, error: profilesError } = await supabase
+      .from("profiles")
+      .select("user_id, full_name")
+      .in("user_id", userIds);
+
+    // Obtener información de clínicas (opcional)
+    const { data: clinicsData, error: clinicsError } = await supabase
+      .from("clinics")
+      .select("doctor_id, city")
+      .in("doctor_id", userIds.map(id => 
+        doctorProfilesData.find(d => d.user_id === id)?.user_id
+      ).filter(Boolean));
+
+    console.log("Profiles data:", profilesData);
+    console.log("Clinics data:", clinicsData);
+
+    // Crear mapa de nombres de perfiles
+    const profilesMap = new Map(profilesData?.map(p => [p.user_id, p.full_name]) || []);
+    
+    // Crear mapa de ciudades (tomar la primera ciudad de cada doctor)
+    const clinicsMap = new Map();
+    clinicsData?.forEach(clinic => {
+      if (!clinicsMap.has(clinic.doctor_id)) {
+        clinicsMap.set(clinic.doctor_id, clinic.city);
+      }
+    });
+
+    // Transformar datos para mantener compatibilidad
+    const transformedDoctors = doctorProfilesData.map(doctor => ({
+      doctor_user_id: doctor.user_id,
+      full_name: profilesMap.get(doctor.user_id) || 'Doctor',
+      specialty: doctor.specialty,
+      profile_image_url: doctor.profile_image_url,
+      rating_avg: doctor.rating_avg,
+      rating_count: doctor.rating_count,
+      experience_years: doctor.experience_years,
+      city: clinicsMap.get(doctor.user_id) || ''
+    }));
+
+    console.log("Transformed doctors:", transformedDoctors);
+
+    // Aplicar filtros si existen
+    let filteredDoctors = transformedDoctors;
+    
+    if (filters.name) {
+      filteredDoctors = filteredDoctors.filter(doctor => 
+        doctor.full_name.toLowerCase().includes(filters.name.toLowerCase())
+      );
+    }
+    if (filters.specialty) {
+      filteredDoctors = filteredDoctors.filter(doctor => 
+        doctor.specialty.toLowerCase().includes(filters.specialty.toLowerCase())
+      );
+    }
+    if (filters.location) {
+      filteredDoctors = filteredDoctors.filter(doctor => 
+        doctor.city.toLowerCase().includes(filters.location.toLowerCase())
+      );
+    }
+
+    setDoctors(filteredDoctors);
     setLoading(false);
   };
 
@@ -190,34 +227,6 @@ export default function DoctorSearch() {
           </CardContent>
         </Card>
 
-        {/* Disclaimer de registro */}
-        {!user && (
-          <Card className="mb-6 border-l-4 border-l-primary bg-primary/5">
-            <CardContent className="p-4">
-              <div className="flex items-start space-x-3">
-                <div className="flex-shrink-0 w-6 h-6 bg-primary rounded-full flex items-center justify-center">
-                  <svg className="w-4 h-4 text-primary-foreground" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                  </svg>
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-foreground mb-1">
-                    🔒 Plataforma Médica Segura
-                  </h3>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Para garantizar la seguridad de nuestros pacientes y doctores, necesitas <strong>registrarte o iniciar sesión</strong> para ver el perfil completo de cada médico, sus horarios disponibles y poder agendar citas.
-                  </p>
-                  <Button 
-                    onClick={() => navigate("/auth")}
-                    className="bg-primary hover:bg-primary/90 text-primary-foreground text-sm px-4 py-2"
-                  >
-                    Registrarse / Iniciar Sesión
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
         {/* Resultados */}
         {loading ? (

@@ -177,248 +177,268 @@ export default function Auth() {
 
       {/* Main Auth Content */}
       <div className="flex-1 flex items-center justify-center bg-gradient-section px-4 py-8">
-      
-      <div className="flex flex-col items-center gap-6 w-full max-w-md">
-        <Card className="w-full">
-        {registrationStatus !== 'idle' ? (
-          // Pantalla de resultado de registro
-          <>
-            <CardHeader className="text-center">
-              <div className="flex justify-center mb-4">
-                {registrationStatus === 'success' && (
-                  <CheckCircle className="h-12 w-12 text-green-500" />
-                )}
-                {registrationStatus === 'error' && (
-                  <XCircle className="h-12 w-12 text-red-500" />
-                )}
-              </div>
-              <CardTitle className="text-2xl">
-                {registrationStatus === 'success' ? '¡Registro exitoso!' : 'Error de registro'}
-              </CardTitle>
-              <CardDescription className="text-center mt-2">
-                {registrationStatus === 'success' 
-                  ? 'Sigue estos pasos para completar tu registro:'
-                  : registrationMessage
-                }
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {registrationStatus === 'success' && (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4 space-y-3">
-                  <div className="flex items-start gap-3">
-                    <span className="flex-shrink-0 w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold">1</span>
-                    <div>
-                      <p className="font-medium text-green-800">Revisa tu correo electrónico</p>
-                      <p className="text-sm text-green-600">Te hemos enviado un correo de confirmación a <strong>{signUpEmail}</strong></p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <span className="flex-shrink-0 w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold">2</span>
-                    <div>
-                      <p className="font-medium text-green-800">Haz click en el enlace del correo</p>
-                      <p className="text-sm text-green-600">El enlace te llevará de vuelta a nuestra plataforma para confirmar tu cuenta</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <span className="flex-shrink-0 w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold">3</span>
-                    <div>
-                      <p className="font-medium text-green-800">¡Ya podrás iniciar sesión!</p>
-                      <p className="text-sm text-green-600">Una vez confirmado tu email, podrás acceder a tu cuenta</p>
-                    </div>
-                  </div>
+        <div className="w-full max-w-md space-y-6">
+          {/* Disclaimer de seguridad */}
+          <Card className="bg-primary/5 border-primary/20">
+            <CardContent className="p-4">
+              <div className="flex items-start space-x-3">
+                <div className="flex-shrink-0 w-6 h-6 bg-primary rounded-full flex items-center justify-center">
+                  <svg className="w-4 h-4 text-primary-foreground" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  </svg>
                 </div>
-              )}
-              <div className="flex flex-col gap-3">
-                {registrationStatus === 'success' && (
-                <Button 
-                  onClick={() => {
-                    setRegistrationStatus('idle');
-                    setRegistrationMessage('');
-                    setActiveTab('signin');
-                    setSignInEmail(signUpEmail); // Pre-llenar el email
-                  }} 
-                  className="w-full"
-                >
-                  Ir a iniciar sesión
-                </Button>
-                )}
-                <Button 
-                  variant="outline" 
-                  onClick={() => {
-                    setRegistrationStatus('idle');
-                    setRegistrationMessage('');
-                  }} 
-                  className="w-full"
-                >
-                  {registrationStatus === 'success' ? 'Registrar otra cuenta' : 'Intentar de nuevo'}
-                </Button>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-foreground mb-1">
+                    🔒 Plataforma Médica Segura
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Para garantizar la seguridad de nuestros pacientes y doctores, necesitas registrarte o iniciar sesión para ver perfiles completos de médicos, horarios disponibles y poder agendar citas.
+                  </p>
+                </div>
               </div>
             </CardContent>
-          </>
-        ) : (
-          // Formulario normal de autenticación
-          <>
-            <CardHeader>
-              <div className="flex items-center justify-center gap-3 mb-2">
-                <img src="/lovable-uploads/2176a5eb-dd8e-4ff9-8a38-3cfe98feb63a.png" alt="Be My Doctor" className="h-8 w-auto" />
-                <CardTitle className="text-2xl text-center">Be My Doctor</CardTitle>
-              </div>
-              <CardDescription className="text-center">
-                Plataforma médica integral
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'signin' | 'signup')}>
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="signin">Iniciar Sesión</TabsTrigger>
-              <TabsTrigger value="signup">Registrarse</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="signin">
-              {!isResetMode ? (
-                <form onSubmit={handleSignIn} className="space-y-4">
+          </Card>
+
+          <Card className="w-full">
+          {registrationStatus !== 'idle' ? (
+            // Pantalla de resultado de registro
+            <>
+              <CardHeader className="text-center">
+                <div className="flex justify-center mb-4">
+                  {registrationStatus === 'success' && (
+                    <CheckCircle className="h-12 w-12 text-green-500" />
+                  )}
+                  {registrationStatus === 'error' && (
+                    <XCircle className="h-12 w-12 text-red-500" />
+                  )}
+                </div>
+                <CardTitle className="text-2xl">
+                  {registrationStatus === 'success' ? '¡Registro exitoso!' : 'Error de registro'}
+                </CardTitle>
+                <CardDescription className="text-center mt-2">
+                  {registrationStatus === 'success' 
+                    ? 'Sigue estos pasos para completar tu registro:'
+                    : registrationMessage
+                  }
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {registrationStatus === 'success' && (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4 space-y-3">
+                    <div className="flex items-start gap-3">
+                      <span className="flex-shrink-0 w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold">1</span>
+                      <div>
+                        <p className="font-medium text-green-800">Revisa tu correo electrónico</p>
+                        <p className="text-sm text-green-600">Te hemos enviado un correo de confirmación a <strong>{signUpEmail}</strong></p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <span className="flex-shrink-0 w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold">2</span>
+                      <div>
+                        <p className="font-medium text-green-800">Haz click en el enlace del correo</p>
+                        <p className="text-sm text-green-600">El enlace te llevará de vuelta a nuestra plataforma para confirmar tu cuenta</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <span className="flex-shrink-0 w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold">3</span>
+                      <div>
+                        <p className="font-medium text-green-800">¡Ya podrás iniciar sesión!</p>
+                        <p className="text-sm text-green-600">Una vez confirmado tu email, podrás acceder a tu cuenta</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <div className="flex flex-col gap-3">
+                  {registrationStatus === 'success' && (
+                  <Button 
+                    onClick={() => {
+                      setRegistrationStatus('idle');
+                      setRegistrationMessage('');
+                      setActiveTab('signin');
+                      setSignInEmail(signUpEmail);
+                    }} 
+                    className="w-full"
+                  >
+                    Ir a iniciar sesión
+                  </Button>
+                  )}
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      setRegistrationStatus('idle');
+                      setRegistrationMessage('');
+                    }} 
+                    className="w-full"
+                  >
+                    {registrationStatus === 'success' ? 'Registrar otra cuenta' : 'Intentar de nuevo'}
+                  </Button>
+                </div>
+              </CardContent>
+            </>
+          ) : (
+            // Formulario normal de autenticación
+            <>
+              <CardHeader>
+                <div className="flex items-center justify-center gap-3 mb-2">
+                  <img src="/lovable-uploads/2176a5eb-dd8e-4ff9-8a38-3cfe98feb63a.png" alt="Be My Doctor" className="h-8 w-auto" />
+                  <CardTitle className="text-2xl text-center">Be My Doctor</CardTitle>
+                </div>
+                <CardDescription className="text-center">
+                  Plataforma médica integral
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'signin' | 'signup')}>
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="signin">Iniciar Sesión</TabsTrigger>
+                <TabsTrigger value="signup">Registrarse</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="signin">
+                {!isResetMode ? (
+                  <form onSubmit={handleSignIn} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="signin-email">Email</Label>
+                      <Input
+                        id="signin-email"
+                        type="email"
+                        value={signInEmail}
+                        onChange={(e) => setSignInEmail(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="signin-password">Contraseña</Label>
+                      <PasswordInput
+                        id="signin-password"
+                        value={signInPassword}
+                        onChange={(e) => setSignInPassword(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <Button type="submit" className="w-full" disabled={loading}>
+                      {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
+                    </Button>
+                    <div className="text-center">
+                      <button
+                        type="button"
+                        onClick={() => setIsResetMode(true)}
+                        className="text-sm text-primary hover:underline"
+                      >
+                        ¿Olvidaste tu contraseña?
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  <form onSubmit={handleForgotPassword} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="reset-email">Email</Label>
+                      <Input
+                        id="reset-email"
+                        type="email"
+                        value={resetEmail}
+                        onChange={(e) => setResetEmail(e.target.value)}
+                        placeholder="Ingresa tu email para restablecer tu contraseña"
+                        required
+                      />
+                    </div>
+                    <Button type="submit" className="w-full" disabled={loading}>
+                      {loading ? 'Enviando...' : 'Enviar enlace de restablecimiento'}
+                    </Button>
+                    <div className="text-center">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsResetMode(false);
+                          setResetEmail('');
+                        }}
+                        className="text-sm text-muted-foreground hover:text-primary"
+                      >
+                        ← Volver al inicio de sesión
+                      </button>
+                    </div>
+                  </form>
+                )}
+              </TabsContent>
+              
+              <TabsContent value="signup">
+                <form onSubmit={handleSignUp} className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="first-name">Nombre</Label>
+                      <Input
+                        id="first-name"
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="last-name">Apellido</Label>
+                      <Input
+                        id="last-name"
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
+                        required
+                      />
+                    </div>
+                  </div>
+                  
                   <div className="space-y-2">
-                    <Label htmlFor="signin-email">Email</Label>
+                    <Label htmlFor="signup-email">Email</Label>
                     <Input
-                      id="signin-email"
+                      id="signup-email"
                       type="email"
-                      value={signInEmail}
-                      onChange={(e) => setSignInEmail(e.target.value)}
+                      value={signUpEmail}
+                      onChange={(e) => setSignUpEmail(e.target.value)}
                       required
                     />
                   </div>
+                  
                   <div className="space-y-2">
-                    <Label htmlFor="signin-password">Contraseña</Label>
+                    <Label htmlFor="phone">Teléfono</Label>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <div className="bg-muted/50 border border-border rounded-lg p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <UserCircle className="h-5 w-5 text-primary" />
+                        <Label className="text-sm font-medium">Registro de pacientes</Label>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Este formulario es exclusivamente para el registro de pacientes. 
+                        Si eres un profesional de la salud, utiliza el formulario de solicitud en la página principal.
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-password">Contraseña</Label>
                     <PasswordInput
-                      id="signin-password"
-                      value={signInPassword}
-                      onChange={(e) => setSignInPassword(e.target.value)}
+                      id="signup-password"
+                      value={signUpPassword}
+                      onChange={(e) => setSignUpPassword(e.target.value)}
                       required
                     />
                   </div>
+                  
                   <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
+                    {loading ? 'Registrando...' : 'Registrarse'}
                   </Button>
-                  <div className="text-center">
-                    <button
-                      type="button"
-                      onClick={() => setIsResetMode(true)}
-                      className="text-sm text-primary hover:underline"
-                    >
-                      ¿Olvidaste tu contraseña?
-                    </button>
-                  </div>
                 </form>
-              ) : (
-                <form onSubmit={handleForgotPassword} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="reset-email">Email</Label>
-                    <Input
-                      id="reset-email"
-                      type="email"
-                      value={resetEmail}
-                      onChange={(e) => setResetEmail(e.target.value)}
-                      placeholder="Ingresa tu email para restablecer tu contraseña"
-                      required
-                    />
-                  </div>
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? 'Enviando...' : 'Enviar enlace de restablecimiento'}
-                  </Button>
-                  <div className="text-center">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsResetMode(false);
-                        setResetEmail('');
-                      }}
-                      className="text-sm text-muted-foreground hover:text-primary"
-                    >
-                      ← Volver al inicio de sesión
-                    </button>
-                  </div>
-                </form>
-              )}
-            </TabsContent>
-            
-            <TabsContent value="signup">
-              <form onSubmit={handleSignUp} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="first-name">Nombre</Label>
-                    <Input
-                      id="first-name"
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="last-name">Apellido</Label>
-                    <Input
-                      id="last-name"
-                      value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
-                      required
-                    />
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="signup-email">Email</Label>
-                  <Input
-                    id="signup-email"
-                    type="email"
-                    value={signUpEmail}
-                    onChange={(e) => setSignUpEmail(e.target.value)}
-                    required
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Teléfono</Label>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <div className="bg-muted/50 border border-border rounded-lg p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <UserCircle className="h-5 w-5 text-primary" />
-                      <Label className="text-sm font-medium">Registro de pacientes</Label>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      Este formulario es exclusivamente para el registro de pacientes. 
-                      Si eres un profesional de la salud, utiliza el formulario de solicitud en la página principal.
-                    </p>
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="signup-password">Contraseña</Label>
-                  <PasswordInput
-                    id="signup-password"
-                    value={signUpPassword}
-                    onChange={(e) => setSignUpPassword(e.target.value)}
-                    required
-                  />
-                </div>
-                
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? 'Registrando...' : 'Registrarse'}
-                </Button>
-              </form>
-            </TabsContent>
-          </Tabs>
-            </CardContent>
-          </>
-        )}
-        </Card>
-      </div>
+              </TabsContent>
+            </Tabs>
+              </CardContent>
+            </>
+          )}
+          </Card>
+        </div>
       </div>
     </div>
   );
