@@ -34,11 +34,11 @@ export const DoctorChatManager = () => {
   const [chatOpen, setChatOpen] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState<PatientWithLastAppointment | null>(null);
 
-  // Subscribe to real-time message updates
+  // Subscribe to real-time message updates and read status changes
   useEffect(() => {
     if (!user) return;
 
-    const channel = supabase
+    const messageChannel = supabase
       .channel('doctor-chat-notifications')
       .on(
         'postgres_changes',
@@ -55,8 +55,28 @@ export const DoctorChatManager = () => {
       )
       .subscribe();
 
+    // Subscribe to message reads to update counts when messages are marked as read
+    const readChannel = supabase
+      .channel('doctor-message-reads')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'message_reads',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('Message marked as read by doctor:', payload);
+          // Refresh patients list to update unread counts
+          fetchPatients();
+        }
+      )
+      .subscribe();
+
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(messageChannel);
+      supabase.removeChannel(readChannel);
     };
   }, [user]);
 
@@ -143,13 +163,14 @@ export const DoctorChatManager = () => {
             if (conversation) {
               patient.conversation_id = conversation.id;
               
-              // Count unread messages (messages from patients after the last hour)
+              // Count unread messages (messages from patients that haven't been read)
               const oneHourAgo = new Date();
               oneHourAgo.setHours(oneHourAgo.getHours() - 1);
               
-              const { data: unreadMessages } = await supabase
+              const { data: messages } = await supabase
                 .from('conversation_messages')
                 .select(`
+                  id,
                   sent_at,
                   sender_user_id,
                   profiles!conversation_messages_sender_user_id_fkey(role)
@@ -159,16 +180,35 @@ export const DoctorChatManager = () => {
                 .gte('sent_at', oneHourAgo.toISOString())
                 .order('sent_at', { ascending: false });
 
-               // Filter messages to only include those from patients
-               const patientMessages = unreadMessages?.filter(message => {
-                 const profile = Array.isArray(message.profiles) ? message.profiles[0] : message.profiles;
-                 return profile?.role === 'patient';
-               }) || [];
+              // Filter messages to only include those from patients
+              const patientMessages = messages?.filter(message => {
+                const profile = Array.isArray(message.profiles) ? message.profiles[0] : message.profiles;
+                return profile?.role === 'patient';
+              }) || [];
 
-              patient.unread_messages = patientMessages.length;
+              // Check which of these patient messages haven't been read by the doctor
+              const unreadPromises = patientMessages.map(async (message) => {
+                const { data: readStatus } = await supabase
+                  .from('message_reads')
+                  .select('id')
+                  .eq('message_id', message.id)
+                  .eq('user_id', user.id)
+                  .single();
+
+                return !readStatus; // Return true if not read
+              });
+
+              const unreadResults = await Promise.all(unreadPromises);
+              const actualUnreadCount = unreadResults.filter(Boolean).length;
+
+              patient.unread_messages = actualUnreadCount;
               
-              if (patientMessages.length > 0) {
-                patient.last_message_time = patientMessages[0].sent_at;
+              if (actualUnreadCount > 0) {
+                // Find the most recent unread message
+                const unreadIndices = unreadResults.map((isUnread, index) => isUnread ? index : -1).filter(i => i !== -1);
+                if (unreadIndices.length > 0) {
+                  patient.last_message_time = patientMessages[unreadIndices[0]].sent_at;
+                }
               }
             }
           }
@@ -235,12 +275,60 @@ export const DoctorChatManager = () => {
     }
   };
 
+  const markPatientMessagesAsRead = async (conversationId: string) => {
+    if (!user) return;
+
+    try {
+      // Get all unread messages from patients in this conversation
+      const { data: unreadMessages } = await supabase
+        .from('conversation_messages')
+        .select(`
+          id,
+          sender_user_id,
+          profiles!conversation_messages_sender_user_id_fkey(role)
+        `)
+        .eq('conversation_id', conversationId)
+        .neq('sender_user_id', user.id);
+
+      if (!unreadMessages) return;
+
+      // Filter to only patient messages
+      const patientMessages = unreadMessages.filter(message => {
+        const profile = Array.isArray(message.profiles) ? message.profiles[0] : message.profiles;
+        return profile?.role === 'patient';
+      });
+
+      // Mark each patient message as read
+      const readPromises = patientMessages.map(message =>
+        supabase
+          .from('message_reads')
+          .upsert({
+            message_id: message.id,
+            user_id: user.id
+          }, {
+            onConflict: 'message_id,user_id'
+          })
+      );
+
+      await Promise.all(readPromises);
+      console.log(`Marked ${patientMessages.length} patient messages as read`);
+    } catch (error) {
+      console.error('Error marking patient messages as read:', error);
+    }
+  };
+
   const handleChatClick = async (patient: PatientWithLastAppointment) => {
     const conversationId = await getOrCreateConversation(patient);
     if (conversationId) {
       setSelectedConversation(conversationId);
       setSelectedPatient(patient);
       setChatOpen(true);
+      
+      // Mark patient messages as read when opening chat
+      await markPatientMessagesAsRead(conversationId);
+      
+      // Refresh patient list to update unread counts
+      fetchPatients();
     }
   };
 
