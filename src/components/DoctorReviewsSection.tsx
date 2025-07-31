@@ -138,9 +138,11 @@ export function DoctorReviewsSection({ doctorUserId }: DoctorReviewsSectionProps
 
                     {/* Comment */}
                     {review.comment && (
-                      <p className="text-sm text-muted-foreground leading-relaxed">
-                        {review.comment}
-                      </p>
+                      <div className="mt-3 p-3 bg-muted/30 rounded-lg border border-border/30">
+                        <p className="text-foreground leading-relaxed whitespace-pre-wrap">
+                          {review.comment}
+                        </p>
+                      </div>
                     )}
                   </div>
                 </div>
