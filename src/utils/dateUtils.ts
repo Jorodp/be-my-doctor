@@ -14,7 +14,13 @@ export const formatInMexicoTZ = (
   options?: { locale?: any }
 ): string => {
   const dateObj = typeof date === 'string' ? new Date(date) : date;
-  return formatInTimeZone(
+  console.log('🇲🇽 formatInMexicoTZ processing:', {
+    input: date,
+    dateObj: dateObj,
+    timezone: MEXICO_TIMEZONE,
+    format: formatString
+  });
+  const result = formatInTimeZone(
     dateObj, 
     MEXICO_TIMEZONE, 
     formatString, 
@@ -22,13 +28,19 @@ export const formatInMexicoTZ = (
       locale: options?.locale || es 
     }
   );
+  console.log('🇲🇽 formatInMexicoTZ result:', result);
+  return result;
 };
 
 /**
  * Formatea solo la hora en zona horaria local
  */
 export const formatTimeInMexicoTZ = (date: string | Date): string => {
-  return formatInMexicoTZ(date, 'HH:mm');
+  console.log('🕐 formatTimeInMexicoTZ input:', date);
+  console.log('🕐 formatTimeInMexicoTZ date object:', new Date(date));
+  const result = formatInMexicoTZ(date, 'HH:mm');
+  console.log('🕐 formatTimeInMexicoTZ result:', result);
+  return result;
 };
 
 /**

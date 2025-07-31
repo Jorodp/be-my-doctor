@@ -62,6 +62,13 @@ export const ConsultationFlowManager: React.FC<ConsultationFlowManagerProps> = (
   userRole,
   onAppointmentUpdate
 }) => {
+  // Debug: Log the raw appointment data
+  console.log('🔍 Raw appointments data:', appointments);
+  if (appointments.length > 0) {
+    console.log('🔍 First appointment starts_at:', appointments[0].starts_at);
+    console.log('🔍 First appointment starts_at type:', typeof appointments[0].starts_at);
+    console.log('🔍 First appointment as Date object:', new Date(appointments[0].starts_at));
+  }
   const [loading, setLoading] = useState<string | null>(null);
   const [consultationWorkspaceOpen, setConsultationWorkspaceOpen] = useState(false);
   const [activeAppointment, setActiveAppointment] = useState<Appointment | null>(null);
