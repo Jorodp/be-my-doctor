@@ -5,6 +5,7 @@ import { ChatWindow } from '@/components/ChatWindow';
 import { MessageSquare, Bell } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useUnreadMessages } from '@/hooks/useUnreadMessages';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 interface AppointmentChatButtonProps {
@@ -19,6 +20,7 @@ export const AppointmentChatButton = ({
   appointmentStatus
 }: AppointmentChatButtonProps) => {
   const { user } = useAuth();
+  const { unreadCount: globalUnreadCount } = useUnreadMessages();
   const [chatOpen, setChatOpen] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -265,12 +267,12 @@ export const AppointmentChatButton = ({
             <MessageSquare className="w-4 h-4 mr-2" />
             {chatLabel}
           </Button>
-          {unreadCount > 0 && (
+          {(unreadCount > 0 || globalUnreadCount > 0) && (
             <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center animate-pulse">
-              {unreadCount > 9 ? '9+' : unreadCount}
+              {(unreadCount + globalUnreadCount) > 9 ? '9+' : (unreadCount + globalUnreadCount)}
             </div>
           )}
-          {unreadCount > 0 && (
+          {(unreadCount > 0 || globalUnreadCount > 0) && (
             <Bell className="absolute -top-2 -left-2 h-4 w-4 text-blue-600 animate-bounce" />
           )}
         </div>
