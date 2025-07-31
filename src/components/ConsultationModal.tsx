@@ -37,6 +37,7 @@ import {
 } from 'lucide-react';
 import { PatientIdDocument } from './PatientIdDocument';
 import { PatientDocumentValidator } from './PatientDocumentValidator';
+import { formatTimeInMexicoTZ, formatDateInMexicoTZ } from '@/utils/dateUtils';
 
 interface ConsultationModalProps {
   isOpen: boolean;
@@ -548,7 +549,7 @@ export function ConsultationModal({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Clock className="h-5 w-5" />
-            Consulta Médica - {new Date(appointment?.starts_at).toLocaleString()}
+            Consulta Médica - {formatTimeInMexicoTZ(appointment?.starts_at)} del {formatDateInMexicoTZ(appointment?.starts_at)}
           </DialogTitle>
         </DialogHeader>
 

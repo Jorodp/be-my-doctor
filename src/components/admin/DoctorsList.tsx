@@ -12,6 +12,7 @@ import { useAdminProfileAPI } from '@/hooks/useAdminProfileAPI';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { EditDoctorProfile } from './EditDoctorProfile';
 import { UnifiedDoctorProfile } from './UnifiedDoctorProfile';
+import { formatTimeInMexicoTZ, formatDateInMexicoTZ } from '@/utils/dateUtils';
 
 interface Doctor {
   doctor_user_id: string;
@@ -336,8 +337,7 @@ export const DoctorsList = () => {
                 <TableRow>
                   <TableHead>ID</TableHead>
                   <TableHead>Paciente</TableHead>
-                  <TableHead>Fecha Inicio</TableHead>
-                  <TableHead>Fecha Fin</TableHead>
+                  <TableHead>Horario</TableHead>
                   <TableHead>Estado</TableHead>
                   <TableHead>Precio</TableHead>
                   <TableHead>Notas</TableHead>
@@ -353,10 +353,11 @@ export const DoctorsList = () => {
                       {appointment.patient_user_id.slice(0, 8)}...
                     </TableCell>
                     <TableCell>
-                      {new Date(appointment.starts_at).toLocaleString('es-ES')}
-                    </TableCell>
-                    <TableCell>
-                      {new Date(appointment.ends_at).toLocaleString('es-ES')}
+                      {formatTimeInMexicoTZ(appointment.starts_at)} - {formatTimeInMexicoTZ(appointment.ends_at)}
+                      <br />
+                      <span className="text-xs text-muted-foreground">
+                        {formatDateInMexicoTZ(appointment.starts_at)}
+                      </span>
                     </TableCell>
                     <TableCell>
                       <Badge variant={

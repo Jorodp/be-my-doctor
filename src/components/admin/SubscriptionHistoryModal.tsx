@@ -4,6 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useAdminProfileAPI } from '@/hooks/useAdminProfileAPI';
+import { formatDateTimeInMexicoTZ, formatDateInMexicoTZ } from '@/utils/dateUtils';
 
 interface SubscriptionHistory {
   doctor_profile_id: string;
@@ -85,13 +86,13 @@ export const SubscriptionHistoryModal = ({
                 {history.map((item, index) => (
                   <TableRow key={index}>
                     <TableCell>
-                      {new Date(item.changed_at).toLocaleString('es-ES')}
+                      {formatDateTimeInMexicoTZ(item.changed_at)}
                     </TableCell>
                     <TableCell>
                       {getStatusBadge(item.status)}
                     </TableCell>
                     <TableCell>
-                      {item.expires_at ? new Date(item.expires_at).toLocaleDateString('es-ES') : 'N/A'}
+                      {item.expires_at ? formatDateInMexicoTZ(item.expires_at) : 'N/A'}
                     </TableCell>
                     <TableCell className="font-mono text-xs">
                       {item.admin_id ? item.admin_id.slice(0, 8) + '...' : 'Sistema'}

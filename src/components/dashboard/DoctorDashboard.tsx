@@ -488,13 +488,7 @@ const DoctorDashboardContent = () => {
   };
 
   const formatTime = (dateString: string) => {
-    console.log('🕐 Input dateString:', dateString);
-    const result = formatTimeInMexicoTZ(dateString);
-    console.log('🕐 Formatted result:', result);
-    console.log('🕐 Date object:', new Date(dateString));
-    console.log('🕐 UTC Hours:', new Date(dateString).getUTCHours());
-    console.log('🕐 Local Hours:', new Date(dateString).getHours());
-    return result;
+    return formatTimeInMexicoTZ(dateString);
   };
 
   const formatDate = (dateString: string) => {
