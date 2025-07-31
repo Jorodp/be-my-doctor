@@ -44,31 +44,11 @@ export function DoctorCalendarView({ doctorId }: DoctorCalendarViewProps) {
   };
 
   /**
-   * 🧠 PASO 2: Conversión correcta a zona local con debugging
-   * Formatea tiempo considerando conversión UTC -> Local
+   * Formatea tiempo a HH:mm considerando que ya viene en zona horaria correcta
+   * desde el hook que maneja la conversión de UTC a México
    */
   const formatTime = (time: string) => {
-    console.log("🕒 DoctorCalendarView formatTime - Input time:", time);
-    
-    // Si el tiempo viene como HH:mm:ss (desde slots), asumimos que ya está en zona local
-    if (time.match(/^\d{2}:\d{2}:\d{2}$/)) {
-      console.log("🕒 DoctorCalendarView formatTime - Time slot format, returning as-is:", time.slice(0, 5));
-      return time.slice(0, 5); // HH:mm
-    }
-    
-    // Si viene como UTC timestamp, convertir a zona local
-    const utcMoment = dayjs.utc(time);
-    const localMoment = utcMoment.tz(dayjs.tz.guess());
-    const formatted = localMoment.format('HH:mm');
-    
-    console.log("🕒 DoctorCalendarView formatTime - UTC to local conversion:", {
-      input: time,
-      utc: utcMoment.toString(),
-      local: localMoment.toString(),
-      formatted: formatted
-    });
-    
-    return formatted;
+    return time.slice(0, 5); // HH:mm
   };
 
   const handleSlotSelect = (slotTime: string, clinicId: string) => {
@@ -101,14 +81,6 @@ export function DoctorCalendarView({ doctorId }: DoctorCalendarViewProps) {
     }
 
     try {
-      console.log("📝 BOOKING ATTEMPT:", {
-        doctorUserId: doctorId,
-        clinicId: selectedSlotData.clinic_id,
-        date: format(selectedDate, 'yyyy-MM-dd'),
-        startTime: selectedSlot,
-        patientUserId: user.id
-      });
-      
       await bookAppointment.mutateAsync({
         doctorUserId: doctorId || '',
         clinicId: selectedSlotData.clinic_id,

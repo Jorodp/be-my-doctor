@@ -33,9 +33,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
 import { format, addDays, startOfDay, endOfDay } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { formatInMexicoTZ, formatTimeInMexicoTZ } from '@/utils/dateUtils';
-// 🐛 PASO 2: Importar dayjs con plugins UTC y timezone para debugging
-import { dayjs } from '@/utils/dayjsConfig';
+import { formatTimeInMexicoTZ, formatInMexicoTZ } from '@/utils/dateUtils';
 import { DashboardLayout } from '@/components/ui/DashboardLayout';
 import { SubscriptionGuard } from '@/components/SubscriptionGuard';
 import { ConsultationFlowManager } from '@/components/ConsultationFlowManager';
@@ -49,10 +47,8 @@ import { ClinicsAndAssistantsManager } from '@/components/ClinicsAndAssistantsMa
 import { ConsultationWorkspace } from '@/components/ConsultationWorkspace';
 import { AssistantPaymentManager } from '@/components/AssistantPaymentManager';
 import { useUnreadMessages } from '@/hooks/useUnreadMessages';
-import { ConsultationModal } from "@/components/ConsultationModal";
-import { TimezoneDebugger } from "@/components/TimezoneDebugger";
-import { PatientHistoryModal } from '@/components/PatientHistoryModal';
 import { DoctorReviewsSection } from '@/components/DoctorReviewsSection';
+import { PatientHistoryModal } from '@/components/PatientHistoryModal';
 import {
   DndContext,
   closestCenter,
@@ -210,44 +206,6 @@ const DoctorDashboardContent = () => {
   // Patient History Modal state
   const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
   const [isPatientHistoryOpen, setIsPatientHistoryOpen] = useState(false);
-
-  const loadAppointmentsForDay = async (date: Date) => {
-    console.log("🔍 PASO 1: Cargando citas para el día:", date);
-    
-    if (!user) return;
-
-    const dateStart = startOfDay(date);
-    const dateEnd = endOfDay(date);
-
-    const { data, error } = await supabase
-      .from('appointments')
-      .select(`
-        *,
-        patient_profile:profiles!appointments_patient_user_id_fkey(full_name, phone)
-      `)
-      .eq('doctor_user_id', user.id)
-      .gte('starts_at', dateStart.toISOString())
-      .lte('starts_at', dateEnd.toISOString())
-      .order('starts_at', { ascending: true });
-
-      if (error) throw error;
-
-      console.log("🔍 PASO 1: Raw appointments from Supabase:", data);
-      
-      // Verificar que starts_at termina en 'Z' (UTC)
-      data?.forEach((apt, index) => {
-        console.log(`🔍 PASO 1: Appointment ${index} - starts_at:`, apt.starts_at);
-        console.log(`🔍 PASO 1: Appointment ${index} - Is UTC?`, apt.starts_at?.endsWith('Z'));
-      });
-
-      const transformedAppointments = data?.map(appointment => ({
-
-        ...appointment,
-        patient_profile: appointment.patient_profile
-      })) || [];
-
-      return transformedAppointments;
-  };
 
   // Tab order management
   const defaultTabOrder = [
@@ -655,41 +613,12 @@ const DoctorDashboardContent = () => {
     }
   };
 
-  /**
-   * 🐛 PASO 3: Debug visual - Formateo de tiempo con logs detallados
-   */
   const formatTime = (dateString: string) => {
-    console.log("🕒 formatTime - Raw UTC string:", dateString);
-    
-    // Verificar que el string tiene "Z" al final (UTC)
-    console.log("🕒 formatTime - Is UTC string?", dateString.endsWith('Z'));
-    
-    // Convertir desde UTC a zona local usando dayjs
-    const utcMoment = dayjs.utc(dateString);
-    console.log("🕒 formatTime - Parsed as UTC:", utcMoment.toString());
-    
-    const localMoment = utcMoment.tz(dayjs.tz.guess());
-    console.log("🕒 formatTime - Converted to local:", localMoment.toString());
-    console.log("🕒 formatTime - Detected timezone:", dayjs.tz.guess());
-    
-    const formatted = localMoment.format('HH:mm');
-    console.log("🕒 formatTime - Final formatted time:", formatted);
-    
-    return formatted;
+    return formatTimeInMexicoTZ(dateString);
   };
 
-  /**
-   * 🐛 PASO 3: Debug visual - Formateo de fecha con logs detallados
-   */
   const formatDate = (dateString: string) => {
-    console.log("📅 formatDate - Raw UTC string:", dateString);
-    
-    const utcMoment = dayjs.utc(dateString);
-    const localMoment = utcMoment.tz(dayjs.tz.guess());
-    const formatted = localMoment.format("d 'de' MMMM");
-    
-    console.log("📅 formatDate - Final formatted date:", formatted);
-    return formatted;
+    return formatInMexicoTZ(dateString, "d 'de' MMMM");
   };
 
   const handleViewPatientHistory = (patientUserId: string) => {
@@ -716,10 +645,6 @@ const DoctorDashboardContent = () => {
       subtitle="Gestiona tu consulta médica"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-        
-        {/* 🐛 DEBUGGING: Componente temporal para verificar zonas horarias */}
-        <TimezoneDebugger />
-        
         
         {/* Document Completion Warning */}
         {profile && !profileComplete && (

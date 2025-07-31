@@ -173,22 +173,22 @@ export function useBookAppointment() {
       patientUserId: string;
       notes?: string;
     }) => {
-      // 🧪 PASO 4: Debug visual - Mostrar conversión de hora seleccionada
-      console.log("📝 BOOKING - User selected date:", date);
-      console.log("📝 BOOKING - User selected time:", startTime);
-      
+      // Check for conflicts first usando dayjs con zona horaria correcta
+      // Validar y asegurar formato correcto
       const normalizedStartTime = startTime.includes(':00:00') ? startTime.substring(0, 5) : 
                                   startTime.length === 5 ? startTime : `${startTime}:00`;
-      console.log("📝 BOOKING - Normalized time:", normalizedStartTime);
       
-      // 🧪 PASO 4: Asegurar consistencia en input - Crear fecha en zona horaria de México
+      // Crear fecha en zona horaria de México y convertir a UTC para guardar en Supabase
       const localDateTimeMX = createMexicoTZDate(date, normalizedStartTime);
-      console.log("📝 BOOKING - Created Mexico TZ date:", localDateTimeMX.format());
-      console.log("📝 BOOKING - Mexico TZ date ISO:", localDateTimeMX.toISOString());
-      
-      // 🧪 PASO 4: Convertir a UTC para Supabase
       const appointmentDateTime = localDateTimeMX.utc().toISOString();
-      console.log("📝 BOOKING - Final UTC for Supabase:", appointmentDateTime);
+      
+      console.log('Creating appointment with timezone awareness:', { 
+        date, 
+        startTime, 
+        normalizedStartTime, 
+        localDateTimeMX: localDateTimeMX.format(), 
+        appointmentDateTime 
+      });
       
       const { data: existingAppointments, error: checkError } = await supabase
         .from('appointments')
