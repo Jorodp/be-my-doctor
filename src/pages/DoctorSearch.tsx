@@ -42,19 +42,36 @@ export default function DoctorSearch() {
     setLoading(true);
     
     let query = supabase
-      .from("public_doctors_public")
-      .select("doctor_user_id,full_name,specialty,profile_image_url,rating_avg,rating_count,experience_years,city")
+      .from("doctor_profiles")
+      .select(`
+        user_id,
+        specialty,
+        profile_image_url,
+        rating_avg,
+        rating_count,
+        experience_years,
+        profile:profiles!inner(
+          full_name,
+          user_id
+        ),
+        clinics:clinics(
+          city
+        )
+      `)
+      .eq("verification_status", "verified")
+      .eq("subscription_status", "active")
+      .eq("profile_complete", true)
       .limit(50);
 
     // Aplicar filtros si existen
     if (filters.name) {
-      query = query.ilike("full_name", `%${filters.name}%`);
+      query = query.ilike("profile.full_name", `%${filters.name}%`);
     }
     if (filters.specialty) {
       query = query.ilike("specialty", `%${filters.specialty}%`);
     }
     if (filters.location) {
-      query = query.ilike("city", `%${filters.location}%`);
+      query = query.ilike("clinics.city", `%${filters.location}%`);
     }
 
     const { data, error } = await query;
@@ -63,11 +80,25 @@ export default function DoctorSearch() {
       console.error("Error al buscar doctores:", error);
     } else {
       console.log("DOCTORS DATA (mira en consola la forma):", data);
+      
+      // Transformar datos para mantener compatibilidad
+      const transformedDoctors = data?.map(doctor => ({
+        doctor_user_id: doctor.user_id,
+        full_name: doctor.profile?.[0]?.full_name || '',
+        specialty: doctor.specialty,
+        profile_image_url: doctor.profile_image_url,
+        rating_avg: doctor.rating_avg,
+        rating_count: doctor.rating_count,
+        experience_years: doctor.experience_years,
+        city: doctor.clinics?.[0]?.city || ''
+      })) || [];
+      
       // Eliminar duplicados basados en doctor_user_id
-      const uniqueDoctors = data?.filter((doctor, index, self) => 
+      const uniqueDoctors = transformedDoctors.filter((doctor, index, self) => 
         index === self.findIndex(d => d.doctor_user_id === doctor.doctor_user_id)
-      ) || [];
-      setDoctors(uniqueDoctors as Doctor[]);
+      );
+      
+      setDoctors(uniqueDoctors);
     }
     setLoading(false);
   };
