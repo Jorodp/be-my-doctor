@@ -318,17 +318,22 @@ export const DoctorChatManager = () => {
   };
 
   const handleChatClick = async (patient: PatientWithLastAppointment) => {
-    const conversationId = await getOrCreateConversation(patient);
-    if (conversationId) {
-      setSelectedConversation(conversationId);
-      setSelectedPatient(patient);
-      setChatOpen(true);
-      
-      // Mark patient messages as read when opening chat
-      await markPatientMessagesAsRead(conversationId);
-      
-      // Refresh patient list to update unread counts
-      fetchPatients();
+    try {
+      const conversationId = await getOrCreateConversation(patient);
+      if (conversationId) {
+        setSelectedConversation(conversationId);
+        setSelectedPatient(patient);
+        setChatOpen(true);
+        
+        // Mark patient messages as read when opening chat (after a short delay)
+        setTimeout(async () => {
+          await markPatientMessagesAsRead(conversationId);
+          // Refresh patient list to update unread counts
+          fetchPatients();
+        }, 500);
+      }
+    } catch (error) {
+      console.error('Error opening chat:', error);
     }
   };
 

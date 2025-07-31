@@ -46,7 +46,7 @@ import { AppointmentActionsExtended } from '@/components/AppointmentActionsExten
 import { ClinicsAndAssistantsManager } from '@/components/ClinicsAndAssistantsManager';
 import { ConsultationWorkspace } from '@/components/ConsultationWorkspace';
 import { AssistantPaymentManager } from '@/components/AssistantPaymentManager';
-import { useUnreadMessages } from '@/hooks/useUnreadMessages';
+import { useDoctorUnreadMessages } from '@/hooks/useDoctorUnreadMessages';
 import { DoctorReviewsSection } from '@/components/DoctorReviewsSection';
 import { PatientHistoryModal } from '@/components/PatientHistoryModal';
 import {
@@ -186,7 +186,7 @@ export const DoctorDashboard = () => {
 const DoctorDashboardContent = () => {
   const { user, doctorProfile } = useAuth();
   const { toast } = useToast();
-  const { unreadCount, markAsRead } = useUnreadMessages();
+  const { unreadCount, refetch: refetchUnreadCount } = useDoctorUnreadMessages();
   
   // State
   const [loading, setLoading] = useState(true);
@@ -790,7 +790,7 @@ const DoctorDashboardContent = () => {
               </SortableContext>
             </DndContext>
           </div>
-          <TabsContent value="chat" onClick={() => markAsRead()}>
+          <TabsContent value="chat" onClick={() => refetchUnreadCount()}>
             <DoctorChatManager />
           </TabsContent>
 
