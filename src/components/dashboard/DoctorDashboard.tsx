@@ -849,61 +849,54 @@ const DoctorDashboardContent = () => {
                   <div className="space-y-4">
                     {todayAppointments.map((appointment) => (
                       <div key={appointment.id} className="border rounded-lg p-4">
-                        <div className="flex items-start justify-between">
-                          <div className="space-y-2 flex-1">
-                            <div className="flex items-center gap-3">
-                              <User className="h-4 w-4 text-muted-foreground" />
-                              <span className="font-medium">
-                                {appointment.patient_profile?.full_name || 'Paciente'}
-                              </span>
-                              <Badge variant={
-                                appointment.status === 'completed' ? 'secondary' : 
-                                appointment.status === 'cancelled' ? 'destructive' : 'default'
-                              }>
-                                {appointment.status === 'completed' ? 'Completada' : 
-                                 appointment.status === 'cancelled' ? 'Cancelada' : 'Programada'}
-                              </Badge>
-                            </div>
-
-                             <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                                <div className="flex items-center gap-1">
-                                  <Clock className="h-3 w-3" />
-                                  {formatInMexicoTZ(appointment.starts_at, 'HH:mm')} - {formatInMexicoTZ(appointment.ends_at, 'HH:mm')}
-                                </div>
-                               {appointment.patient_profile?.phone && (
-                                 <div className="flex items-center gap-1">
-                                   <Phone className="h-3 w-3" />
-                                   {appointment.patient_profile.phone}
-                                 </div>
-                               )}
-                               <Button
-                                 size="sm"
-                                 variant="outline"
-                                 onClick={() => handleViewPatientHistory(appointment.patient_user_id)}
-                                 className="ml-auto"
-                               >
-                                 <FileText className="h-3 w-3 mr-1" />
-                                 Ver Historial
-                               </Button>
+                         <div className="flex items-start justify-between">
+                           <div className="space-y-2 flex-1">
+                             <div className="flex items-center gap-3">
+                               <User className="h-4 w-4 text-muted-foreground" />
+                               <span className="font-medium">
+                                 {appointment.patient_profile?.full_name || 'Paciente'}
+                               </span>
                              </div>
 
-                            {appointment.notes && (
-                              <div className="bg-muted p-2 rounded text-sm">
-                                <strong>Notas:</strong> {appointment.notes}
+                              <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                 <div className="flex items-center gap-1">
+                                   <Clock className="h-3 w-3" />
+                                   {formatInMexicoTZ(appointment.starts_at, 'HH:mm')} - {formatInMexicoTZ(appointment.ends_at, 'HH:mm')}
+                                 </div>
+                                {appointment.patient_profile?.phone && (
+                                  <div className="flex items-center gap-1">
+                                    <Phone className="h-3 w-3" />
+                                    {appointment.patient_profile.phone}
+                                  </div>
+                                )}
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleViewPatientHistory(appointment.patient_user_id)}
+                                  className="ml-auto"
+                                >
+                                  <FileText className="h-3 w-3 mr-1" />
+                                  Ver Historial
+                                </Button>
                               </div>
-                            )}
-                          </div>
 
-                          <div className="ml-4">
-                            <AppointmentActionsExtended
-                              appointment={appointment}
-                              userRole="doctor"
-                              currentUserId={user?.id || ''}
-                              onAppointmentUpdated={fetchAllData}
-                              showPatientName={false}
-                            />
-                          </div>
-                        </div>
+                             {appointment.notes && (
+                               <div className="bg-muted p-2 rounded text-sm">
+                                 <strong>Notas:</strong> {appointment.notes}
+                               </div>
+                             )}
+                           </div>
+
+                           <div className="ml-4">
+                             <AppointmentActionsExtended
+                               appointment={appointment}
+                               userRole="doctor"
+                               currentUserId={user?.id || ''}
+                               onAppointmentUpdated={fetchAllData}
+                               showPatientName={false}
+                             />
+                           </div>
+                         </div>
                       </div>
                     ))}
                   </div>
