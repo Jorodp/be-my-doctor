@@ -48,6 +48,15 @@ export const useUnreadMessages = () => {
           const isUserInvolved = appointment.doctor_user_id === user.id || appointment.patient_user_id === user.id;
           const isMessageFromCurrentUser = payload.new.sender_user_id === user.id;
 
+          console.log('Message analysis:', {
+            currentUserId: user.id,
+            senderId: payload.new.sender_user_id,
+            isUserInvolved,
+            isMessageFromCurrentUser,
+            appointmentDoctorId: appointment.doctor_user_id,
+            appointmentPatientId: appointment.patient_user_id
+          });
+
           if (isUserInvolved && !isMessageFromCurrentUser) {
             // Get sender role to filter appropriately
             const { data: senderProfile } = await supabase
@@ -56,13 +65,22 @@ export const useUnreadMessages = () => {
               .eq('user_id', payload.new.sender_user_id)
               .single();
 
+            console.log('Sender profile:', senderProfile);
+
             // For doctors: only count patient messages
             // For patients: only count doctor messages
             const shouldCount = 
               (appointment.doctor_user_id === user.id && senderProfile?.role === 'patient') ||
               (appointment.patient_user_id === user.id && senderProfile?.role === 'doctor');
 
+            console.log('Should count message:', {
+              shouldCount,
+              currentUserRole: appointment.doctor_user_id === user.id ? 'doctor' : 'patient',
+              senderRole: senderProfile?.role
+            });
+
             if (shouldCount) {
+              console.log('Incrementing unread count for new message');
               setUnreadCount(prev => prev + 1);
               setLastMessageTime(payload.new.sent_at);
             }
@@ -128,6 +146,8 @@ export const useUnreadMessages = () => {
         const oneHourAgo = new Date();
         oneHourAgo.setHours(oneHourAgo.getHours() - 1);
 
+        console.log('Fetching messages for conversation:', conversationId, 'User ID:', user.id);
+
         const { data: messages } = await supabase
           .from('conversation_messages')
           .select(`
@@ -141,10 +161,21 @@ export const useUnreadMessages = () => {
           .gte('sent_at', oneHourAgo.toISOString())
           .order('sent_at', { ascending: false });
 
+        console.log('Messages found:', messages?.length || 0, 'for conversation:', conversationId);
+
         if (messages && messages.length > 0) {
           // Filtrar solo mensajes de doctores para pacientes o de pacientes para doctores
           const relevantMessages = messages.filter(message => {
             const profile = Array.isArray(message.profiles) ? message.profiles[0] : message.profiles;
+            
+            console.log('Message analysis:', {
+              messageId: message.id,
+              senderId: message.sender_user_id,
+              senderRole: profile?.role,
+              currentUserId: user.id,
+              appointmentDoctorId: appointment.doctor_user_id,
+              appointmentPatientId: appointment.patient_user_id
+            });
             
             // Para pacientes: solo contar mensajes de doctores
             if (appointment.patient_user_id === user.id) {
@@ -158,6 +189,8 @@ export const useUnreadMessages = () => {
             
             return false;
           });
+
+          console.log('Relevant messages after filtering:', relevantMessages.length);
 
           // Verificar cuáles de estos mensajes NO han sido leídos por el usuario actual
           const unreadPromises = relevantMessages.map(async (message) => {
@@ -173,6 +206,8 @@ export const useUnreadMessages = () => {
 
           const unreadResults = await Promise.all(unreadPromises);
           const unreadInThisConversation = unreadResults.filter(Boolean).length;
+          
+          console.log('Unread in this conversation:', unreadInThisConversation, 'of', relevantMessages.length, 'relevant messages');
           
           totalUnread += unreadInThisConversation;
           
