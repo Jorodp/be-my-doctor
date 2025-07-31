@@ -454,26 +454,26 @@ export const AdminDashboard = () => {
                     <CardTitle>Acciones Rápidas</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                      <Button variant="outline" className="h-20 flex flex-col gap-2" onClick={() => setActiveTab('requests')}>
-                        <UserPlus className="h-6 w-6" />
-                        Nuevas Solicitudes
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+                      <Button variant="outline" className="h-24 flex flex-col gap-2 text-center" onClick={() => setActiveTab('requests')}>
+                        <UserPlus className="h-5 w-5" />
+                        <span className="text-xs leading-tight">Nuevas Solicitudes</span>
                       </Button>
-                      <Button className="h-20 flex flex-col gap-2" onClick={() => setActiveTab('doctors')}>
-                        <UserCheck className="h-6 w-6" />
-                        Gestionar Doctores
+                      <Button className="h-24 flex flex-col gap-2 text-center" onClick={() => setActiveTab('doctors')}>
+                        <UserCheck className="h-5 w-5" />
+                        <span className="text-xs leading-tight">Gestionar Doctores</span>
                       </Button>
-                      <Button variant="outline" className="h-20 flex flex-col gap-2" onClick={() => setActiveTab('patients')}>
-                        <Users className="h-6 w-6" />
-                        Ver Pacientes
+                      <Button variant="outline" className="h-24 flex flex-col gap-2 text-center" onClick={() => setActiveTab('patients')}>
+                        <Users className="h-5 w-5" />
+                        <span className="text-xs leading-tight">Ver Pacientes</span>
                       </Button>
-                      <Button variant="outline" className="h-20 flex flex-col gap-2" onClick={() => setActiveTab('pricing')}>
-                        <DollarSign className="h-6 w-6" />
-                        Configurar Precios
+                      <Button variant="outline" className="h-24 flex flex-col gap-2 text-center" onClick={() => setActiveTab('pricing')}>
+                        <DollarSign className="h-5 w-5" />
+                        <span className="text-xs leading-tight">Configurar Precios</span>
                       </Button>
-                      <Button variant="outline" className="h-20 flex flex-col gap-2" onClick={() => setActiveTab('testing')}>
-                        <TestTube className="h-6 w-6" />
-                        Pruebas Sistema
+                      <Button variant="outline" className="h-24 flex flex-col gap-2 text-center" onClick={() => setActiveTab('testing')}>
+                        <TestTube className="h-5 w-5" />
+                        <span className="text-xs leading-tight">Pruebas Sistema</span>
                       </Button>
                     </div>
                   </CardContent>
