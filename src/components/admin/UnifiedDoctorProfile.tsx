@@ -444,8 +444,13 @@ export const UnifiedDoctorProfile = ({
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Badge variant={appointment.status === 'completed' ? 'default' : 'secondary'}>
-                            {appointment.status}
+                          <Badge variant={
+                            appointment.status === 'completed' ? 'default' : 
+                            appointment.status === 'cancelled' ? 'destructive' : 'secondary'
+                          }>
+                            {appointment.status === 'completed' ? 'Completada' : 
+                             appointment.status === 'cancelled' ? 'Cancelada' : 
+                             appointment.status === 'scheduled' ? 'Programada' : appointment.status}
                           </Badge>
                           {appointment.price && (
                             <span className="text-sm font-medium">${appointment.price}</span>

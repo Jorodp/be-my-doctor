@@ -771,8 +771,12 @@ const DoctorDashboardContent = () => {
                               <span className="font-medium">
                                 {appointment.patient_profile?.full_name || 'Paciente'}
                               </span>
-                              <Badge variant={appointment.status === 'completed' ? 'secondary' : 'default'}>
-                                {appointment.status === 'completed' ? 'Completada' : 'Programada'}
+                              <Badge variant={
+                                appointment.status === 'completed' ? 'secondary' : 
+                                appointment.status === 'cancelled' ? 'destructive' : 'default'
+                              }>
+                                {appointment.status === 'completed' ? 'Completada' : 
+                                 appointment.status === 'cancelled' ? 'Cancelada' : 'Programada'}
                               </Badge>
                             </div>
 

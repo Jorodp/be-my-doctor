@@ -359,8 +359,13 @@ export const DoctorsList = () => {
                       {new Date(appointment.ends_at).toLocaleString('es-ES')}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={appointment.status === 'completed' ? 'default' : 'secondary'}>
-                        {appointment.status}
+                      <Badge variant={
+                        appointment.status === 'completed' ? 'default' : 
+                        appointment.status === 'cancelled' ? 'destructive' : 'secondary'
+                      }>
+                        {appointment.status === 'completed' ? 'Completada' : 
+                         appointment.status === 'cancelled' ? 'Cancelada' : 
+                         appointment.status === 'scheduled' ? 'Programada' : appointment.status}
                       </Badge>
                     </TableCell>
                     <TableCell>
