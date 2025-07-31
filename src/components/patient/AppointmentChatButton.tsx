@@ -20,7 +20,7 @@ export const AppointmentChatButton = ({
   appointmentStatus
 }: AppointmentChatButtonProps) => {
   const { user } = useAuth();
-  const { unreadCount: globalUnreadCount } = useUnreadMessages();
+  const { unreadCount: globalUnreadCount, refetch: refetchUnreadCount } = useUnreadMessages();
   const [chatOpen, setChatOpen] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -123,12 +123,14 @@ export const AppointmentChatButton = ({
 
   // Reset unread count when chat is opened
   useEffect(() => {
-    if (chatOpen && unreadCount > 0) {
+    if (chatOpen && (unreadCount > 0 || globalUnreadCount > 0)) {
       setUnreadCount(0);
       // Mark messages as read when chat is opened
       markConversationMessagesAsRead();
+      // Refresh global unread count
+      refetchUnreadCount();
     }
-  }, [chatOpen]);
+  }, [chatOpen, refetchUnreadCount]);
 
   const markConversationMessagesAsRead = async () => {
     if (!conversationId || !user) return;
