@@ -14,7 +14,7 @@ export const useUnreadMessages = () => {
     fetchUnreadCount();
 
     // Subscribe to new messages in real-time
-    const channel = supabase
+    const messageChannel = supabase
       .channel('unread-messages')
       .on(
         'postgres_changes',
@@ -71,8 +71,28 @@ export const useUnreadMessages = () => {
       )
       .subscribe();
 
+    // Subscribe to message reads to decrease count when messages are marked as read
+    const readChannel = supabase
+      .channel('message-reads')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'message_reads',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('Message marked as read:', payload);
+          // Refetch count when a message is marked as read
+          fetchUnreadCount();
+        }
+      )
+      .subscribe();
+
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(messageChannel);
+      supabase.removeChannel(readChannel);
     };
   }, [user]);
 
@@ -105,28 +125,60 @@ export const useUnreadMessages = () => {
         if (!appointment) continue;
         
         // Obtener mensajes recientes que no son del usuario actual
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        const oneHourAgo = new Date();
+        oneHourAgo.setHours(oneHourAgo.getHours() - 1);
 
         const { data: messages } = await supabase
           .from('conversation_messages')
           .select(`
             id,
             sent_at, 
-            sender_user_id
+            sender_user_id,
+            profiles!conversation_messages_sender_user_id_fkey(role)
           `)
           .eq('conversation_id', conversationId)
           .neq('sender_user_id', user.id) // Mensajes no del usuario actual
-          .gte('sent_at', today.toISOString())
+          .gte('sent_at', oneHourAgo.toISOString())
           .order('sent_at', { ascending: false });
 
         if (messages && messages.length > 0) {
-          // Para ahora, contar todos los mensajes no del usuario
-          totalUnread += messages.length;
+          // Filtrar solo mensajes de doctores para pacientes o de pacientes para doctores
+          const relevantMessages = messages.filter(message => {
+            const profile = Array.isArray(message.profiles) ? message.profiles[0] : message.profiles;
+            
+            // Para pacientes: solo contar mensajes de doctores
+            if (appointment.patient_user_id === user.id) {
+              return profile?.role === 'doctor';
+            }
+            
+            // Para doctores: solo contar mensajes de pacientes  
+            if (appointment.doctor_user_id === user.id) {
+              return profile?.role === 'patient';
+            }
+            
+            return false;
+          });
+
+          // Verificar cuáles de estos mensajes NO han sido leídos por el usuario actual
+          const unreadPromises = relevantMessages.map(async (message) => {
+            const { data: readStatus } = await supabase
+              .from('message_reads')
+              .select('id')
+              .eq('message_id', message.id)
+              .eq('user_id', user.id)
+              .single();
+
+            return !readStatus; // Return true if not read
+          });
+
+          const unreadResults = await Promise.all(unreadPromises);
+          const unreadInThisConversation = unreadResults.filter(Boolean).length;
+          
+          totalUnread += unreadInThisConversation;
           
           // Rastrear el tiempo del mensaje más reciente
-          if (messages.length > 0) {
-            const latestInConversation = messages[0].sent_at;
+          if (relevantMessages.length > 0) {
+            const latestInConversation = relevantMessages[0].sent_at;
             if (!latestMessageTime || latestInConversation > latestMessageTime) {
               latestMessageTime = latestInConversation;
             }
@@ -134,6 +186,7 @@ export const useUnreadMessages = () => {
         }
       }
 
+      console.log('Total unread messages:', totalUnread);
       setUnreadCount(totalUnread);
       setLastMessageTime(latestMessageTime);
     } catch (error) {
