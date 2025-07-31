@@ -49,7 +49,7 @@ const Index = () => {
         <DoctorsSection />
         
         {/* Sección de registro para doctores */}
-        <section className="py-16 bg-gradient-section">
+        <section id="doctor-registration" className="py-16 bg-gradient-section">
           <div className="container mx-auto px-4">
             <DoctorRegistrationForm />
           </div>

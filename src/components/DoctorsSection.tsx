@@ -52,7 +52,10 @@ const DoctorsSection = () => {
               <Button 
                 variant="hero" 
                 size="lg"
-                onClick={() => window.location.href = '/complete-doctor-profile'}
+                onClick={() => {
+                  const element = document.getElementById('doctor-registration');
+                  element?.scrollIntoView({ behavior: 'smooth' });
+                }}
               >
                 Soy médico, quiero registrarme
               </Button>
