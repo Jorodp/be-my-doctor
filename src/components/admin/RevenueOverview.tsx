@@ -63,14 +63,10 @@ export const RevenueOverview = () => {
       const subscriptionRevenue = subscriptions?.reduce((sum, sub) => 
         sum + Number(sub.amount), 0) || 0;
 
-      // Pagos físicos vs online de suscripciones
-      const physicalSubscriptions = subscriptions?.filter(s => 
-        s.payment_method === 'cash' || s.payment_method === 'transfer')
-        .reduce((sum, s) => sum + Number(s.amount), 0) || 0;
-
-      const onlineSubscriptions = subscriptions?.filter(s => 
-        s.payment_method === 'stripe' || s.payment_method === 'card' || !s.payment_method)
-        .reduce((sum, s) => sum + Number(s.amount), 0) || 0;
+      // Por ahora consideramos todos los pagos como físicos ya que se procesan manualmente
+      // TODO: Ajustar cuando tengamos una clasificación más específica
+      const physicalSubscriptions = subscriptionRevenue;
+      const onlineSubscriptions = 0;
 
       const totalRevenue = subscriptionRevenue;
 
