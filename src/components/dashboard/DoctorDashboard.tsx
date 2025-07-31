@@ -26,7 +26,8 @@ import {
   UserCheck,
   MessageSquare,
   History,
-  Building2
+  Building2,
+  GripVertical
 } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
@@ -48,6 +49,86 @@ import { AssistantPaymentManager } from '@/components/AssistantPaymentManager';
 import { useUnreadMessages } from '@/hooks/useUnreadMessages';
 import { DoctorReviewsSection } from '@/components/DoctorReviewsSection';
 import { PatientHistoryModal } from '@/components/PatientHistoryModal';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  horizontalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable';
+import {
+  CSS,
+} from '@dnd-kit/utilities';
+
+// SortableTabTrigger component
+interface SortableTabTriggerProps {
+  id: string;
+  value: string;
+  config: {
+    icon: any;
+    label: string;
+    shortLabel: string;
+    hasNotification?: boolean;
+  };
+  unreadCount?: number;
+}
+
+function SortableTabTrigger({ id, value, config, unreadCount }: SortableTabTriggerProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  const IconComponent = config.icon;
+
+  return (
+    <div ref={setNodeRef} style={style} {...attributes}>
+      <TabsTrigger 
+        value={value} 
+        className={`flex flex-col items-center gap-1 p-3 text-xs font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm group relative ${
+          isDragging ? 'opacity-50' : ''
+        }`}
+      >
+        <div className="flex items-center gap-1">
+          <div 
+            {...listeners}
+            className="cursor-grab active:cursor-grabbing hover:bg-muted/30 rounded p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+          >
+            <GripVertical className="h-3 w-3 text-muted-foreground" />
+          </div>
+          <div className="relative">
+            <IconComponent className="h-4 w-4" />
+            {config.hasNotification && unreadCount && unreadCount > 0 && (
+              <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center animate-pulse">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </div>
+            )}
+          </div>
+        </div>
+        <span className="hidden sm:block">{config.label}</span>
+        <span className="sm:hidden">{config.shortLabel}</span>
+      </TabsTrigger>
+    </div>
+  );
+}
 
 interface DoctorProfile {
   id: string;
@@ -125,6 +206,51 @@ const DoctorDashboardContent = () => {
   // Patient History Modal state
   const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
   const [isPatientHistoryOpen, setIsPatientHistoryOpen] = useState(false);
+
+  // Tab order management
+  const defaultTabOrder = [
+    'consultas', 'chat', 'schedule', 'today', 'clinics', 
+    'payments', 'subscription', 'ratings', 'income', 'history'
+  ];
+  
+  const [tabOrder, setTabOrder] = useState<string[]>(() => {
+    const savedOrder = localStorage.getItem('doctor-tabs-order');
+    return savedOrder ? JSON.parse(savedOrder) : defaultTabOrder;
+  });
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // Tab configuration
+  const tabConfig = {
+    'consultas': { icon: Timer, label: 'Consultas', shortLabel: 'Cons' },
+    'chat': { icon: MessageSquare, label: 'Chat', shortLabel: '💬', hasNotification: true },
+    'schedule': { icon: Settings, label: 'Agenda', shortLabel: 'Agen' },
+    'today': { icon: Clock, label: 'Hoy', shortLabel: 'Hoy' },
+    'clinics': { icon: Building2, label: 'Clinicas', shortLabel: 'Clin' },
+    'payments': { icon: CreditCard, label: 'Pagos', shortLabel: 'Pago' },
+    'subscription': { icon: UserCheck, label: 'Suscripción', shortLabel: 'Subs' },
+    'ratings': { icon: Star, label: 'Rating', shortLabel: '★' },
+    'income': { icon: DollarSign, label: 'Ingresos', shortLabel: '$' },
+    'history': { icon: History, label: 'Historial', shortLabel: '📋' },
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = tabOrder.indexOf(active.id as string);
+      const newIndex = tabOrder.indexOf(over.id as string);
+      
+      const newOrder = arrayMove(tabOrder, oldIndex, newIndex);
+      setTabOrder(newOrder);
+      localStorage.setItem('doctor-tabs-order', JSON.stringify(newOrder));
+    }
+  };
 
   // Realtime updates para appointments y ratings
   useEffect(() => {
@@ -636,74 +762,33 @@ const DoctorDashboardContent = () => {
         {/* Main Content Tabs */}
         <Tabs defaultValue="consultas" className="space-y-6">
           <div className="w-full overflow-x-auto">
-            <TabsList className="grid grid-cols-6 lg:grid-cols-10 gap-1 h-auto p-2 bg-muted/50 rounded-lg w-full">
-              <TabsTrigger value="consultas" className="flex flex-col items-center gap-1 p-3 text-xs font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm">
-                <Timer className="h-4 w-4" />
-                <span className="hidden sm:block">Consultas</span>
-                <span className="sm:hidden">Cons</span>
-              </TabsTrigger>
-              
-              <TabsTrigger value="chat" className="flex flex-col items-center gap-1 p-3 text-xs font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm relative">
-                <div className="relative">
-                  <MessageSquare className="h-4 w-4" />
-                  {unreadCount > 0 && (
-                    <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center animate-pulse">
-                      {unreadCount > 9 ? '9+' : unreadCount}
-                    </div>
-                  )}
-                </div>
-                <span className="hidden sm:block">Chat</span>
-                <span className="sm:hidden">💬</span>
-              </TabsTrigger>
-              
-              <TabsTrigger value="schedule" className="flex flex-col items-center gap-1 p-3 text-xs font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm">
-                <Settings className="h-4 w-4" />
-                <span className="hidden sm:block">Agenda</span>
-                <span className="sm:hidden">Agen</span>
-              </TabsTrigger>
-              
-              <TabsTrigger value="today" className="flex flex-col items-center gap-1 p-3 text-xs font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm">
-                <Clock className="h-4 w-4" />
-                <span className="hidden sm:block">Hoy</span>
-                <span className="sm:hidden">Hoy</span>
-              </TabsTrigger>
-              
-              <TabsTrigger value="clinics" className="flex flex-col items-center gap-1 p-3 text-xs font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm">
-                <Building2 className="h-4 w-4" />
-                <span className="hidden sm:block">Clinicas</span>
-                <span className="sm:hidden">Clin</span>
-              </TabsTrigger>
-              
-              <TabsTrigger value="payments" className="flex flex-col items-center gap-1 p-3 text-xs font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm">
-                <CreditCard className="h-4 w-4" />
-                <span className="hidden sm:block">Pagos</span>
-                <span className="sm:hidden">Pago</span>
-              </TabsTrigger>
-              
-              <TabsTrigger value="subscription" className="flex flex-col items-center gap-1 p-3 text-xs font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm">
-                <UserCheck className="h-4 w-4" />
-                <span className="hidden sm:block">Suscripción</span>
-                <span className="sm:hidden">Subs</span>
-              </TabsTrigger>
-              
-              <TabsTrigger value="ratings" className="flex flex-col items-center gap-1 p-3 text-xs font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm lg:flex">
-                <Star className="h-4 w-4" />
-                <span className="hidden sm:block">Rating</span>
-                <span className="sm:hidden">★</span>
-              </TabsTrigger>
-              
-               <TabsTrigger value="income" className="flex flex-col items-center gap-1 p-3 text-xs font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm lg:flex">
-                <DollarSign className="h-4 w-4" />
-                <span className="hidden sm:block">Ingresos</span>
-                <span className="sm:hidden">$</span>
-              </TabsTrigger>
-              
-              <TabsTrigger value="history" className="flex flex-col items-center gap-1 p-3 text-xs font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm lg:flex">
-                <History className="h-4 w-4" />
-                <span className="hidden sm:block">Historial</span>
-                <span className="sm:hidden">📋</span>
-              </TabsTrigger>
-            </TabsList>
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={tabOrder}
+                strategy={horizontalListSortingStrategy}
+              >
+                <TabsList className="grid grid-cols-6 lg:grid-cols-10 gap-1 h-auto p-2 bg-muted/50 rounded-lg w-full">
+                  {tabOrder.map((tabId) => {
+                    const config = tabConfig[tabId as keyof typeof tabConfig];
+                    if (!config) return null;
+                    
+                    return (
+                      <SortableTabTrigger
+                        key={tabId}
+                        id={tabId}
+                        value={tabId}
+                        config={config}
+                        unreadCount={tabId === 'chat' ? unreadCount : undefined}
+                      />
+                    );
+                  })}
+                </TabsList>
+              </SortableContext>
+            </DndContext>
           </div>
           <TabsContent value="chat" onClick={() => markAsRead()}>
             <DoctorChatManager />
