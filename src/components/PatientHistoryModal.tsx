@@ -9,6 +9,8 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Calendar, FileText, User, Phone, MapPin, Star, Eye } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { PatientIdDocument } from './PatientIdDocument';
+import { formatInMexicoTZ, formatTimeInMexicoTZ } from '@/utils/dateUtils';
+import { useSignedUrl } from '@/hooks/useSignedUrl';
 
 interface PatientHistoryModalProps {
   isOpen: boolean;
@@ -52,6 +54,12 @@ export const PatientHistoryModal = ({ isOpen, onClose, patientUserId, doctorUser
   const [patientProfile, setPatientProfile] = useState<PatientProfile | null>(null);
   const [appointmentHistory, setAppointmentHistory] = useState<AppointmentHistory[]>([]);
   const [selectedNotes, setSelectedNotes] = useState<AppointmentHistory | null>(null);
+  
+  // Hook para la imagen de perfil del paciente
+  const { signedUrl: profileImageUrl, loading: profileImageLoading } = useSignedUrl(
+    'patient-profiles', 
+    patientProfile?.profile_image_url || ''
+  );
 
   useEffect(() => {
     if (isOpen && patientUserId && doctorUserId) {
@@ -107,18 +115,11 @@ export const PatientHistoryModal = ({ isOpen, onClose, patientUserId, doctorUser
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('es-ES', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
+    return formatInMexicoTZ(dateString, "d 'de' MMMM 'de' yyyy");
   };
 
   const formatTime = (dateString: string) => {
-    return new Date(dateString).toLocaleTimeString('es-ES', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    return formatTimeInMexicoTZ(dateString);
   };
 
   const calculateAge = (birthDate: string) => {
@@ -156,10 +157,24 @@ export const PatientHistoryModal = ({ isOpen, onClose, patientUserId, doctorUser
                   <CardHeader>
                     <CardTitle className="flex items-center gap-3">
                       <Avatar className="h-12 w-12">
-                        <AvatarImage src={patientProfile.profile_image_url || ''} />
-                        <AvatarFallback>
-                          <User className="h-6 w-6" />
-                        </AvatarFallback>
+                        {profileImageLoading ? (
+                          <AvatarFallback>
+                            <LoadingSpinner />
+                          </AvatarFallback>
+                        ) : (
+                          <>
+                            <AvatarImage 
+                              src={profileImageUrl || patientProfile.profile_image_url || ''} 
+                              alt={patientProfile.full_name || 'Paciente'}
+                              onError={(e) => {
+                                console.error('Error loading patient profile image:', e);
+                              }}
+                            />
+                            <AvatarFallback>
+                              <User className="h-6 w-6" />
+                            </AvatarFallback>
+                          </>
+                        )}
                       </Avatar>
                       <div>
                         <h3 className="text-lg font-semibold">{patientProfile.full_name || 'Paciente'}</h3>

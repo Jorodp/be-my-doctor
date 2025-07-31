@@ -47,6 +47,7 @@ import { ConsultationWorkspace } from '@/components/ConsultationWorkspace';
 import { AssistantPaymentManager } from '@/components/AssistantPaymentManager';
 import { useUnreadMessages } from '@/hooks/useUnreadMessages';
 import { DoctorReviewsSection } from '@/components/DoctorReviewsSection';
+import { PatientHistoryModal } from '@/components/PatientHistoryModal';
 
 interface DoctorProfile {
   id: string;
@@ -120,6 +121,10 @@ const DoctorDashboardContent = () => {
     totalPatients: 0,
     monthlyRevenue: 0
   });
+
+  // Patient History Modal state
+  const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
+  const [isPatientHistoryOpen, setIsPatientHistoryOpen] = useState(false);
 
   // Realtime updates para appointments y ratings
   useEffect(() => {
@@ -491,6 +496,11 @@ const DoctorDashboardContent = () => {
     return formatInMexicoTZ(dateString, "d 'de' MMMM");
   };
 
+  const handleViewPatientHistory = (patientUserId: string) => {
+    setSelectedPatientId(patientUserId);
+    setIsPatientHistoryOpen(true);
+  };
+
   if (loading) {
     return (
       <DashboardLayout
@@ -767,18 +777,27 @@ const DoctorDashboardContent = () => {
                               </Badge>
                             </div>
 
-                            <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                              <div className="flex items-center gap-1">
-                                <Clock className="h-3 w-3" />
-                                {formatTime(appointment.starts_at)} - {formatTime(appointment.ends_at)}
-                              </div>
-                              {appointment.patient_profile?.phone && (
-                                <div className="flex items-center gap-1">
-                                  <Phone className="h-3 w-3" />
-                                  {appointment.patient_profile.phone}
-                                </div>
-                              )}
-                            </div>
+                             <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                               <div className="flex items-center gap-1">
+                                 <Clock className="h-3 w-3" />
+                                 {formatTime(appointment.starts_at)} - {formatTime(appointment.ends_at)}
+                               </div>
+                               {appointment.patient_profile?.phone && (
+                                 <div className="flex items-center gap-1">
+                                   <Phone className="h-3 w-3" />
+                                   {appointment.patient_profile.phone}
+                                 </div>
+                               )}
+                               <Button
+                                 size="sm"
+                                 variant="outline"
+                                 onClick={() => handleViewPatientHistory(appointment.patient_user_id)}
+                                 className="ml-auto"
+                               >
+                                 <FileText className="h-3 w-3 mr-1" />
+                                 Ver Historial
+                               </Button>
+                             </div>
 
                             {appointment.notes && (
                               <div className="bg-muted p-2 rounded text-sm">
@@ -898,6 +917,19 @@ const DoctorDashboardContent = () => {
             <DoctorAppointmentHistory />
           </TabsContent>
         </Tabs>
+
+        {/* Patient History Modal */}
+        {selectedPatientId && user && (
+          <PatientHistoryModal
+            isOpen={isPatientHistoryOpen}
+            onClose={() => {
+              setIsPatientHistoryOpen(false);
+              setSelectedPatientId(null);
+            }}
+            patientUserId={selectedPatientId}
+            doctorUserId={user.id}
+          />
+        )}
       </div>
     </DashboardLayout>
   );
