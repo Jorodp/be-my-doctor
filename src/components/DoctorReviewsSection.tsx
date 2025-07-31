@@ -14,7 +14,7 @@ interface DoctorReviewsSectionProps {
 
 export function DoctorReviewsSection({ doctorUserId }: DoctorReviewsSectionProps) {
   const [currentPage, setCurrentPage] = useState(1);
-  const reviewsPerPage = 5;
+  const reviewsPerPage = 10;
   
   const { data, isLoading, error } = useDoctorReviews(doctorUserId, currentPage, reviewsPerPage);
 

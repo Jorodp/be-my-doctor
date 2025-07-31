@@ -269,9 +269,12 @@ export default function DoctorProfile() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Reviews Section */}
+            <DoctorReviewsSection doctorUserId={doctorId || ''} />
           </div>
 
-          {/* Right Column - Calendar and Reviews */}
+          {/* Right Column - Calendar */}
           <div className="lg:col-span-2 space-y-6">
             {/* Calendar Section */}
             <Card className="shadow-soft h-fit">
@@ -288,9 +291,6 @@ export default function DoctorProfile() {
                 <DoctorCalendarView doctorId={doctorId} />
               </CardContent>
             </Card>
-
-            {/* Reviews Section */}
-            <DoctorReviewsSection doctorUserId={doctorId || ''} />
           </div>
         </div>
       </div>
