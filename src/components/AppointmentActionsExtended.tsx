@@ -163,7 +163,7 @@ export function AppointmentActionsExtended({
 
       toast({
         title: "Cita reprogramada",
-        description: `La cita ha sido reprogramada para el ${format(newStartTime, 'dd/MM/yyyy')} a las ${newTime}`,
+        description: `La cita ha sido reprogramada para el ${formatDateTimeInMexicoTZ(newStartTime)} a las ${newTime}`,
       });
 
       setRescheduleOpen(false);
