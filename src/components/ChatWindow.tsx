@@ -228,26 +228,8 @@ export const ChatWindow = ({ conversationId, onConversationSelect }: ChatWindowP
           filter: `conversation_id=eq.${conversationId}`,
         },
         async (payload) => {
-          // Avoid duplicates - check if message already exists (from optimistic update)
-          const existingMessage = messages.find(msg => 
-            msg.sender_id === payload.new.sender_user_id && 
-            msg.content === payload.new.content &&
-            Math.abs(new Date(msg.created_at).getTime() - new Date(payload.new.sent_at).getTime()) < 5000
-          );
-          
-          if (existingMessage) {
-            // Update the existing optimistic message with real data
-            setMessages((prev) => 
-              prev.map(msg => 
-                msg.id === existingMessage.id 
-                  ? {
-                      ...msg,
-                      id: payload.new.id,
-                      created_at: payload.new.sent_at
-                    }
-                  : msg
-              )
-            );
+          // Skip messages from current user since they're handled optimistically
+          if (payload.new.sender_user_id === user?.id) {
             return;
           }
 
