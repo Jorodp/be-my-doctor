@@ -282,14 +282,13 @@ const DoctorDashboardContent = () => {
     // Crear las fechas en zona horaria de México (GMT-6)
     const now = new Date();
     
-    // Inicio del día actual en México (00:00 México = 06:00 UTC)
-    const todayStart = new Date(now);
-    todayStart.setUTCHours(6, 0, 0, 0);
+    // Inicio del día actual en México
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
     
-    // Final del día actual en México (23:59 México = 05:59 UTC del día siguiente)
-    const todayEnd = new Date(now);
-    todayEnd.setUTCDate(todayEnd.getUTCDate() + 1); // Ir al día siguiente en UTC
-    todayEnd.setUTCHours(5, 59, 59, 999); // 23:59 México = 05:59 UTC
+    // Final del día actual en México  
+    const todayEnd = new Date();
+    todayEnd.setHours(23, 59, 59, 999);
 
     const { data: appointments, error } = await supabase
       .from('appointments')
@@ -329,14 +328,14 @@ const DoctorDashboardContent = () => {
     // Crear las fechas en zona horaria de México (GMT-6)
     const now = new Date();
     
-    // Inicio del día actual en México (00:00 México = 06:00 UTC)
-    const weekStart = new Date(now);
-    weekStart.setUTCHours(6, 0, 0, 0);
+    // Inicio de la semana actual en México
+    const weekStart = new Date();
+    weekStart.setHours(0, 0, 0, 0);
     
-    // Final de la semana en México (7 días después, 23:59 México = 05:59 UTC)
-    const weekEnd = new Date(now);
-    weekEnd.setUTCDate(weekEnd.getUTCDate() + 8); // 7 días + 1 para llegar al UTC correcto
-    weekEnd.setUTCHours(5, 59, 59, 999);
+    // Final de la semana (7 días después)
+    const weekEnd = new Date();
+    weekEnd.setDate(weekEnd.getDate() + 7);
+    weekEnd.setHours(23, 59, 59, 999);
 
     const { data: appointments, error } = await supabase
       .from('appointments')
