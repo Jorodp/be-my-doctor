@@ -13,19 +13,38 @@ export const useSignedUrl = (bucket: string, path: string | null | undefined) =>
       return;
     }
 
+    // If the path is already a full URL, return it as is
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      setSignedUrl(path);
+      setError(null);
+      setLoading(false);
+      return;
+    }
+
     const getSignedUrl = async () => {
       try {
         setLoading(true);
         setError(null);
         
+        // Try signed URL first
         const { data, error } = await supabase.storage
           .from(bucket)
           .createSignedUrl(path, 3600); // 1 hour expiry
 
         if (error) {
           console.error('Error creating signed URL:', error);
-          setError('Error al cargar la imagen');
-          setSignedUrl(null);
+          // Fallback to public URL
+          const publicUrl = supabase.storage
+            .from(bucket)
+            .getPublicUrl(path);
+          
+          if (publicUrl.data?.publicUrl) {
+            setSignedUrl(publicUrl.data.publicUrl);
+            setError(null);
+          } else {
+            setError('Error al cargar la imagen');
+            setSignedUrl(null);
+          }
         } else {
           setSignedUrl(data.signedUrl);
         }

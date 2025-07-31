@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { ProfileAvatar } from '@/components/ui/ProfileAvatar';
 import { Badge } from '@/components/ui/badge';
 import { Send, MessageCircle } from 'lucide-react';
 import { format } from 'date-fns';
@@ -467,15 +467,17 @@ export const ChatWindow = ({ conversationId, onConversationSelect }: ChatWindowP
                   onClick={() => onConversationSelect?.(conversation.id)}
                 >
                   <div className="flex items-start gap-3">
-                    <div className="flex -space-x-2">
-                      {participants.slice(0, 2).map((participant, index) => (
-                        <Avatar key={index} className="h-8 w-8 border-2 border-background">
-                          <AvatarImage src={participant.image || undefined} />
-                          <AvatarFallback className="text-xs">
-                            {participant.name?.charAt(0) || '?'}
-                          </AvatarFallback>
-                        </Avatar>
-                      ))}
+                     <div className="flex -space-x-2">
+                       {participants.slice(0, 2).map((participant, index) => (
+                         <ProfileAvatar
+                           key={index}
+                           profileImageUrl={participant.image}
+                           fallbackName={participant.name}
+                           size="sm"
+                           className="border-2 border-background"
+                           role={participant.role as 'patient' | 'doctor' | 'assistant'}
+                         />
+                       ))}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
@@ -524,13 +526,14 @@ export const ChatWindow = ({ conversationId, onConversationSelect }: ChatWindowP
                     key={message.id}
                     className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'}`}
                   >
-                    <div className={`flex gap-3 max-w-[70%] ${isOwnMessage ? 'flex-row-reverse' : ''}`}>
-                      <Avatar className="h-8 w-8 shrink-0">
-                        <AvatarImage src={message.sender?.profile_image_url || undefined} />
-                        <AvatarFallback className="text-xs">
-                          {message.sender?.full_name?.charAt(0) || '?'}
-                        </AvatarFallback>
-                      </Avatar>
+                     <div className={`flex gap-3 max-w-[70%] ${isOwnMessage ? 'flex-row-reverse' : ''}`}>
+                       <ProfileAvatar
+                         profileImageUrl={message.sender?.profile_image_url}
+                         fallbackName={message.sender?.full_name}
+                         size="sm"
+                         className="shrink-0"
+                         role={message.sender?.role as 'patient' | 'doctor' | 'assistant'}
+                       />
                       <div className={`flex flex-col ${isOwnMessage ? 'items-end' : 'items-start'}`}>
                         <div className="flex items-center gap-2 mb-1">
                           <span className="text-sm font-medium">

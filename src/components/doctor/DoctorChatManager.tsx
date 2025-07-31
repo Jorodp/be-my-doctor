@@ -2,11 +2,11 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ChatWindow } from '@/components/ChatWindow';
-import { Search, MessageSquare, User, Bell } from 'lucide-react';
+import { ProfileAvatar } from '@/components/ui/ProfileAvatar';
+import { Search, MessageSquare, Bell } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
@@ -409,20 +409,20 @@ export const DoctorChatManager = () => {
                       patient.unread_messages > 0 ? 'border-blue-500 bg-blue-50' : ''
                     }`}
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="relative">
-                        <Avatar>
-                          <AvatarImage src={patient.profile_image_url} />
-                          <AvatarFallback>
-                            <User className="h-5 w-5" />
-                          </AvatarFallback>
-                        </Avatar>
-                        {patient.unread_messages > 0 && (
-                          <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center animate-pulse">
-                            {patient.unread_messages > 9 ? '9+' : patient.unread_messages}
-                          </div>
-                        )}
-                      </div>
+                     <div className="flex items-center gap-3">
+                       <div className="relative">
+                         <ProfileAvatar 
+                           profileImageUrl={patient.profile_image_url}
+                           fallbackName={patient.full_name}
+                           size="md"
+                           role="patient"
+                         />
+                         {patient.unread_messages > 0 && (
+                           <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center animate-pulse">
+                             {patient.unread_messages > 9 ? '9+' : patient.unread_messages}
+                           </div>
+                         )}
+                       </div>
                       <div>
                         <div className="flex items-center gap-2">
                           <h4 className="font-medium">{patient.full_name}</h4>
