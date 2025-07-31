@@ -83,10 +83,10 @@ export const AppointmentChat = ({ appointmentId }: AppointmentChatProps) => {
     setIsSending(true);
     try {
       const { error } = await supabase
-        .from('messages')
+        .from('conversation_messages')
         .insert({
           conversation_id: conversationId,
-          sender_id: user.id,
+          sender_user_id: user.id,
           content: newMessage.trim()
         });
 
@@ -144,11 +144,24 @@ export const AppointmentChat = ({ appointmentId }: AppointmentChatProps) => {
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'messages',
+          table: 'conversation_messages',
           filter: `conversation_id=eq.${conversationId}`
         },
-        (payload) => {
-          setMessages(prev => [...prev, payload.new as Message]);
+        async (payload) => {
+          // Cargar el mensaje completo con información del perfil
+          const { data } = await supabase.rpc('list_messages', {
+            p_conversation_id: conversationId
+          });
+          if (data) {
+            const newMsg = data.find((msg: Message) => msg.id === payload.new.id);
+            if (newMsg) {
+              setMessages(prev => {
+                // Evitar duplicados
+                if (prev.find(m => m.id === newMsg.id)) return prev;
+                return [...prev, newMsg];
+              });
+            }
+          }
         }
       )
       .subscribe();

@@ -80,60 +80,53 @@ export const useUnreadMessages = () => {
     if (!user) return;
 
     try {
-      // Get all conversations where user is involved
-      const { data: conversations } = await supabase
-        .from('conversations')
+      // Obtener todas las conversaciones donde el usuario participa
+      const { data: userConversations } = await supabase
+        .from('conversation_participants')
         .select(`
-          id,
-          appointment_id,
-          appointments!inner(doctor_user_id, patient_user_id)
+          conversation_id,
+          conversations!inner(
+            appointment_id,
+            appointments!inner(doctor_user_id, patient_user_id)
+          )
         `)
-        .or(`appointments.doctor_user_id.eq.${user.id},appointments.patient_user_id.eq.${user.id}`);
+        .eq('user_id', user.id);
 
-      if (!conversations) return;
+      if (!userConversations) return;
 
       let totalUnread = 0;
       let latestMessageTime: string | null = null;
 
-      // For each conversation, count unread messages based on user role
-      for (const conversation of conversations) {
-        // Get the last message the user read (you might want to track this in a separate table)
-        // For now, we'll consider messages from today as potentially unread
+      // Para cada conversación, contar mensajes no leídos
+      for (const participant of userConversations) {
+        const conversationId = participant.conversation_id;
+        const appointment = (participant.conversations as any)?.appointments;
+        
+        if (!appointment) continue;
+        
+        // Obtener mensajes recientes que no son del usuario actual
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
         const { data: messages } = await supabase
           .from('conversation_messages')
           .select(`
+            id,
             sent_at, 
-            sender_user_id,
-            profiles!conversation_messages_sender_user_id_fkey(role)
+            sender_user_id
           `)
-          .eq('conversation_id', conversation.id)
-          .neq('sender_user_id', user.id) // Messages not from current user
+          .eq('conversation_id', conversationId)
+          .neq('sender_user_id', user.id) // Mensajes no del usuario actual
           .gte('sent_at', today.toISOString())
           .order('sent_at', { ascending: false });
 
         if (messages && messages.length > 0) {
-          // Filter messages based on user role
-          const relevantMessages = messages.filter(message => {
-            const appointment = Array.isArray(conversation.appointments) ? conversation.appointments[0] : conversation.appointments;
-            const isUserDoctor = appointment?.doctor_user_id === user.id;
-            const isUserPatient = appointment?.patient_user_id === user.id;
-            
-            const profile = Array.isArray(message.profiles) ? message.profiles[0] : message.profiles;
-            
-            // For doctors: only count patient messages
-            // For patients: only count doctor messages
-            return (isUserDoctor && profile?.role === 'patient') ||
-                   (isUserPatient && profile?.role === 'doctor');
-          });
+          // Para ahora, contar todos los mensajes no del usuario
+          totalUnread += messages.length;
           
-          totalUnread += relevantMessages.length;
-          
-          // Track the latest message time from relevant messages
-          if (relevantMessages.length > 0) {
-            const latestInConversation = relevantMessages[0].sent_at;
+          // Rastrear el tiempo del mensaje más reciente
+          if (messages.length > 0) {
+            const latestInConversation = messages[0].sent_at;
             if (!latestMessageTime || latestInConversation > latestMessageTime) {
               latestMessageTime = latestInConversation;
             }

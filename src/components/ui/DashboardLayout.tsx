@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 import { Home, LogOut, LayoutDashboard, ChevronRight, Menu } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { ChatNotificationBadge } from '@/components/ChatNotificationBadge';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -61,6 +62,8 @@ export const DashboardLayout = ({ children, title, subtitle, breadcrumbs = [] }:
 
   const NavigationButtons = () => (
     <div className="flex items-center gap-3">
+      <ChatNotificationBadge />
+      
       <Button 
         variant="outline" 
         size="sm"

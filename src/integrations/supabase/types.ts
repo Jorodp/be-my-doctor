@@ -3373,9 +3373,11 @@ export type Database = {
         Args: { p_conversation_id: string }
         Returns: {
           id: number
-          sender_user_id: string
-          sent_at: string
+          conversation_id: string
+          sender_id: string
           content: string
+          created_at: string
+          sender_profile: Json
         }[]
       }
       list_patient_prescriptions: {
