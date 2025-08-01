@@ -216,13 +216,23 @@ export const DoctorBadgeManager: React.FC<DoctorBadgeManagerProps> = ({
 
   return (
     <div className="space-y-6">
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+        <h4 className="text-sm font-medium text-blue-900 mb-2">ℹ️ Cómo asignar insignias</h4>
+        <p className="text-sm text-blue-700">
+          • Haz clic en "Asignar Insignia" para otorgar una nueva insignia a este doctor<br/>
+          • Solo puedes asignar cada tipo de insignia una vez por doctor<br/>
+          • Usa el botón de ojo para controlar si la insignia es visible al público<br/>
+          • Las insignias aparecerán en el perfil público del doctor
+        </p>
+      </div>
+
       <div className="flex justify-between items-center">
         <h3 className="text-xl font-semibold">
           Insignias de {doctorName}
         </h3>
-        <Button onClick={() => setIsDialogOpen(true)}>
+        <Button onClick={() => setIsDialogOpen(true)} className="bg-primary hover:bg-primary/90">
           <Plus className="h-4 w-4 mr-2" />
-          Asignar Insignia
+          Asignar Nueva Insignia
         </Button>
       </div>
 
