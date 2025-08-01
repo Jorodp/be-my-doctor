@@ -237,11 +237,17 @@ export const DoctorBadgeManager: React.FC<DoctorBadgeManagerProps> = ({
       </div>
 
       {doctorBadges.length === 0 ? (
-        <Card>
+        <Card className="border-dashed border-2 border-gray-300">
           <CardContent className="text-center py-8">
-            <p className="text-muted-foreground">
-              Este doctor no tiene insignias asignadas
+            <Award className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+            <h4 className="text-lg font-medium text-gray-900 mb-2">Sin insignias asignadas</h4>
+            <p className="text-gray-600 mb-4">
+              Este doctor no tiene ninguna insignia asignada aún.
             </p>
+            <Button onClick={() => setIsDialogOpen(true)} className="bg-primary hover:bg-primary/90">
+              <Plus className="h-4 w-4 mr-2" />
+              Asignar Primera Insignia
+            </Button>
           </CardContent>
         </Card>
       ) : (
@@ -304,34 +310,47 @@ export const DoctorBadgeManager: React.FC<DoctorBadgeManagerProps> = ({
       )}
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Asignar Insignia a {doctorName}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleAssignBadge} className="space-y-4">
             <div>
-              <label className="text-sm font-medium">Insignia</label>
-              <Select value={selectedBadgeId} onValueChange={setSelectedBadgeId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecciona una insignia" />
-                </SelectTrigger>
-                <SelectContent>
-                  {getAvailableBadgesToAssign().map((badge) => {
-                    const IconComponent = getIconComponent(badge.icon);
-                    return (
-                      <SelectItem key={badge.id} value={badge.id}>
-                        <div className="flex items-center gap-2">
-                          <IconComponent 
-                            className="h-4 w-4" 
-                            style={{ color: badge.color }}
-                          />
-                          {badge.name}
-                        </div>
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
+              <label className="text-sm font-medium mb-2 block">
+                Selecciona una insignia para asignar:
+              </label>
+              {getAvailableBadgesToAssign().length === 0 ? (
+                <div className="p-4 bg-gray-50 rounded-lg text-center">
+                  <p className="text-sm text-gray-600">
+                    No hay insignias disponibles para asignar. Este doctor ya tiene todas las insignias posibles.
+                  </p>
+                </div>
+              ) : (
+                <Select value={selectedBadgeId} onValueChange={setSelectedBadgeId}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="👇 Haz clic para ver las opciones disponibles" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {getAvailableBadgesToAssign().map((badge) => {
+                      const IconComponent = getIconComponent(badge.icon);
+                      return (
+                        <SelectItem key={badge.id} value={badge.id}>
+                          <div className="flex items-center gap-3 py-1">
+                            <IconComponent 
+                              className="h-5 w-5 flex-shrink-0" 
+                              style={{ color: badge.color }}
+                            />
+                            <div>
+                              <div className="font-medium">{badge.name}</div>
+                              <div className="text-xs text-gray-500">{badge.description}</div>
+                            </div>
+                          </div>
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
             
             <div>
