@@ -37,9 +37,6 @@ const Header = () => {
             <a href="#contacto" className="text-foreground hover:text-primary transition-smooth">
               Contacto
             </a>
-            <Link to="/prescription-test" className="text-foreground hover:text-primary transition-smooth font-medium">
-              Recetas
-            </Link>
           </nav>
 
           {/* Desktop CTA */}
@@ -87,9 +84,6 @@ const Header = () => {
             <a href="#contacto" className="block text-foreground hover:text-primary transition-smooth">
               Contacto
             </a>
-            <Link to="/prescription-test" className="block text-foreground hover:text-primary transition-smooth font-medium">
-              Recetas
-            </Link>
             <div className="pt-4 space-y-2">
               {user && userRole ? <>
                   <div className="text-sm text-muted-foreground px-3 py-2">
