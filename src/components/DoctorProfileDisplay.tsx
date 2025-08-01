@@ -7,6 +7,7 @@ import { Camera, User, Phone, MapPin, Stethoscope, Award, Building, DollarSign, 
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { DoctorBadges } from './DoctorBadges';
 
 interface DoctorProfile {
   id: string;
@@ -264,6 +265,13 @@ export const DoctorProfileDisplay: React.FC<DoctorProfileDisplayProps> = ({
             </div>
           </div>
         </div>
+
+        {/* Doctor Badges */}
+        <DoctorBadges 
+          doctorUserId={profile.user_id} 
+          variant="default"
+          showOnlyVisible={true}
+        />
 
         {/* Biography */}
         {profile.biography && (

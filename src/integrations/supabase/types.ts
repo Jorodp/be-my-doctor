@@ -398,6 +398,39 @@ export type Database = {
           },
         ]
       }
+      badge_types: {
+        Row: {
+          color: string
+          created_at: string
+          description: string | null
+          icon: string | null
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       clinic_assistants: {
         Row: {
           assistant_id: string
@@ -926,6 +959,44 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      doctor_badges: {
+        Row: {
+          assigned_at: string
+          assigned_by: string | null
+          badge_type_id: string
+          doctor_user_id: string
+          id: string
+          is_visible: boolean
+          notes: string | null
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by?: string | null
+          badge_type_id: string
+          doctor_user_id: string
+          id?: string
+          is_visible?: boolean
+          notes?: string | null
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string | null
+          badge_type_id?: string
+          doctor_user_id?: string
+          id?: string
+          is_visible?: boolean
+          notes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "doctor_badges_badge_type_id_fkey"
+            columns: ["badge_type_id"]
+            isOneToOne: false
+            referencedRelation: "badge_types"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       doctor_physical_payments: {
         Row: {

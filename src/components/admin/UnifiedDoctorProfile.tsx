@@ -35,6 +35,8 @@ import { es } from 'date-fns/locale';
 import { EditDoctorProfile } from './EditDoctorProfile';
 import { DoctorDocumentManager } from './DoctorDocumentManager';
 import { SubscriptionManager } from './SubscriptionManager';
+import { DoctorBadgeManager } from './DoctorBadgeManager';
+import { DoctorBadges } from '../DoctorBadges';
 
 interface Doctor {
   doctor_user_id: string;
@@ -298,10 +300,11 @@ export const UnifiedDoctorProfile = ({
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="info">Información</TabsTrigger>
             <TabsTrigger value="subscription">Suscripción</TabsTrigger>
             <TabsTrigger value="documents">Documentos</TabsTrigger>
+            <TabsTrigger value="badges">Insignias</TabsTrigger>
             <TabsTrigger value="activity">Actividad</TabsTrigger>
           </TabsList>
 
@@ -418,6 +421,13 @@ export const UnifiedDoctorProfile = ({
               doctorProfile={data.doctorProfile}
               onProfileUpdate={fetchDoctorData}
               isAdminView={true}
+            />
+          </TabsContent>
+
+          <TabsContent value="badges" className="mt-6">
+            <DoctorBadgeManager
+              doctorUserId={doctor.doctor_user_id}
+              doctorName={data.profile.full_name}
             />
           </TabsContent>
 

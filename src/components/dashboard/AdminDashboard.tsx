@@ -16,6 +16,7 @@ import DoctorRegistrationRequests from '@/components/admin/DoctorRegistrationReq
 import PhysicalPaymentRequests from '@/components/admin/PhysicalPaymentRequests';
 import { SystemTester } from '@/components/SystemTester';
 import { RevenueOverview } from '@/components/admin/RevenueOverview';
+import { BadgeManager } from '@/components/admin/BadgeManager';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { DashboardLayout } from '@/components/ui/DashboardLayout';
@@ -394,13 +395,14 @@ export const AdminDashboard = () => {
 
         {/* Main Management Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-8">
+          <TabsList className="grid w-full grid-cols-9">
             <TabsTrigger value="overview">Resumen</TabsTrigger>
             <TabsTrigger value="revenue">Ingresos</TabsTrigger>
             <TabsTrigger value="requests">Solicitudes</TabsTrigger>
             <TabsTrigger value="payments">Pagos Físicos</TabsTrigger>
             <TabsTrigger value="doctors">Doctores</TabsTrigger>
             <TabsTrigger value="patients">Pacientes</TabsTrigger>
+            <TabsTrigger value="badges">Insignias</TabsTrigger>
             <TabsTrigger value="pricing">Precios</TabsTrigger>
             <TabsTrigger value="testing">Pruebas</TabsTrigger>
           </TabsList>
@@ -505,6 +507,10 @@ export const AdminDashboard = () => {
 
           <TabsContent value="patients">
             <PatientsList />
+          </TabsContent>
+
+          <TabsContent value="badges">
+            <BadgeManager />
           </TabsContent>
 
           <TabsContent value="pricing">
