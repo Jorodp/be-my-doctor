@@ -300,7 +300,7 @@ export const UnifiedDoctorProfile = ({
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-1" style={{ width: '100%', overflowX: 'auto' }}>
             <TabsTrigger value="info">Información</TabsTrigger>
             <TabsTrigger value="subscription">Suscripción</TabsTrigger>
             <TabsTrigger value="documents">Documentos</TabsTrigger>
