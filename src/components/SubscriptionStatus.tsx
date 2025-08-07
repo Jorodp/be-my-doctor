@@ -401,7 +401,7 @@ export function SubscriptionStatus() {
                 disabled={creatingSubscription}
               >
                 {creatingSubscription ? "Procesando..." : 
-                 subscription ? "Cambiar a Mensual" : "Suscribirse Mensual"}
+                 subscription ? "Agregar 1 mes" : "Suscribirse Mensual"}
               </Button>
             </div>
 
@@ -446,7 +446,7 @@ export function SubscriptionStatus() {
                 disabled={creatingSubscription}
               >
                 {creatingSubscription ? "Procesando..." : 
-                 subscription ? "Cambiar a Anual" : "Suscribirse Anual"}
+                 subscription ? "Agregar 1 año" : "Suscribirse Anual"}
               </Button>
             </div>
           </div>
