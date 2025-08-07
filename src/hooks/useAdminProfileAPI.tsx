@@ -79,7 +79,11 @@ export const useAdminProfileAPI = () => {
     try {
       setLoading(true);
       const response = await callAdminAPI('list-doctors');
-      return response.doctors || [];
+      const mapped = (response.doctors || []).map((d: any) => ({
+        ...d,
+        cita_count: d?.cita_count ?? d?.completed_appointments_90d ?? 0,
+      }));
+      return mapped;
     } catch (error: any) {
       toast({
         title: 'Error',

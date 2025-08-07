@@ -18,8 +18,10 @@ import { SubscriptionHistoryModal } from '@/components/admin/SubscriptionHistory
 import { DoctorAppointmentsDrawer } from '@/components/admin/DoctorAppointmentsDrawer';
 import { CreateDoctorModal } from '@/components/admin/CreateDoctorModal';
 import { UnifiedDoctorProfile } from '@/components/admin/UnifiedDoctorProfile';
-import { Eye, Calendar, CreditCard, Edit, ArrowLeft, Plus, Users, Activity, CheckCircle } from 'lucide-react';
-
+import { Eye, Calendar, CreditCard, Edit, ArrowLeft, Plus, Users, Activity, CheckCircle, Award } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { DoctorBadgeManager } from '@/components/admin/DoctorBadgeManager';
 interface DoctorListItem {
   doctor_user_id: string;
   full_name: string;
@@ -41,6 +43,7 @@ export default function AdminDoctorsPage() {
   const [showAppointments, setShowAppointments] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDoctorProfile, setShowDoctorProfile] = useState(false);
+  const [showBadgeManager, setShowBadgeManager] = useState(false);
   
   const { toast } = useToast();
   const { listDoctors, loading: apiLoading } = useAdminProfileAPI();
@@ -287,31 +290,64 @@ export default function AdminDoctorsPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleViewProfile(doctor)}
-                          className="h-8 px-2"
-                        >
-                          <Eye className="h-3 w-3" />
-                        </Button>
-                        <Link to={`/admin/doctores/${doctor.doctor_user_id}`}>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-8 px-2"
-                          >
-                            <Edit className="h-3 w-3" />
-                          </Button>
-                        </Link>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleViewAppointments(doctor)}
-                          className="h-8 px-2"
-                        >
-                          <Calendar className="h-3 w-3" />
-                        </Button>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleViewProfile(doctor)}
+                                className="h-8 px-2"
+                              >
+                                <Eye className="h-3 w-3" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Ver perfil</TooltipContent>
+                          </Tooltip>
+
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Link to={`/admin/doctores/${doctor.doctor_user_id}`}>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-8 px-2"
+                                >
+                                  <Edit className="h-3 w-3" />
+                                </Button>
+                              </Link>
+                            </TooltipTrigger>
+                            <TooltipContent>Editar</TooltipContent>
+                          </Tooltip>
+
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleViewAppointments(doctor)}
+                                className="h-8 px-2"
+                              >
+                                <Calendar className="h-3 w-3" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Ver citas</TooltipContent>
+                          </Tooltip>
+
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => { setSelectedDoctor(doctor); setShowBadgeManager(true); }}
+                                className="h-8 px-2"
+                              >
+                                <Award className="h-3 w-3" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Insignias</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -370,6 +406,20 @@ export default function AdminDoctorsPage() {
         doctorUserId={selectedDoctor?.doctor_user_id}
         doctorName={selectedDoctor?.full_name}
       />
+
+      <Dialog open={showBadgeManager} onOpenChange={setShowBadgeManager}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Insignias de {selectedDoctor?.full_name}</DialogTitle>
+          </DialogHeader>
+          {selectedDoctor && (
+            <DoctorBadgeManager 
+              doctorUserId={selectedDoctor.doctor_user_id} 
+              doctorName={selectedDoctor.full_name}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
