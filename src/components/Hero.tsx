@@ -64,13 +64,6 @@ const Hero = () => {
               <div className="absolute inset-0 bg-gradient-to-t from-primary/20 to-transparent"></div>
             </div>
             
-            {/* Floating elements */}
-            <div className="absolute -top-4 -right-4 bg-background rounded-lg shadow-soft p-4 animate-fade-in">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="text-sm font-medium">En línea</span>
-              </div>
-            </div>
             
             <div className="absolute -bottom-4 -left-4 bg-background rounded-lg shadow-soft p-4 animate-fade-in">
               <div className="text-center">
