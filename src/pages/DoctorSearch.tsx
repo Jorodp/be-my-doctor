@@ -10,7 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { BackToHomeButton } from "@/components/ui/BackToHomeButton";
-import { Search, MapPin, Star, DollarSign, User } from "lucide-react";
+import { Search, MapPin, Star, DollarSign, User, Award, Crown, Shield, Trophy, Heart } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface Doctor {
   [key: string]: any;
@@ -23,6 +24,9 @@ interface Doctor {
   experience_years?: number;
   city?: string;
 }
+
+type SearchBadge = { id: string; name: string; description: string; color: string; icon: string };
+const iconComponents = { Award, Crown, Star, Shield, Trophy, Heart } as const;
 
 export default function DoctorSearch() {
   const [filters, setFilters] = useState({
@@ -92,6 +96,24 @@ export default function DoctorSearch() {
     console.log("Profiles data:", profilesData);
     console.log("Clinics data:", clinicsData);
 
+    // Insignias visibles para los doctores listados
+    const { data: badgesData, error: badgesError } = await supabase
+      .from('doctor_badges')
+      .select('doctor_user_id, badge_types (id, name, description, color, icon)')
+      .in('doctor_user_id', userIds)
+      .eq('is_visible', true);
+    if (badgesError) {
+      console.error('Error fetching badges:', badgesError);
+    }
+    const badgeMap = new Map<string, SearchBadge[]>();
+    (badgesData || []).forEach((row: any) => {
+      const b = row?.badge_types;
+      if (!b) return;
+      const list = badgeMap.get(row.doctor_user_id) || [];
+      list.push({ id: b.id, name: b.name, description: b.description, color: b.color, icon: b.icon });
+      badgeMap.set(row.doctor_user_id, list);
+    });
+
     // Crear mapa de nombres de perfiles
     const profilesMap = new Map(profilesData?.map(p => [p.user_id, p.full_name]) || []);
     
@@ -112,7 +134,8 @@ export default function DoctorSearch() {
       rating_avg: doctor.rating_avg,
       rating_count: doctor.rating_count,
       experience_years: doctor.experience_years,
-      city: clinicsMap.get(doctor.user_id) || ''
+      city: clinicsMap.get(doctor.user_id) || '',
+      badges: badgeMap.get(doctor.user_id) || []
     }));
 
     console.log("Transformed doctors:", transformedDoctors);
@@ -286,6 +309,29 @@ export default function DoctorSearch() {
                             <div className="flex items-center justify-center text-sm text-muted-foreground">
                               <MapPin className="mr-1 h-3 w-3" />
                               <span className="truncate">{doc.city}</span>
+                            </div>
+                          )}
+                          {doc.badges && doc.badges.length > 0 && (
+                            <div className="flex flex-wrap justify-center gap-2">
+                              <TooltipProvider>
+                                {doc.badges.map((b: SearchBadge) => {
+                                  const Icon = (iconComponents as any)[b.icon] || Award;
+                                  return (
+                                    <Tooltip key={b.id}>
+                                      <TooltipTrigger asChild>
+                                        <div
+                                          className="flex items-center gap-1 px-2 py-1 rounded-full text-xs"
+                                          style={{ backgroundColor: `${b.color}20`, color: b.color }}
+                                        >
+                                          <Icon className="h-3 w-3" />
+                                          <span className="font-medium">{b.name}</span>
+                                        </div>
+                                      </TooltipTrigger>
+                                      <TooltipContent>{b.description}</TooltipContent>
+                                    </Tooltip>
+                                  );
+                                })}
+                              </TooltipProvider>
                             </div>
                           )}
                           <div className="flex items-center justify-center space-x-4 text-sm">
