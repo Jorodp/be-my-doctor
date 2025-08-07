@@ -16,7 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { formatInMexicoTZ } from '@/utils/dateUtils';
-import { dayjs, MEXICO_TIMEZONE, getNowInMexicoTZ } from '@/utils/dayjsConfig';
+import { dayjs, MEXICO_TIMEZONE, getNowInMexicoTZ, convertUTCToMexicoTZ } from '@/utils/dayjsConfig';
 
 interface Appointment {
   id: string;
@@ -96,7 +96,7 @@ export const PatientDashboard = () => {
       if (appointmentsError) throw appointmentsError;
 
       // Separate upcoming and completed appointments (compare in Mexico local time)
-      const toMexicoLocal = (s: string) => dayjs.tz(s.replace('Z','').replace('+00:00',''), MEXICO_TIMEZONE);
+      const toMexicoLocal = (s: string) => convertUTCToMexicoTZ(s);
       const nowMX = getNowInMexicoTZ();
 
       const upcoming = appointmentsData?.filter(apt => 
@@ -218,18 +218,16 @@ export const PatientDashboard = () => {
   };
 
   const formatAppointmentTime = (dateString: string) => {
-    // Las citas se almacenan como hora local de México pero marcadas como UTC
-    // Por eso las tomamos tal como están sin conversión de timezone
-    const dateStr = dateString.replace('Z', '').replace('+00:00', '');
-    const localDate = new Date(dateStr);
-    
-    return localDate.toLocaleString('es-MX', {
+    // Convertir desde UTC a hora local de México y mostrar en español
+    const d = new Date(dateString);
+    return d.toLocaleString('es-MX', {
+      timeZone: 'America/Mexico_City',
       year: 'numeric',
       month: 'long',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
-      hour12: false
+      hour12: false,
     });
   };
 
