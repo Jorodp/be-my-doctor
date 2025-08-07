@@ -1,5 +1,5 @@
 import { Facebook, Instagram, Twitter, Mail, MapPin } from "lucide-react";
-import beMyLogo from "@/assets/be-my-logo.png";
+
 
 const Footer = () => {
   return (
@@ -9,7 +9,7 @@ const Footer = () => {
           {/* Brand Section */}
           <div className="space-y-4">
             <div className="flex items-center space-x-2">
-              <img src={beMyLogo} alt="Be My logo" className="h-8 w-auto" loading="lazy" />
+              <img src="/lovable-uploads/1dd302bf-f10f-47bb-b8f0-350720637593.png" alt="Be My logo" className="h-8 w-auto" loading="lazy" />
             </div>
             <p className="text-background/80 leading-relaxed">
               Conectamos pacientes con médicos verificados para consultas presenciales seguras y confiables.
