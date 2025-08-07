@@ -35,7 +35,7 @@ export const PhysicalPaymentRequestForm = ({ onSuccess }: PhysicalPaymentRequest
 
   const subscriptionTypes = [
     { value: 'monthly', label: 'Mensual - $2,320 MXN (incluye IVA)', amount: 2320 },
-    { value: 'annual', label: 'Anual - $23,200 MXN (incluye IVA, 2 meses gratis)', amount: 23200 }
+    { value: 'annual', label: 'Anual - $23,200 MXN (incluye IVA, paga 10 meses y recibe 12)', amount: 23200 }
   ];
 
   const getSubscriptionAmount = (type: string) => {
@@ -179,7 +179,7 @@ export const PhysicalPaymentRequestForm = ({ onSuccess }: PhysicalPaymentRequest
                   <Label htmlFor={type.value} className="flex-1 cursor-pointer">
                     <div className="font-medium">{type.label}</div>
                     <div className="text-sm text-muted-foreground">
-                      {type.value === 'annual' && 'Ahorra 2 meses pagando anualmente'}
+                      {type.value === 'annual' && 'Paga 10 meses y recibe 12 de servicio'}
                     </div>
                   </Label>
                 </div>
