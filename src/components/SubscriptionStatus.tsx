@@ -309,46 +309,21 @@ export function SubscriptionStatus() {
 
               <Separator />
 
-              <div className="flex gap-3">
+              <div className="space-y-3 rounded-lg border p-4">
+                <p className="text-sm font-medium">Solicitar pago físico</p>
+                <p className="text-sm text-muted-foreground">
+                  Si prefieres pagar en efectivo o tarjeta de manera presencial, solicita asistencia de nuestro equipo.
+                </p>
                 <Button 
-                  variant="outline" 
-                  className="flex-1"
-                  onClick={handleRenew}
-                  disabled={creatingSubscription || openingPortal}
+                  variant="secondary" 
+                  className="w-full"
+                  onClick={handlePhysicalPaymentRequest}
                 >
-                  <CreditCard className="h-4 w-4 mr-2" />
-                  {creatingSubscription ? "Procesando..." : "Renovar Suscripción"}
-                </Button>
-                
-                <Button 
-                  variant="outline" 
-                  onClick={openCustomerPortal}
-                  disabled={creatingSubscription || openingPortal}
-                >
-                  <Settings className="h-4 w-4 mr-2" />
-                  {openingPortal ? "Abriendo..." : "Gestionar"}
+                  <HandCoins className="h-4 w-4 mr-2" />
+                  Solicitar Pago en Efectivo/Tarjeta
                 </Button>
               </div>
 
-              {physicalPaymentEnabled && (
-                <>
-                  <Separator />
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-muted-foreground">Pago Físico Disponible</p>
-                    <Button 
-                      variant="secondary" 
-                      className="w-full"
-                      onClick={handlePhysicalPaymentRequest}
-                    >
-                      <HandCoins className="h-4 w-4 mr-2" />
-                      Solicitar Pago en Efectivo/Tarjeta
-                    </Button>
-                    <p className="text-xs text-muted-foreground">
-                      Contacta a nuestro equipo para realizar el pago presencialmente
-                    </p>
-                  </div>
-                </>
-              )}
             </div>
           ) : (
             <div className="text-center space-y-4">
