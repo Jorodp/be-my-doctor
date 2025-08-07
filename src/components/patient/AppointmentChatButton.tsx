@@ -99,11 +99,11 @@ export const AppointmentChatButton = ({
               .eq('user_id', payload.new.sender_user_id)
               .single();
             
-            if (senderProfile?.role === 'doctor') {
-              console.log('Message from doctor, incrementing count');
+            if (senderProfile?.role && senderProfile.role !== 'patient') {
+              console.log('Message from staff (doctor/assistant), incrementing count');
               setUnreadCount(prev => prev + 1);
             } else {
-              console.log('Message not from doctor, ignoring');
+              console.log('Message from patient or unknown role, ignoring');
             }
           } else {
             console.log('Message from current user, ignoring');
@@ -136,39 +136,32 @@ export const AppointmentChatButton = ({
     if (!conversationId || !user) return;
 
     try {
-      // Get all unread messages from doctors in this conversation
+      // Get all messages in this conversation not sent by current user
       const { data: unreadMessages } = await supabase
         .from('conversation_messages')
-        .select(`
-          id,
-          sender_user_id,
-          profiles!conversation_messages_sender_user_id_fkey(role)
-        `)
+        .select('id, sender_user_id')
         .eq('conversation_id', conversationId)
         .neq('sender_user_id', user.id);
 
-      if (!unreadMessages) return;
+      if (!unreadMessages || unreadMessages.length === 0) return;
 
-      // Filter to only doctor messages
-      const doctorMessages = unreadMessages.filter(message => {
-        const profile = Array.isArray(message.profiles) ? message.profiles[0] : message.profiles;
-        return profile?.role === 'doctor';
-      });
-
-      // Mark each doctor message as read
-      const readPromises = doctorMessages.map(message =>
+      // Mark each message as read for current user
+      const readPromises = unreadMessages.map(message =>
         supabase
           .from('message_reads')
-          .upsert({
-            message_id: message.id,
-            user_id: user.id
-          }, {
-            onConflict: 'message_id,user_id'
-          })
+          .upsert(
+            {
+              message_id: message.id,
+              user_id: user.id
+            },
+            {
+              onConflict: 'message_id,user_id'
+            }
+          )
       );
 
       await Promise.all(readPromises);
-      console.log(`Marked ${doctorMessages.length} doctor messages as read`);
+      console.log(`Marked ${unreadMessages.length} messages as read`);
     } catch (error) {
       console.error('Error marking conversation messages as read:', error);
     }
@@ -184,31 +177,20 @@ export const AppointmentChatButton = ({
       const oneHourAgo = new Date();
       oneHourAgo.setHours(oneHourAgo.getHours() - 1);
 
-      const { data: unreadMessages } = await supabase
+      const { data: recentMessages } = await supabase
         .from('conversation_messages')
-        .select(`
-          id,
-          sender_user_id,
-          sent_at,
-          profiles!conversation_messages_sender_user_id_fkey(role)
-        `)
+        .select('id, sender_user_id, sent_at')
         .eq('conversation_id', conversationId)
         .neq('sender_user_id', user.id)
         .gte('sent_at', oneHourAgo.toISOString());
 
-      if (!unreadMessages) {
+      if (!recentMessages || recentMessages.length === 0) {
         setUnreadCount(0);
         return;
       }
 
-      // Filter to only doctor messages
-      const doctorMessages = unreadMessages.filter(message => {
-        const profile = Array.isArray(message.profiles) ? message.profiles[0] : message.profiles;
-        return profile?.role === 'doctor';
-      });
-
       // Check which of these messages haven't been read by the current user
-      const unreadPromises = doctorMessages.map(async (message) => {
+      const unreadPromises = recentMessages.map(async (message) => {
         const { data: readStatus } = await supabase
           .from('message_reads')
           .select('id')
@@ -222,7 +204,7 @@ export const AppointmentChatButton = ({
       const unreadResults = await Promise.all(unreadPromises);
       const actualUnreadCount = unreadResults.filter(Boolean).length;
 
-      console.log('Actual unread doctor messages:', actualUnreadCount);
+      console.log('Actual unread messages:', actualUnreadCount);
       setUnreadCount(actualUnreadCount);
     } catch (error) {
       console.error('Error fetching unread count:', error);
@@ -243,12 +225,26 @@ export const AppointmentChatButton = ({
         setConversationId(existingConversation.id);
       } else {
         // Create new conversation using edge function to bypass RLS
+        // First fetch appointment participants
+        const { data: apt } = await supabase
+          .from('appointments')
+          .select('patient_user_id, doctor_user_id')
+          .eq('id', appointmentId)
+          .single();
+
+        if (!apt) throw new Error('No se encontró la cita');
+
         const { data, error } = await supabase.functions.invoke('create-conversation', {
-          body: { appointmentId }
+          body: {
+            appointment_id: appointmentId,
+            patient_id: apt.patient_user_id,
+            doctor_id: apt.doctor_user_id,
+          },
         });
 
         if (error) throw error;
-        setConversationId(data.conversationId);
+        const createdId = data?.conversation_id || data?.conversationId;
+        setConversationId(createdId);
       }
     } catch (error) {
       console.error('Error getting conversation:', error);
