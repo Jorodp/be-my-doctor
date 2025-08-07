@@ -361,8 +361,9 @@ export const DoctorCalendarSchedule = ({ doctorId }: DoctorCalendarScheduleProps
                   fontWeight: 'bold'
                 },
                 today: { 
-                  backgroundColor: 'hsl(var(--accent))',
-                  color: 'hsl(var(--accent-foreground))'
+                  backgroundColor: 'transparent',
+                  color: 'inherit',
+                  border: '2px solid hsl(var(--accent))'
                 }
               }}
               fromDate={new Date()}
@@ -374,7 +375,7 @@ export const DoctorCalendarSchedule = ({ doctorId }: DoctorCalendarScheduleProps
                 <span>Días con disponibilidad</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
-                <div className="w-4 h-4 rounded bg-accent"></div>
+                <div className="w-4 h-4 rounded border-2 border-accent"></div>
                 <span>Día actual</span>
               </div>
             </div>
