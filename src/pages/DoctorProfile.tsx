@@ -19,6 +19,7 @@ import { DoctorCalendarView } from "@/components/DoctorCalendarView";
 import { DoctorReviewsSection } from "@/components/DoctorReviewsSection";
 import { DoctorClinicsDisplay } from "@/components/DoctorClinicsDisplay";
 import { DoctorImage } from "@/components/DoctorImage";
+import { DoctorBadges } from "@/components/DoctorBadges";
 
 interface DoctorProfileData {
   user_id: string;
@@ -166,7 +167,12 @@ export default function DoctorProfile() {
                 <div className="text-center space-y-4">
                   <div>
                     <h1 className="text-4xl md:text-5xl font-bold mb-2 text-foreground">{doctor.full_name}</h1>
-                    <p className="text-xl text-muted-foreground mb-4">{doctor.specialty}</p>
+                    <p className="text-xl text-muted-foreground mb-2">{doctor.specialty}</p>
+                  </div>
+
+                  {/* Badges (visibles) */}
+                  <div className="mb-2 flex justify-center">
+                    <DoctorBadges doctorUserId={doctor.user_id} variant="compact" showOnlyVisible={true} />
                   </div>
                   
                   {/* Rating */}
