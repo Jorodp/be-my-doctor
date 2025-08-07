@@ -304,16 +304,15 @@ export const UnifiedScheduleManager = ({
               }}
               modifiersStyles={{
                 available: { 
-                  backgroundColor: 'hsl(var(--primary))', 
-                  color: 'hsl(var(--primary-foreground))',
+                  backgroundColor: 'hsl(var(--success))', 
+                  color: 'hsl(var(--success-foreground))',
                   fontWeight: 'bold',
                   borderRadius: '8px'
                 },
                 today: { 
-                  backgroundColor: 'hsl(var(--accent))',
-                  color: 'hsl(var(--accent-foreground))',
-                  fontWeight: 'bold',
-                  border: '2px solid hsl(var(--primary))',
+                  backgroundColor: 'transparent',
+                  color: 'inherit',
+                  border: '2px solid hsl(var(--accent))',
                   borderRadius: '8px'
                 }
               }}
@@ -325,15 +324,15 @@ export const UnifiedScheduleManager = ({
               <h4 className="font-medium text-sm">Leyenda del Calendario</h4>
               <div className="space-y-2">
                 <div className="flex items-center gap-3 text-sm">
-                  <div className="w-4 h-4 rounded bg-primary"></div>
+                  <div className="w-4 h-4 rounded" style={{ backgroundColor: 'hsl(var(--success))' }}></div>
                   <span>Días con horarios disponibles</span>
                 </div>
                 <div className="flex items-center gap-3 text-sm">
-                  <div className="w-4 h-4 rounded bg-accent border-2 border-primary"></div>
+                  <div className="w-4 h-4 rounded border-2 border-accent"></div>
                   <span className="font-medium">Día actual</span>
                 </div>
                 <div className="flex items-center gap-3 text-sm">
-                  <div className="w-4 h-4 rounded bg-muted border"></div>
+                  <div className="w-4 h-4 rounded border"></div>
                   <span>Días sin disponibilidad</span>
                 </div>
               </div>

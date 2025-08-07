@@ -178,16 +178,22 @@ export function DoctorCalendarView({ doctorId }: DoctorCalendarViewProps) {
               }}
               modifiersStyles={{
                 available: {
-                  backgroundColor: 'hsl(var(--primary) / 0.9)',
-                  color: 'hsl(var(--primary-foreground))',
+                  backgroundColor: 'hsl(var(--success))',
+                  color: 'hsl(var(--success-foreground))',
                   borderRadius: '8px',
                   fontWeight: '600',
-                  border: '2px solid hsl(var(--primary))',
-                  boxShadow: '0 2px 4px hsl(var(--primary) / 0.3)'
+                  border: '2px solid hsl(var(--success))',
+                  boxShadow: '0 2px 4px hsl(var(--success) / 0.3)'
+                },
+                today: {
+                  backgroundColor: 'transparent',
+                  color: 'inherit',
+                  border: '2px solid hsl(var(--accent))',
+                  borderRadius: '8px'
                 }
               }}
               classNames={{
-                day_today: "bg-orange-400 text-white border-2 border-orange-600 rounded-lg font-bold shadow-lg",
+                day_today: "bg-transparent text-foreground border-2 border-accent rounded-lg font-semibold",
                 day_selected: "bg-primary text-primary-foreground border-2 border-primary-dark shadow-md"
               }}
               locale={es}
@@ -205,11 +211,11 @@ export function DoctorCalendarView({ doctorId }: DoctorCalendarViewProps) {
             <h4 className="font-medium text-sm text-foreground">Leyenda</h4>
             <div className="space-y-2">
               <div className="flex items-center gap-3 text-sm">
-                <div className="w-4 h-4 bg-primary rounded-lg"></div>
+                <div className="w-4 h-4 rounded-lg" style={{ backgroundColor: 'hsl(var(--success))' }}></div>
                 <span>Días con horarios disponibles</span>
               </div>
               <div className="flex items-center gap-3 text-sm">
-                <div className="w-4 h-4 bg-orange-400 border-2 border-orange-600 rounded-lg"></div>
+                <div className="w-4 h-4 rounded-lg border-2 border-accent"></div>
                 <span>Hoy</span>
               </div>
             </div>

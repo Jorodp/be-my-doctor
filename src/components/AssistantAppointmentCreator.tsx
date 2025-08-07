@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
-import { format, addDays, setHours, setMinutes, parseISO } from 'date-fns';
+import { format, addDays, setHours, setMinutes, parseISO, isToday } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useDoctorClinics } from '@/hooks/useDoctorClinics';
 import {
@@ -26,6 +26,7 @@ import {
   CheckCircle,
   MapPin
 } from 'lucide-react';
+import { useDoctorAvailability } from '@/hooks/useDoctorAvailability';
 
 interface Patient {
   user_id: string;
@@ -62,6 +63,7 @@ export function AssistantAppointmentCreator({ doctorId }: AssistantAppointmentCr
   const [showNewPatientForm, setShowNewPatientForm] = useState(false);
 
   const { data: clinics = [] } = useDoctorClinics(doctorId);
+  const { data: availabilityMap = {} } = useDoctorAvailability(doctorId);
   
   // New patient form
   const [newPatient, setNewPatient] = useState({
@@ -81,6 +83,11 @@ export function AssistantAppointmentCreator({ doctorId }: AssistantAppointmentCr
       fetchAvailableSlots();
     }
   }, [selectedDate, doctorId, selectedClinic]);
+
+  const hasAvailabilityForDate = (date: Date) => {
+    const dayOfWeek = date.getDay();
+    return availabilityMap[dayOfWeek] || false;
+  };
 
   const fetchPatients = async () => {
     try {
@@ -533,6 +540,24 @@ export function AssistantAppointmentCreator({ doctorId }: AssistantAppointmentCr
                 }}
                 initialFocus
                 className="pointer-events-auto"
+                modifiers={{
+                  available: (date) => hasAvailabilityForDate(date),
+                  today: (date) => isToday(date)
+                }}
+                modifiersStyles={{
+                  available: {
+                    backgroundColor: 'hsl(var(--success))',
+                    color: 'hsl(var(--success-foreground))',
+                    fontWeight: '600',
+                    borderRadius: '8px'
+                  },
+                  today: {
+                    backgroundColor: 'transparent',
+                    color: 'inherit',
+                    border: '2px solid hsl(var(--accent))',
+                    borderRadius: '8px'
+                  }
+                }}
               />
             </PopoverContent>
           </Popover>

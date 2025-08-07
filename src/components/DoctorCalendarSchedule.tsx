@@ -356,8 +356,8 @@ export const DoctorCalendarSchedule = ({ doctorId }: DoctorCalendarScheduleProps
               }}
               modifiersStyles={{
                 available: { 
-                  backgroundColor: 'hsl(var(--primary))', 
-                  color: 'hsl(var(--primary-foreground))',
+                  backgroundColor: 'hsl(var(--success))', 
+                  color: 'hsl(var(--success-foreground))',
                   fontWeight: 'bold'
                 },
                 today: { 
@@ -371,7 +371,7 @@ export const DoctorCalendarSchedule = ({ doctorId }: DoctorCalendarScheduleProps
             />
             <div className="mt-4 space-y-2">
               <div className="flex items-center gap-2 text-sm">
-                <div className="w-4 h-4 rounded bg-primary"></div>
+                <div className="w-4 h-4 rounded" style={{ backgroundColor: 'hsl(var(--success))' }}></div>
                 <span>Días con disponibilidad</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
