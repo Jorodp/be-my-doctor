@@ -51,6 +51,16 @@ export function DoctorCalendarView({ doctorId }: DoctorCalendarViewProps) {
     return time.slice(0, 5); // HH:mm
   };
 
+  const isFutureSlot = (slotTime: string, date?: Date) => {
+    if (!date) return true;
+    // Consider timezone: build a Dayjs datetime in Mexico TZ
+    const [h, m] = slotTime.slice(0,5).split(":").map(Number);
+    const dateStart = dayjs.tz(date, MEXICO_TIMEZONE).startOf('day');
+    const nowMX = getNowInMexicoTZ();
+    if (!dateStart.isSame(nowMX.startOf('day'))) return true; // only filter for today
+    const slotDT = dayjs.tz(date, MEXICO_TIMEZONE).hour(h).minute(m).second(0);
+    return slotDT.isSameOrAfter(nowMX);
+  };
   const handleSlotSelect = (slotTime: string, clinicId: string) => {
     setSelectedSlot(slotTime);
     // Siempre actualizar la clínica seleccionada al hacer click en un slot específico
@@ -259,12 +269,12 @@ export function DoctorCalendarView({ doctorId }: DoctorCalendarViewProps) {
                       <div className="flex items-center gap-2 text-sm text-primary">
                         <Clock className="w-4 h-4" />
                         <span className="font-medium">
-                          {slots.filter(slot => slot.available).length} horarios disponibles (horario de México)
+                          {slots.filter(slot => slot.available && isFutureSlot(slot.start_time, selectedDate)).length} horarios disponibles (horario de México)
                         </span>
                       </div>
                     </div>
 
-                    {slots.filter(slot => slot.available).map((slot, index) => {
+                    {slots.filter(slot => slot.available && isFutureSlot(slot.start_time, selectedDate)).map((slot, index) => {
                       const slotId = `${slot.clinic_id}-${slot.start_time}-${slot.end_time}`;
                       const isSelected = selectedSlot === slot.start_time && selectedClinic === slot.clinic_id;
                       

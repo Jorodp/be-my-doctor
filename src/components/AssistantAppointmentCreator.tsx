@@ -62,6 +62,16 @@ export function AssistantAppointmentCreator({ doctorId }: AssistantAppointmentCr
   const [creatingAppointment, setCreatingAppointment] = useState(false);
   const [showNewPatientForm, setShowNewPatientForm] = useState(false);
 
+  const isFutureSlotTime = (time: string, date?: Date) => {
+    if (!date) return true;
+    if (!isToday(date)) return true;
+    const [h, m] = time.slice(0,5).split(":").map(Number);
+    const now = new Date();
+    const slotMinutes = h * 60 + m;
+    const nowMinutes = now.getHours() * 60 + now.getMinutes();
+    return slotMinutes >= nowMinutes;
+  };
+
   const { data: clinics = [] } = useDoctorClinics(doctorId);
   const { data: availabilityMap = {} } = useDoctorAvailability(doctorId);
   
@@ -572,7 +582,7 @@ export function AssistantAppointmentCreator({ doctorId }: AssistantAppointmentCr
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto"></div>
                 <p className="mt-2 text-sm text-muted-foreground">Cargando horarios...</p>
               </div>
-            ) : availableSlots.length === 0 ? (
+            ) : availableSlots.filter((s) => isFutureSlotTime(s.time, selectedDate)).length === 0 ? (
               <div className="p-4 text-center border rounded-lg">
                 <AlertCircle className="h-6 w-6 text-muted-foreground mx-auto mb-2" />
                 <p className="text-muted-foreground">No hay horarios disponibles para esta fecha</p>
@@ -581,16 +591,18 @@ export function AssistantAppointmentCreator({ doctorId }: AssistantAppointmentCr
               <div className="space-y-4">
                 {/* Group slots by clinic */}
                 {Object.entries(
-                  availableSlots.reduce((acc, slot) => {
-                    if (!acc[slot.clinic_id]) {
-                      acc[slot.clinic_id] = {
-                        clinic_name: slot.clinic_name,
-                        slots: []
-                      };
-                    }
-                    acc[slot.clinic_id].slots.push(slot);
-                    return acc;
-                  }, {} as Record<string, { clinic_name: string; slots: TimeSlot[] }>)
+                  availableSlots
+                    .filter((s) => isFutureSlotTime(s.time, selectedDate))
+                    .reduce((acc, slot) => {
+                      if (!acc[slot.clinic_id]) {
+                        acc[slot.clinic_id] = {
+                          clinic_name: slot.clinic_name,
+                          slots: []
+                        };
+                      }
+                      acc[slot.clinic_id].slots.push(slot);
+                      return acc;
+                    }, {} as Record<string, { clinic_name: string; slots: TimeSlot[] }>)
                 ).map(([clinicId, { clinic_name, slots }]) => (
                   <div key={clinicId} className="space-y-2">
                     <h4 className="font-medium text-sm flex items-center gap-2">

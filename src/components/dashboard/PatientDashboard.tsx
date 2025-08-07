@@ -16,6 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { formatInMexicoTZ } from '@/utils/dateUtils';
+import { dayjs, MEXICO_TIMEZONE, getNowInMexicoTZ } from '@/utils/dayjsConfig';
 
 interface Appointment {
   id: string;
@@ -94,10 +95,12 @@ export const PatientDashboard = () => {
 
       if (appointmentsError) throw appointmentsError;
 
-      // Separate upcoming and completed appointments
-      const now = new Date();
+      // Separate upcoming and completed appointments (compare in Mexico local time)
+      const toMexicoLocal = (s: string) => dayjs.tz(s.replace('Z','').replace('+00:00',''), MEXICO_TIMEZONE);
+      const nowMX = getNowInMexicoTZ();
+
       const upcoming = appointmentsData?.filter(apt => 
-        apt.status === 'scheduled' && new Date(apt.starts_at) >= now
+        apt.status === 'scheduled' && toMexicoLocal(apt.starts_at).isSameOrAfter(nowMX)
       ) || [];
       
       const completed = appointmentsData?.filter(apt => 
@@ -105,8 +108,8 @@ export const PatientDashboard = () => {
       ) || [];
 
       // Sort upcoming by date ascending, completed by date descending
-      upcoming.sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime());
-      completed.sort((a, b) => new Date(b.starts_at).getTime() - new Date(a.starts_at).getTime());
+      upcoming.sort((a, b) => toMexicoLocal(a.starts_at).valueOf() - toMexicoLocal(b.starts_at).valueOf());
+      completed.sort((a, b) => toMexicoLocal(b.starts_at).valueOf() - toMexicoLocal(a.starts_at).valueOf());
 
       setUpcomingAppointments(upcoming);
       setCompletedAppointments(completed);
