@@ -114,8 +114,8 @@ serve(async (req) => {
 
     // Price IDs
     const priceIds = {
-      monthly: "price_1RlLZh2QFgncbl10moSdGhjZ",
-      annual: "price_1RlLaW2QFgncbl10pCwWOFFM"
+      monthly: "price_1Rtbak2QFgncbl10DYmxDhJW",
+      annual: "price_1Rtbc02QFgncbl10dAfRnxjY"
     };
 
     const priceId = priceIds[plan_type as keyof typeof priceIds];
