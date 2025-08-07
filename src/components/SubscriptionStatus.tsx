@@ -461,7 +461,7 @@ export function SubscriptionStatus() {
                 </li>
                 <li className="flex items-center gap-2">
                   <CheckCircle className="h-4 w-4 text-green-500" />
-                  2 meses gratis incluidos
+                  Paga 10 meses y recibe 12 de servicio
                 </li>
               </ul>
               
