@@ -1,0 +1,1 @@
+alter view public.appointments set (security_invoker = on, security_barrier = on);
