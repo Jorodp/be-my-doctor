@@ -2453,7 +2453,6 @@ export type Database = {
         Args: { p_appointment_id: string; p_actor_user_id: string }
         Returns: {
           id: string
-          consultation_status: string
           patient_arrived_at: string
         }[]
       }
@@ -2788,6 +2787,15 @@ export type Database = {
           doctor_user_id: string
           verification_status: string
           verified_at: string
+        }[]
+      }
+      verify_patient_identity: {
+        Args: { p_appointment_id: string; p_actor_user_id: string }
+        Returns: {
+          id: string
+          identity_validated: boolean
+          identity_validated_at: string
+          identity_validated_by: string
         }[]
       }
     }
