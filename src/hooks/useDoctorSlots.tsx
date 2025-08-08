@@ -131,6 +131,7 @@ export function useDoctorSlots(doctorUserId: string, selectedDate: Date | undefi
       let appointments: { starts_at: string; clinic_id: string }[] = [];
       try {
         const { data: appts, error: apptError } = await supabase
+          .schema('appointments')
           .from('appointments')
           .select('starts_at, clinic_id')
           .eq('doctor_user_id', doctorUserId)
