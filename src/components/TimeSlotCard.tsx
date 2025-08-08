@@ -43,8 +43,8 @@ export function TimeSlotCard({
     <div
       className={`group relative p-4 rounded-xl border-2 transition-all duration-300 cursor-pointer overflow-hidden ${
         isSelected
-          ? 'bg-gradient-to-r from-primary/20 to-primary/10 border-primary shadow-lg scale-[1.02]'
-          : 'bg-gradient-to-r from-background to-primary/5 border-primary/20 hover:border-primary/50 hover:shadow-md hover:scale-[1.01]'
+          ? 'bg-gradient-to-r from-primary/20 to-primary/10 border-primary shadow-lg ring-2 ring-primary ring-offset-2 ring-offset-background'
+          : 'bg-gradient-to-r from-background to-primary/5 border-primary/20 hover:border-primary/50 hover:shadow-md'
       }`}
       onClick={() => onSelect(startTime, clinicId)}
     >
@@ -93,7 +93,7 @@ export function TimeSlotCard({
         <Button 
           size="sm" 
           className={`px-6 py-2 font-semibold transition-all duration-200 ${
-            isSelected ? 'shadow-md scale-105' : 'scale-100'
+            isSelected ? 'shadow-md ring-1 ring-primary' : ''
           }`}
           variant={isSelected ? "default" : "outline"}
           onClick={(e) => {
