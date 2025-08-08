@@ -1883,6 +1883,10 @@ export type Database = {
           status: string
         }[]
       }
+      auto_mark_no_show: {
+        Args: { p_doctor_user_id: string; p_now?: string }
+        Returns: number
+      }
       book_slot: {
         Args: {
           p_doctor_internal_id: string
