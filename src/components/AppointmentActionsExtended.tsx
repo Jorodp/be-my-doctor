@@ -226,6 +226,7 @@ export function AppointmentActionsExtended({
     switch (status) {
       case 'scheduled': return 'default';
       case 'completed': return 'secondary';
+      case 'no_show': return 'destructive';
       case 'cancelled': return 'destructive';
       default: return 'secondary';
     }
@@ -235,11 +236,11 @@ export function AppointmentActionsExtended({
     switch (status) {
       case 'scheduled': return 'Programada';
       case 'completed': return 'Completada';
+      case 'no_show': return 'No se presentó';
       case 'cancelled': return 'Cancelada';
       default: return status;
     }
   };
-
   return (
     <div className="flex flex-col gap-2">
       <Badge variant={getStatusColor(appointment.status)}>

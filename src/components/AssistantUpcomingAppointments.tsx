@@ -73,18 +73,27 @@ const [conversationId, setConversationId] = useState<string | null>(null);
   const fetchUpcomingAppointments = async () => {
     try {
       setLoading(true);
-      
-      // Fetch upcoming appointments for the assigned doctor
+
+      // 1) Auto-mark no_show for overdue appointments
+      await supabase.rpc('auto_mark_no_show', { p_doctor_user_id: doctorId });
+
+      // 2) Fetch all today's appointments for the doctor (exclude cancelled)
+      const today = new Date();
+      const todayStr = today.toISOString().split('T')[0];
+      const start = `${todayStr}T00:00:00.000Z`;
+      const end = `${todayStr}T23:59:59.999Z`;
+
       const { data: appointmentsData, error } = await supabase
         .from('appointments')
         .select('*')
         .eq('doctor_user_id', doctorId)
-        .gte('starts_at', new Date().toISOString())
+        .gte('starts_at', start)
+        .lt('starts_at', end)
+        .neq('status', 'cancelled')
         .order('starts_at', { ascending: true });
 
       if (error) throw error;
 
-      // Fetch patient profiles for each appointment
       const appointmentsWithPatients = await Promise.all(
         (appointmentsData || []).map(async (appointment) => {
           const { data: patientProfile } = await supabase
@@ -104,9 +113,9 @@ const [conversationId, setConversationId] = useState<string | null>(null);
     } catch (error) {
       console.error('Error fetching appointments:', error);
       toast({
-        title: "Error",
-        description: "No se pudieron cargar las citas",
-        variant: "destructive"
+        title: 'Error',
+        description: 'No se pudieron cargar las citas',
+        variant: 'destructive'
       });
     } finally {
       setLoading(false);
@@ -208,6 +217,7 @@ const [conversationId, setConversationId] = useState<string | null>(null);
     switch (status) {
       case 'scheduled': return 'default';
       case 'completed': return 'secondary';
+      case 'no_show': return 'destructive';
       case 'cancelled': return 'destructive';
       default: return 'secondary';
     }
@@ -217,11 +227,11 @@ const [conversationId, setConversationId] = useState<string | null>(null);
     switch (status) {
       case 'scheduled': return 'Programada';
       case 'completed': return 'Completada';
+      case 'no_show': return 'No se presentó';
       case 'cancelled': return 'Cancelada';
       default: return status;
     }
   };
-
   const isToday = (dateString: string) => {
     const appointmentDate = new Date(dateString);
     const today = new Date();
