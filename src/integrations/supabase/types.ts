@@ -684,6 +684,13 @@ export type Database = {
             foreignKeyName: "doctor_ratings_appointment_id_fkey"
             columns: ["appointment_id"]
             isOneToOne: true
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "doctor_ratings_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: true
             referencedRelation: "v_patient_appointments"
             referencedColumns: ["appointment_id"]
           },
@@ -1395,6 +1402,80 @@ export type Database = {
             | null
         }
         Relationships: []
+      }
+      appointments: {
+        Row: {
+          clinic_id: string | null
+          created_at: string | null
+          created_by: string | null
+          doctor_user_id: string | null
+          ends_at: string | null
+          id: string | null
+          notes: string | null
+          patient_user_id: string | null
+          price: number | null
+          starts_at: string | null
+          status: Database["public"]["Enums"]["appointment_status"] | null
+          updated_at: string | null
+        }
+        Insert: {
+          clinic_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          doctor_user_id?: string | null
+          ends_at?: string | null
+          id?: string | null
+          notes?: string | null
+          patient_user_id?: string | null
+          price?: number | null
+          starts_at?: string | null
+          status?: Database["public"]["Enums"]["appointment_status"] | null
+          updated_at?: string | null
+        }
+        Update: {
+          clinic_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          doctor_user_id?: string | null
+          ends_at?: string | null
+          id?: string | null
+          notes?: string | null
+          patient_user_id?: string | null
+          price?: number | null
+          starts_at?: string | null
+          status?: Database["public"]["Enums"]["appointment_status"] | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointments_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "admin_doctors_overview"
+            referencedColumns: ["any_clinic_id"]
+          },
+          {
+            foreignKeyName: "appointments_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "doctor_directory"
+            referencedColumns: ["any_clinic_id"]
+          },
+          {
+            foreignKeyName: "appointments_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "mv_public_top_doctors"
+            referencedColumns: ["clinic_id"]
+          },
+          {
+            foreignKeyName: "appointments_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "public_top_doctors"
+            referencedColumns: ["primary_clinic_id"]
+          },
+        ]
       }
       doctor_directory: {
         Row: {
