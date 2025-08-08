@@ -73,13 +73,7 @@ export function AssistantUpcomingAppointments({ doctorId }: AssistantUpcomingApp
       // Fetch upcoming appointments for the assigned doctor
       const { data: appointmentsData, error } = await supabase
         .from('appointments')
-        .select(`
-          *,
-          clinics (
-            name,
-            address
-          )
-        `)
+        .select('*')
         .eq('doctor_user_id', doctorId)
         .gte('starts_at', new Date().toISOString())
         .order('starts_at', { ascending: true });
