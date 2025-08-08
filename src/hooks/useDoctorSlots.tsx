@@ -228,7 +228,7 @@ export function useBookAppointment() {
 
       // Reservar usando RPC con seguridad en el backend (evita depender de la tabla pública)
       const { data: booked, error: rpcError } = await supabase
-        .rpc('book_slot', {
+        .rpc('book_slot_v2', {
           p_doctor_internal_id: doctorProfile.id,
           p_clinic_id: clinicId,
           p_slot_start: slotStartUTC,

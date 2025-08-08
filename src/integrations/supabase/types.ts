@@ -1792,6 +1792,22 @@ export type Database = {
           out_status: string
         }[]
       }
+      book_slot_v2: {
+        Args: {
+          p_doctor_internal_id: string
+          p_clinic_id: string
+          p_slot_start: string
+          p_patient_user_id: string
+          p_created_by: string
+          p_notes?: string
+        }
+        Returns: {
+          out_appointment_id: string
+          out_starts_at: string
+          out_ends_at: string
+          out_status: string
+        }[]
+      }
       can_doctor_be_verified: {
         Args: { p_doctor_user_id: string }
         Returns: {
