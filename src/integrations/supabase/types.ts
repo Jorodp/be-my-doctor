@@ -125,6 +125,95 @@ export type Database = {
         }
         Relationships: []
       }
+      clinic_assistants: {
+        Row: {
+          assistant_id: string
+          clinic_id: string
+          created_at: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          assistant_id: string
+          clinic_id: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          assistant_id?: string
+          clinic_id?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clinic_assistants_assistant_id_fkey"
+            columns: ["assistant_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clinic_assistants_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clinics: {
+        Row: {
+          address: string | null
+          city: string | null
+          consultation_fee: number | null
+          country: string | null
+          created_at: string
+          doctor_id: string
+          id: string
+          is_primary: boolean
+          name: string
+          state: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          consultation_fee?: number | null
+          country?: string | null
+          created_at?: string
+          doctor_id: string
+          id?: string
+          is_primary?: boolean
+          name: string
+          state?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          consultation_fee?: number | null
+          country?: string | null
+          created_at?: string
+          doctor_id?: string
+          id?: string
+          is_primary?: boolean
+          name?: string
+          state?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clinics_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       doctor_availability: {
         Row: {
           created_at: string
