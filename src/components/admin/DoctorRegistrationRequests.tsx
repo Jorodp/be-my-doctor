@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import logger from '@/lib/logger';
 import { 
   FileText, 
   Clock, 
@@ -156,7 +157,7 @@ export default function DoctorRegistrationRequests() {
 
       toast({
         title: "Cuenta creada",
-        description: `Se ha creado la cuenta para ${request.full_name}. Contraseña temporal: ${tempPassword}`
+        description: `Se ha creado la cuenta para ${request.full_name}. La contraseña temporal se ha enviado de forma segura.`,
       });
 
       setShowCreateModal(false);
@@ -164,7 +165,7 @@ export default function DoctorRegistrationRequests() {
       setAdminNotes('');
       await fetchRequests();
     } catch (error: any) {
-      console.error('Error creating doctor account:', error);
+      logger.error('Error creating doctor account');
       toast({
         variant: "destructive",
         title: "Error al crear cuenta",

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import logger from "@/lib/logger";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -42,7 +43,7 @@ const SubscriptionSection = () => {
   const createSubscription = async (planType: 'monthly' | 'annual') => {
     try {
       setActionLoading(true);
-      console.log(`Starting ${planType} subscription process...`);
+      logger.info(`Starting ${planType} subscription process...`);
       
       // Get current session for authentication
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
@@ -97,7 +98,7 @@ const SubscriptionSection = () => {
         return;
       }
       
-      console.log('Received checkout URL:', data.url);
+      logger.info('Received checkout URL');
       
       // Redirect directly to Stripe checkout
       window.location.href = data.url;

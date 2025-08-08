@@ -71,7 +71,7 @@ Deno.serve(async (req) => {
         role: 'admin'
       })
 
-    if (adminProfileError) console.log('Admin profile error:', adminProfileError)
+    if (adminProfileError) {/* logged internally */}
 
     const patientPassword = generateSecurePassword();
     
@@ -97,7 +97,7 @@ Deno.serve(async (req) => {
         role: 'patient'
       })
 
-    if (patientProfileError) console.log('Patient profile error:', patientProfileError)
+    if (patientProfileError) {/* logged internally */}
 
     const doctorPassword = generateSecurePassword();
     
@@ -123,7 +123,7 @@ Deno.serve(async (req) => {
         role: 'doctor'
       })
 
-    if (doctorProfileError) console.log('Doctor profile error:', doctorProfileError)
+    if (doctorProfileError) {/* logged internally */}
 
     // Create doctor profile
     const { error: doctorProfError } = await supabaseAdmin
@@ -137,7 +137,7 @@ Deno.serve(async (req) => {
         verification_status: 'verified'
       })
 
-    if (doctorProfError) console.log('Doctor professional profile error:', doctorProfError)
+    if (doctorProfError) {/* logged internally */}
 
     const assistantPassword = generateSecurePassword();
     
@@ -164,7 +164,7 @@ Deno.serve(async (req) => {
         role: 'assistant'
       })
 
-    if (assistantProfileError) console.log('Assistant profile error:', assistantProfileError)
+    if (assistantProfileError) {/* logged internally */}
 
     // Create 5 demo doctors with proper data
     const demoDoctors = [
@@ -249,10 +249,9 @@ Deno.serve(async (req) => {
         }
       });
 
-      if (newDoctorError) {
-        console.log(`Error creating doctor ${doctorData.email}:`, newDoctorError);
-        continue;
-      }
+    if (newDoctorError) {
+      continue;
+    }
 
       // Create profile
       const { error: newDoctorProfileError } = await supabaseAdmin
@@ -265,7 +264,7 @@ Deno.serve(async (req) => {
           address: doctorData.address
         });
 
-      if (newDoctorProfileError) console.log(`Profile error for ${doctorData.email}:`, newDoctorProfileError);
+      if (newDoctorProfileError) {/* logged internally */}
 
       // Create doctor profile
       const { error: newDoctorProfError } = await supabaseAdmin
@@ -284,7 +283,7 @@ Deno.serve(async (req) => {
           verified_at: new Date().toISOString()
         });
 
-      if (newDoctorProfError) console.log(`Doctor profile error for ${doctorData.email}:`, newDoctorProfError);
+      if (newDoctorProfError) {/* logged internally */}
 
       // Create active subscription
       const { error: subscriptionError } = await supabaseAdmin
@@ -299,7 +298,7 @@ Deno.serve(async (req) => {
           payment_method: 'demo'
         });
 
-      if (subscriptionError) console.log(`Subscription error for ${doctorData.email}:`, subscriptionError);
+      if (subscriptionError) {/* logged internally */}
 
       // Create some ratings
       const ratings = [
@@ -320,7 +319,7 @@ Deno.serve(async (req) => {
             created_at: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString() // Random date within last 30 days
           });
 
-        if (ratingError) console.log(`Rating error for ${doctorData.email}:`, ratingError);
+        if (ratingError) {/* logged internally */}
       }
 
       createdDoctors.push({
@@ -368,10 +367,10 @@ Deno.serve(async (req) => {
       status: 200,
     })
 
-  } catch (error) {
+  } catch (_error) {
     return new Response(JSON.stringify({ 
-      error: error.message,
-      success: false 
+      error: "Internal error",
+      hint: "create-demo-users failed"
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 400,

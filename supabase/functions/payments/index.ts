@@ -323,11 +323,11 @@ async function checkSubscription(req: Request, data: any) {
 }
 
 async function handleWebhook(req: Request) {
-  console.log("Webhook received");
+  logger.info("Webhook received");
   
   const signature = req.headers.get("stripe-signature");
   if (!signature) {
-    console.error("No Stripe signature found");
+    logger.warn("No Stripe signature found");
     throw new Error("No Stripe signature found");
   }
 
@@ -340,27 +340,27 @@ async function handleWebhook(req: Request) {
       signature,
       Deno.env.get("STRIPE_WEBHOOK_SECRET") || ""
     );
-  } catch (err) {
-    console.error("Webhook signature verification failed:", err);
+  } catch (_err) {
+    logger.warn("Webhook signature verification failed");
     throw new Error("Webhook signature verification failed");
   }
 
-  console.log("Processing event:", event.type);
+  logger.info("Processing event", { type: event.type });
 
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as any;
-    console.log("Checkout session completed:", session.id);
+    logger.info("Checkout session completed");
     
     if (session.mode === "subscription") {
       const subscription = await stripe.subscriptions.retrieve(session.subscription);
-      console.log("Retrieved subscription:", subscription.id);
+      logger.info("Retrieved subscription");
       
       const userId = session.metadata?.user_id;
       const plan = session.metadata?.plan;
       
-      if (!userId) {
-        console.error("No user_id in session metadata");
-        return new Response("No user_id found", { status: 400, headers: corsHeaders });
+    if (!userId) {
+      logger.warn("No user_id in session metadata");
+      return new Response("No user_id found", { status: 400, headers: corsHeaders });
       }
 
       // Create subscription record
@@ -378,18 +378,18 @@ async function handleWebhook(req: Request) {
           ends_at: new Date(subscription.current_period_end * 1000).toISOString(),
         });
 
-      if (error) {
-        console.error("Error creating subscription record:", error);
-        throw error;
-      }
+    if (error) {
+      logger.warn("Error creating subscription record");
+      throw error;
+    }
 
-      console.log("Subscription record created for user:", userId);
+      logger.info("Subscription record created");
     }
   }
 
   if (event.type === "customer.subscription.updated") {
     const subscription = event.data.object as any;
-    console.log("Subscription updated:", subscription.id);
+    logger.info("Subscription updated");
     
     // Update subscription in database
     const { error } = await supabaseAdmin
@@ -400,15 +400,15 @@ async function handleWebhook(req: Request) {
       })
       .eq("stripe_subscription_id", subscription.id);
 
-    if (error) {
-      console.error("Error updating subscription:", error);
-      throw error;
-    }
+  if (error) {
+    logger.warn("Error updating subscription");
+    throw error;
+  }
   }
 
   if (event.type === "customer.subscription.deleted") {
     const subscription = event.data.object as any;
-    console.log("Subscription cancelled:", subscription.id);
+    logger.info("Subscription cancelled");
     
     // Mark subscription as cancelled
     const { error } = await supabaseAdmin
@@ -419,10 +419,10 @@ async function handleWebhook(req: Request) {
       })
       .eq("stripe_subscription_id", subscription.id);
 
-    if (error) {
-      console.error("Error cancelling subscription:", error);
-      throw error;
-    }
+  if (error) {
+    logger.warn("Error cancelling subscription");
+    throw error;
+  }
   }
 
   return new Response(JSON.stringify({ received: true }), {
