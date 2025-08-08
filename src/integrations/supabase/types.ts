@@ -2058,6 +2058,13 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_doctor_occupied_slots: {
+        Args: { p_doctor_user_id: string; p_from: string; p_to: string }
+        Returns: {
+          starts_at: string
+          clinic_id: string
+        }[]
+      }
       get_doctor_profile_private: {
         Args: { p_requester_user_id: string; p_doctor_user_id: string }
         Returns: Json
