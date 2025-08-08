@@ -198,58 +198,49 @@ export function useBookAppointment() {
       patientUserId: string;
       notes?: string;
     }) => {
-      // Check for conflicts first usando dayjs con zona horaria correcta
-      // Validar y asegurar formato correcto
+      // Normalizar hora de inicio
       const normalizedStartTime = startTime.includes(':00:00') ? startTime.substring(0, 5) : 
                                   startTime.length === 5 ? startTime : `${startTime}:00`;
       
-      // Crear fecha en zona horaria de México y convertir a UTC para guardar en Supabase
+      // Construir fecha/hora en zona MX y convertir a UTC
       const localDateTimeMX = createMexicoTZDate(date, normalizedStartTime);
-      const appointmentDateTime = localDateTimeMX.utc().toISOString();
-      
-      console.log('Creating appointment with timezone awareness:', { 
-        date, 
-        startTime, 
-        normalizedStartTime, 
-        localDateTimeMX: localDateTimeMX.format(), 
-        appointmentDateTime 
+      const slotStartUTC = localDateTimeMX.utc().toISOString();
+
+      console.log('Booking via RPC book_slot()', {
+        date,
+        startTime,
+        normalizedStartTime,
+        localDateTimeMX: localDateTimeMX.format(),
+        slotStartUTC,
+        clinicId,
+        doctorUserId,
       });
-      
-      const { data: existingAppointments, error: checkError } = await supabase
-        .from('appointments')
+
+      // Obtener ID interno del doctor (profiles.id) requerido por la función
+      const { data: doctorProfile, error: profileError } = await supabase
+        .from('profiles')
         .select('id')
-        .eq('doctor_user_id', doctorUserId)
-        .eq('clinic_id', clinicId)
-        .eq('starts_at', appointmentDateTime)
-        .in('status', ['scheduled', 'completed']);
-
-      if (checkError) throw checkError;
-
-      if (existingAppointments && existingAppointments.length > 0) {
-        throw new Error('Este horario ya está ocupado en este consultorio');
-      }
-
-      // Create the appointment usando dayjs
-      // Calcular hora de fin (1 hora después) en zona horaria de México
-      const endDateTimeMX = localDateTimeMX.add(1, 'hour');
-
-      const { data, error } = await supabase
-        .from('appointments')
-        .insert({
-          doctor_user_id: doctorUserId,
-          patient_user_id: patientUserId,
-          clinic_id: clinicId,
-          starts_at: localDateTimeMX.utc().toISOString(),
-          ends_at: endDateTimeMX.utc().toISOString(),
-          status: 'scheduled',
-          notes: notes || null
-        })
-        .select()
+        .eq('user_id', doctorUserId)
         .single();
 
-      if (error) throw error;
+      if (profileError) throw profileError;
 
-      return { success: true, appointment_id: data.id };
+      // Reservar usando RPC con seguridad en el backend (evita depender de la tabla pública)
+      const { data: booked, error: rpcError } = await supabase
+        .rpc('book_slot', {
+          p_doctor_internal_id: doctorProfile.id,
+          p_clinic_id: clinicId,
+          p_slot_start: slotStartUTC,
+          p_patient_user_id: patientUserId,
+          p_created_by: patientUserId,
+          p_notes: notes ?? null,
+        })
+        .maybeSingle();
+
+      if (rpcError) throw rpcError;
+      if (!booked) throw new Error('No se pudo crear la cita.');
+
+      return { success: true, appointment_id: (booked as any).out_appointment_id };
     },
     onSuccess: (data, variables) => {
       // Invalidar queries relacionadas
