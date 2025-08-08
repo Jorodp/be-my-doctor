@@ -116,20 +116,14 @@ serve(async (req) => {
           if (roleUpdateError) {
             console.error("Error updating role:", roleUpdateError);
             return new Response(
-              JSON.stringify({ error: "Error actualizando rol: " + roleUpdateError.message }),
+              JSON.stringify({ error: "Error actualizando rol" }),
               { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
             );
           }
-        } else {
-          return new Response(
-            JSON.stringify({ error: `Este correo ya está en uso por una cuenta de tipo ${existingProfile.role}` }),
-            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
-        }
       }
 
       if (!existingProfile) {
-        console.log('Creating profile for existing user...');
+        
         // Create profile for existing user
         const { data: newProfile, error: profileInsertError } = await adminClient
           .from("profiles")
@@ -150,10 +144,10 @@ serve(async (req) => {
         }
 
         assistantProfileId = newProfile.user_id;
-        console.log('Profile created for existing user with user_id:', assistantProfileId);
+        
       } else {
         assistantProfileId = existingProfile.user_id;
-        console.log('Using existing profile with user_id:', assistantProfileId);
+        
         
         // Update existing profile to assign doctor if needed
         if (existingProfile.assigned_doctor_id !== doctor_id) {
@@ -171,7 +165,7 @@ serve(async (req) => {
               { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
             );
           }
-          console.log('Profile updated with doctor assignment');
+          
         }
       }
 
@@ -230,7 +224,7 @@ serve(async (req) => {
 
       assistantProfileId = newProfile.user_id;
 
-      message = `Nuevo asistente creado. Email: ${email}, Contraseña temporal: ${tempPassword}`;
+      message = "Nuevo asistente creado correctamente.";
     }
 
     // Handle clinic-specific assignment if clinic_id is provided
