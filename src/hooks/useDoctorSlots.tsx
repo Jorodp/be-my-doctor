@@ -125,16 +125,41 @@ export function useDoctorSlots(doctorUserId: string, selectedDate: Date | undefi
       // Check existing appointments for each clinic usando zona horaria México
       const startOfDayMX = selectedDateMX.startOf('day');
       const endOfDayMX = selectedDateMX.endOf('day');
-      
-      const { data: appointments, error: apptError } = await supabase
-        .from('appointments')
-        .select('starts_at, clinic_id')
-        .eq('doctor_user_id', doctorUserId)
-        .gte('starts_at', startOfDayMX.utc().toISOString())
-        .lt('starts_at', endOfDayMX.utc().toISOString())
-        .in('status', ['scheduled', 'completed']);
 
-      if (apptError) throw apptError;
+      // Fetch appointments to mark occupied slots. If the table doesn't exist or access is denied,
+      // we gracefully continue without blocking (so patients still see available hours).
+      let appointments: { starts_at: string; clinic_id: string }[] = [];
+      try {
+        const { data: appts, error: apptError } = await supabase
+          .from('appointments')
+          .select('starts_at, clinic_id')
+          .eq('doctor_user_id', doctorUserId)
+          .gte('starts_at', startOfDayMX.utc().toISOString())
+          .lt('starts_at', endOfDayMX.utc().toISOString())
+          .in('status', ['scheduled', 'completed']);
+
+        if (apptError) {
+          // Ignore if relation doesn't exist (42P01) or any RLS/permission error
+          // to avoid blocking slot visibility.
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const code = (apptError as any)?.code;
+          if (code !== '42P01') {
+            // Log non-table-missing errors securely
+            // We import logger dynamically to avoid circular deps if any
+            try {
+              const { default: logger } = await import('@/lib/logger');
+              logger.warn('Appointments fetch error (non-fatal)', { code, message: apptError.message });
+            } catch {}
+          }
+        } else {
+          appointments = appts || [];
+        }
+      } catch (e: any) {
+        try {
+          const { default: logger } = await import('@/lib/logger');
+          logger.warn('Appointments fetch failed (ignored)', { message: e?.message });
+        } catch {}
+      }
 
       // Mark occupied slots per clinic usando zona horaria correcta
       const occupiedSlots = new Set(
