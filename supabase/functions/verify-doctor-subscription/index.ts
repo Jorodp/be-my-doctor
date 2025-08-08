@@ -8,8 +8,7 @@ const corsHeaders = {
 };
 
 const logStep = (step: string, details?: any) => {
-  const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
-  console.log(`[VERIFY-DOCTOR-SUBSCRIPTION] ${step}${detailsStr}`);
+  logger.info('[VERIFY-DOCTOR-SUBSCRIPTION]', { step, ...(details ? { details } : {}) });
 };
 
 serve(async (req) => {

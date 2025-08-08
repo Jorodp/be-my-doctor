@@ -14,6 +14,7 @@ import { BackToHomeButton } from '@/components/ui/BackToHomeButton';
 import { Home, ArrowLeft, Search, UserCircle, CheckCircle, XCircle } from 'lucide-react';
 import { Database } from '@/integrations/supabase/types';
 import { supabase } from '@/integrations/supabase/client';
+import logger from '@/lib/logger';
 
 
 type UserRole = Database['public']['Enums']['user_role'];
@@ -125,7 +126,7 @@ export default function Auth() {
     });
 
     if (error) {
-      console.log('Reset password error:', error);
+      logger.error('Reset password error');
       let errorMessage = error.message;
       
       if (error.message.includes('email rate limit exceeded') || error.message.includes('over_email_send_rate_limit')) {

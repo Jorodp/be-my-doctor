@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-
+import logger from '@/lib/logger';
 export const CreateDemoUsers = () => {
   const [isCreating, setIsCreating] = useState(false);
   const { toast } = useToast();
@@ -17,12 +17,12 @@ export const CreateDemoUsers = () => {
 
       toast({
         title: "Usuarios demo creados",
-        description: "Se han creado exitosamente las cuentas demo. Revisa la consola para las contraseñas.",
+        description: "Se han creado exitosamente las cuentas demo.",
       });
 
-      console.log('Usuarios creados con contraseñas seguras:', data);
+      logger.info('Usuarios demo creados');
     } catch (error) {
-      console.error('Error:', error);
+      logger.error('Error creando usuarios demo');
       toast({
         title: "Error",
         description: "No se pudieron crear los usuarios demo",
@@ -55,7 +55,7 @@ export const CreateDemoUsers = () => {
           <p><strong>Paciente:</strong> paciente@paciente.com</p>
           <p><strong>Asistente:</strong> asistente.demo@bemy.com</p>
           <p className="mt-2 text-orange-600 font-medium">
-            ⚠️ Las contraseñas se generan automáticamente y se muestran en la consola por seguridad.
+            ⚠️ Las contraseñas se generan automáticamente y no se exponen en consola.
           </p>
         </div>
       </CardContent>

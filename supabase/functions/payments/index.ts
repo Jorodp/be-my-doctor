@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.21.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders } from "../_shared/cors.ts";
+import { logger } from "../_shared/logger.ts";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
   apiVersion: "2023-10-16",
@@ -20,7 +21,7 @@ serve(async (req) => {
 
   try {
     const { action, ...data } = await req.json();
-    console.log("Payment function called with action:", action);
+    logger.info("Payment function called", { action });
 
     switch (action) {
       case "create-subscription":
@@ -41,10 +42,10 @@ serve(async (req) => {
           { status: 400, headers: corsHeaders }
         );
     }
-  } catch (error) {
-    console.error("Payment function error:", error);
+  } catch (_error) {
+    logger.error("Payment function error");
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: "Internal error", hint: "payments failed" }),
       { status: 500, headers: corsHeaders }
     );
   }

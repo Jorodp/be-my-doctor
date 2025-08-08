@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import logger from "@/lib/logger";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -33,13 +34,12 @@ export function SubscriptionGuard({ children }: SubscriptionGuardProps) {
   const [physicalPaymentEnabled, setPhysicalPaymentEnabled] = useState(false);
 
   useEffect(() => {
-    console.log("SubscriptionGuard: Effect triggered", { user: user?.id, role: profile?.role });
+    logger.info("SubscriptionGuard effect", { hasUser: !!user, role: profile?.role });
     if (user && profile?.role === "doctor") {
       checkSubscription();
       fetchPaymentSettings();
       checkPhysicalPayment();
     } else {
-      console.log("SubscriptionGuard: Not a doctor or no user, setting loading to false");
       setLoading(false);
     }
   }, [user, profile]);
@@ -175,18 +175,16 @@ export function SubscriptionGuard({ children }: SubscriptionGuardProps) {
   const handleSubscribe = async (plan: "monthly" | "annual") => {
     try {
       setLoading(true);
-      console.log(`🚀 Starting ${plan} subscription process...`);
-      console.log('🔑 Auth token available:', !!supabase.auth.getSession());
+      logger.info("Starting subscription process", { plan });
       
       // Get current session to validate auth token
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       if (sessionError || !session?.access_token) {
-        console.error('❌ No valid session found:', sessionError);
+        logger.warn('No valid session found');
         throw new Error('No hay una sesión válida. Por favor, inicia sesión nuevamente.');
       }
       
-      console.log('✅ Valid session found, token length:', session.access_token.length);
-      console.log('📤 Calling edge function with plan_type:', plan);
+      logger.info('Invoking edge function create-doctor-subscription');
       
       const { data, error } = await supabase.functions.invoke('create-doctor-subscription', {
         body: { plan_type: plan },
@@ -196,10 +194,10 @@ export function SubscriptionGuard({ children }: SubscriptionGuardProps) {
         }
       });
       
-      console.log('📥 Edge function response:', { data, error });
+      logger.info('Edge function response', { ok: !error });
       
       if (error) {
-        console.error('❌ Error from edge function:', error);
+        logger.error('Error from edge function');
         
         // Check if it's a network/connectivity error
         if (error.message?.includes('fetch')) {
@@ -214,18 +212,18 @@ export function SubscriptionGuard({ children }: SubscriptionGuardProps) {
         throw new Error(error.message || 'Error al crear la sesión de pago');
       }
       
-      console.log('✅ Edge function success, checking URL...');
+      logger.info('Checking URL from edge function');
       
       if (!data?.url) {
-        console.error('❌ No checkout URL received:', data);
+        logger.error('No checkout URL received');
         throw new Error('No se recibió la URL de checkout de Stripe');
       }
       
-      console.log('🔍 Received URL:', data.url);
+      logger.info('Received checkout URL');
       
       // Validate URL before redirecting
       if (!data.url || data.url === "https://checkout.stripe.com/test-session-url") {
-        console.warn('⚠️ Test URL detected or invalid URL');
+        logger.warn('Test URL detected or invalid URL');
         toast({
           title: "Función en modo de prueba",
           description: "La función está funcionando pero en modo de prueba. Contacte al administrador.",
@@ -234,13 +232,13 @@ export function SubscriptionGuard({ children }: SubscriptionGuardProps) {
         return;
       }
       
-      console.log('🎯 Redirecting to Stripe checkout:', data.url);
+      logger.info('Redirecting to Stripe checkout');
       
       // Redirect to Stripe checkout
       window.location.href = data.url;
       
     } catch (error: any) {
-      console.error("❌ Error creating subscription:", error);
+      logger.error("Error creating subscription");
       
       // More specific error handling
       let errorMessage = "No se pudo crear la sesión de pago";
@@ -281,12 +279,10 @@ export function SubscriptionGuard({ children }: SubscriptionGuardProps) {
 
   // If user has active subscription, show children
   if (subscription) {
-    console.log("SubscriptionGuard: User has active subscription, rendering children");
     return <>{children}</>;
   }
   
   // If no active subscription, show subscription prompt
-  console.log("SubscriptionGuard: No active subscription found, showing subscription prompt");
   
   if (!paymentSettings) {
     return (

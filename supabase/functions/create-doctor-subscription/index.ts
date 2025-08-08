@@ -65,11 +65,11 @@ logger.info("create-doctor-subscription invoked");
     }
 
     const user = userData.user;
-    console.log("User authenticated:", { id: user.id, email: user.email });
+    logger.info("User authenticated", { id: user.id });
 
     // Verify doctor role with SERVICE_ROLE_KEY client
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
-    console.log("Checking doctor role for user:", user.id);
+    logger.info("Checking doctor role", { id: user.id });
     
     const { data: profile, error: profileError } = await adminClient
       .from("profiles")
