@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { logger } from "../_shared/logger.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,22 +12,26 @@ serve(async (req) => {
   }
 
   try {
-    
-    return new Response(JSON.stringify({ 
-      status: "success", 
-      message: "Test function works",
-      body: body 
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
-    });
+    logger.info("test-function invoked", { method: req.method });
+
+    return new Response(
+      JSON.stringify({
+        status: "success",
+        message: "Test function works",
+      }),
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      }
+    );
   } catch (_error) {
-    return new Response(JSON.stringify({ 
-      error: "Internal error",
-      hint: "test-function failed"
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
-    });
+    logger.error("test-function error");
+    return new Response(
+      JSON.stringify({ error: "Internal error", hint: "test-function failed" }),
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500,
+      }
+    );
   }
 });

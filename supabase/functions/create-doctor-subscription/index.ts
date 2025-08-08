@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.21.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-
+import { logger } from "../_shared/logger.ts";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -22,13 +22,10 @@ serve(async (req) => {
     );
   }
 
-  console.log("🚀 CREATE-DOCTOR-SUBSCRIPTION FUNCTION CALLED!");
-  console.log("Request method:", req.method);
-  console.log("Request headers:", Object.fromEntries(req.headers.entries()));
-
+logger.info("create-doctor-subscription invoked");
   try {
     // Validate plan_type is required
-    const { plan_type } = body;
+    const { plan_type } = await req.json();
     if (!plan_type || !["monthly", "annual"].includes(plan_type)) {
       return new Response(
         JSON.stringify({ error: "plan_type is required and must be 'monthly' or 'annual'" }),
@@ -60,7 +57,7 @@ serve(async (req) => {
     const { data: userData, error: authError } = await authClient.auth.getUser(token);
 
     if (authError || !userData.user?.email) {
-      console.error("Authentication failed:", authError);
+      logger.warn("Authentication failed");
       return new Response(
         JSON.stringify({ error: "Authentication failed" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
