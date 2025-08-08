@@ -1857,6 +1857,32 @@ export type Database = {
         Args: { clinic_id: string }
         Returns: boolean
       }
+      assistant_cancel_appointment: {
+        Args: {
+          p_appointment_id: string
+          p_actor_user_id: string
+          p_reason: string
+        }
+        Returns: {
+          id: string
+          status: string
+          notes: string
+        }[]
+      }
+      assistant_reschedule_appointment: {
+        Args: {
+          p_appointment_id: string
+          p_new_starts_at: string
+          p_actor_user_id: string
+          p_reason?: string
+        }
+        Returns: {
+          id: string
+          starts_at: string
+          ends_at: string
+          status: string
+        }[]
+      }
       book_slot: {
         Args: {
           p_doctor_internal_id: string

@@ -21,8 +21,10 @@ import {
   CheckCircle,
   Image as ImageIcon,
   Eye,
-  MapPin
+  MapPin,
+  MessageSquare
 } from 'lucide-react';
+import { ChatWindow } from '@/components/ChatWindow';
 import { PatientIdDocument } from './PatientIdDocument';
 import { useSignedUrl } from '@/hooks/useSignedUrl';
 
@@ -58,7 +60,9 @@ export function AssistantUpcomingAppointments({ doctorId }: AssistantUpcomingApp
   const [selectedPatient, setSelectedPatient] = useState<Appointment | null>(null);
   const [identityVerificationModal, setIdentityVerificationModal] = useState(false);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
-  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+const [chatOpen, setChatOpen] = useState(false);
+const [conversationId, setConversationId] = useState<string | null>(null);
 
   useEffect(() => {
     if (doctorId) {
@@ -171,6 +175,35 @@ export function AssistantUpcomingAppointments({ doctorId }: AssistantUpcomingApp
     }
   };
 
+  const openChat = async (apt: Appointment) => {
+    try {
+      const { data: existing } = await supabase
+        .from('conversations')
+        .select('id')
+        .eq('appointment_id', apt.id)
+        .maybeSingle();
+
+      if (existing?.id) {
+        setConversationId(existing.id);
+      } else {
+        const { data, error } = await supabase.functions.invoke('create-conversation', {
+          body: {
+            appointment_id: apt.id,
+            patient_id: apt.patient_user_id,
+            doctor_id: apt.doctor_user_id,
+          },
+        });
+        if (error) throw error;
+        const createdId = data?.conversation_id || data?.conversationId;
+        setConversationId(createdId);
+      }
+      setChatOpen(true);
+    } catch (e) {
+      console.error('Error opening chat:', e);
+      toast({ title: 'Error', description: 'No se pudo abrir el chat', variant: 'destructive' });
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'scheduled': return 'default';
@@ -262,7 +295,8 @@ export function AssistantUpcomingAppointments({ doctorId }: AssistantUpcomingApp
   }
 
   return (
-    <Card>
+    <>
+      <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Calendar className="h-5 w-5" />
@@ -345,6 +379,16 @@ export function AssistantUpcomingAppointments({ doctorId }: AssistantUpcomingApp
                     >
                       <Eye className="h-4 w-4 mr-1" />
                       Ver Detalles
+                    </Button>
+
+                    {/* Chat Button */}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => openChat(appointment)}
+                    >
+                      <MessageSquare className="h-4 w-4 mr-1" />
+                      Chat
                     </Button>
 
                     {/* Mark Patient Arrived Button */}
@@ -455,5 +499,22 @@ export function AssistantUpcomingAppointments({ doctorId }: AssistantUpcomingApp
         userRole="assistant"
       />
     </Card>
+
+    {/* Chat Dialog */}
+    <Dialog open={chatOpen} onOpenChange={setChatOpen}>
+      <DialogContent className="max-w-2xl max-h-[80vh]">
+        <DialogHeader>
+          <DialogTitle>Chat de la Cita</DialogTitle>
+        </DialogHeader>
+        <div className="flex-1 overflow-hidden">
+          {conversationId ? (
+            <ChatWindow conversationId={conversationId} />
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">No se pudo cargar la conversación</div>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }

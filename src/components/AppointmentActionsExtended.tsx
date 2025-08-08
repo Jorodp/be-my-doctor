@@ -151,13 +151,12 @@ export function AppointmentActionsExtended({
       const newEndTime = new Date(newStartTime.getTime() + 60 * 60 * 1000); // 1 hour
 
       const { error } = await supabase
-        .from('appointments')
-        .update({
-          starts_at: newStartTime.toISOString(),
-          ends_at: newEndTime.toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', appointment.id);
+        .rpc('assistant_reschedule_appointment', {
+          p_appointment_id: appointment.id,
+          p_new_starts_at: newStartTime.toISOString(),
+          p_actor_user_id: currentUserId,
+          p_reason: null,
+        });
 
       if (error) throw error;
 
@@ -195,13 +194,11 @@ export function AppointmentActionsExtended({
     setLoading(true);
     try {
       const { error } = await supabase
-        .from('appointments')
-        .update({
-          status: 'cancelled',
-          cancellation_reason: cancelReason,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', appointment.id);
+        .rpc('assistant_cancel_appointment', {
+          p_appointment_id: appointment.id,
+          p_actor_user_id: currentUserId,
+          p_reason: cancelReason,
+        });
 
       if (error) throw error;
 
