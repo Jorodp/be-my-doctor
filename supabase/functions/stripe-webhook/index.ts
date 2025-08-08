@@ -19,7 +19,6 @@ serve(async (req) => {
   }
 
   try {
-    console.log("Webhook received");
     
     const signature = req.headers.get("stripe-signature");
     if (!signature) {
@@ -41,28 +40,16 @@ serve(async (req) => {
       return new Response("Webhook signature verification failed", { status: 400 });
     }
 
-    console.log("Processing event:", event.type);
 
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as any;
-      console.log("Checkout session completed:", session.id);
-      console.log("Session metadata:", session.metadata);
-      
       if (session.mode === "subscription") {
         const subscription = await stripe.subscriptions.retrieve(session.subscription);
-        console.log("Retrieved subscription:", subscription.id);
-        
         const userId = session.metadata?.user_id;
-        const plan = session.metadata?.plan || session.metadata?.plan_type; // Soporte para ambos campos
-        
-        console.log("Extracted metadata:", { userId, plan });
-        
+        const plan = session.metadata?.plan || session.metadata?.plan_type;
         if (!userId) {
-          console.error("No user_id in session metadata");
-          return new Response("No user_id found", { status: 400 });
+          return new Response("user_id missing", { status: 400 });
         }
-
-        // Create subscription record
         const subscriptionData = {
           user_id: userId,
           stripe_subscription_id: subscription.id,
@@ -74,27 +61,17 @@ serve(async (req) => {
           starts_at: new Date(subscription.current_period_start * 1000).toISOString(),
           ends_at: new Date(subscription.current_period_end * 1000).toISOString(),
         };
-        
-        console.log("Creating subscription record:", subscriptionData);
-        
         const { error } = await supabaseAdmin
           .from("subscriptions")
           .insert(subscriptionData);
-
         if (error) {
-          console.error("Error creating subscription record:", error);
-          return new Response("Error creating subscription", { status: 500 });
+          return new Response("DB insert error", { status: 500 });
         }
-
-        console.log("✅ Subscription record created successfully for user:", userId);
       }
     }
 
     if (event.type === "customer.subscription.updated") {
       const subscription = event.data.object as any;
-      console.log("Subscription updated:", subscription.id);
-      
-      // Update subscription in database
       const { error } = await supabaseAdmin
         .from("subscriptions")
         .update({
@@ -102,18 +79,13 @@ serve(async (req) => {
           ends_at: new Date(subscription.current_period_end * 1000).toISOString(),
         })
         .eq("stripe_subscription_id", subscription.id);
-
       if (error) {
-        console.error("Error updating subscription:", error);
-        return new Response("Error updating subscription", { status: 500 });
+        return new Response("DB update error", { status: 500 });
       }
     }
 
     if (event.type === "customer.subscription.deleted") {
       const subscription = event.data.object as any;
-      console.log("Subscription cancelled:", subscription.id);
-      
-      // Mark subscription as cancelled
       const { error } = await supabaseAdmin
         .from("subscriptions")
         .update({
@@ -121,10 +93,8 @@ serve(async (req) => {
           ends_at: new Date().toISOString(),
         })
         .eq("stripe_subscription_id", subscription.id);
-
       if (error) {
-        console.error("Error cancelling subscription:", error);
-        return new Response("Error cancelling subscription", { status: 500 });
+        return new Response("DB cancel error", { status: 500 });
       }
     }
 
@@ -132,9 +102,8 @@ serve(async (req) => {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
-  } catch (error) {
-    console.error("Webhook error:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
+  } catch (_error) {
+    return new Response(JSON.stringify({ error: "Internal error", hint: "stripe-webhook failed" }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
     });

@@ -11,20 +11,6 @@ serve(async (req) => {
   }
 
   try {
-    console.log("TEST FUNCTION STARTED");
-    
-    let body = {};
-    try {
-      const text = await req.text();
-      if (text) {
-        body = JSON.parse(text);
-      }
-    } catch (e) {
-      // Si no hay body o no es JSON válido, usar objeto vacío
-      console.log("No valid JSON body received");
-    }
-    
-    console.log("Body received:", body);
     
     return new Response(JSON.stringify({ 
       status: "success", 
@@ -34,11 +20,10 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
-  } catch (error) {
-    console.log("ERROR in test function:", error);
+  } catch (_error) {
     return new Response(JSON.stringify({ 
-      error: error.message,
-      status: "error"
+      error: "Internal error",
+      hint: "test-function failed"
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,

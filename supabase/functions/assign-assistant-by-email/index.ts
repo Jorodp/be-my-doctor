@@ -8,8 +8,6 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  console.log('=== NEW ASSIGN ASSISTANT REQUEST ===');
-  
   // Handle CORS preflight request
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -23,15 +21,9 @@ serve(async (req) => {
   }
 
   try {
-    // Parse request body
     const { email, doctor_id, clinic_id } = await req.json();
-    console.log('=== ASSIGN ASSISTANT REQUEST ===');
-    console.log('Email:', email);
-    console.log('Doctor ID:', doctor_id);
-    console.log('Clinic ID:', clinic_id);
 
     if (!email || !doctor_id) {
-      console.log('Missing required fields');
       return new Response(
         JSON.stringify({ error: "Email and doctor_id are required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -55,10 +47,9 @@ serve(async (req) => {
       auth: { persistSession: false }
     });
 
-    console.log('Admin client created');
+    // Create admin client for user management
 
     // First, verify the doctor exists
-    console.log('Checking if doctor exists...');
     const { data: doctorProfile, error: doctorError } = await adminClient
       .from("profiles")
       .select("user_id, role")
@@ -81,10 +72,8 @@ serve(async (req) => {
       );
     }
 
-    console.log('Doctor verified with user_id:', doctorProfile.user_id);
 
     // Check if user with email exists
-    console.log('Searching for existing user...');
     const { data: existingUsers, error: searchError } = await adminClient.auth.admin.listUsers();
     
     if (searchError) {
@@ -101,7 +90,6 @@ serve(async (req) => {
     let message: string;
 
     if (existingUser) {
-      console.log('Found existing user:', existingUser.id);
       assistantUserId = existingUser.id;
 
       // Check if user already has a profile
@@ -120,10 +108,6 @@ serve(async (req) => {
       }
 
       if (existingProfile && existingProfile.role !== 'assistant') {
-        console.log('User has different role:', existingProfile.role);
-        // If user has different role but we're trying to assign to clinic, allow conversion to assistant
-        if (clinic_id) {
-          console.log('Converting user to assistant role for clinic assignment');
           const { error: roleUpdateError } = await adminClient
             .from("profiles")
             .update({ role: "assistant" })
@@ -193,7 +177,6 @@ serve(async (req) => {
 
       message = "Usuario existente asignado como asistente exitosamente";
     } else {
-      console.log('Creating new user...');
       
       // Generate a temporary password
       const tempPassword = Math.random().toString(36).slice(-12) + "Aa1!";
@@ -225,7 +208,6 @@ serve(async (req) => {
       }
 
       assistantUserId = newUser.user.id;
-      console.log('New user created:', assistantUserId);
 
       // Create profile for new user
       const { data: newProfile, error: profileCreateError } = await adminClient
@@ -247,15 +229,12 @@ serve(async (req) => {
       }
 
       assistantProfileId = newProfile.user_id;
-      console.log('Profile created for new user with user_id:', assistantProfileId);
 
       message = `Nuevo asistente creado. Email: ${email}, Contraseña temporal: ${tempPassword}`;
     }
 
     // Handle clinic-specific assignment if clinic_id is provided
     if (clinic_id) {
-      console.log('Creating clinic-specific assistant assignment...');
-      
       // Get the doctor's internal profile ID
       const { data: doctorProfileData, error: doctorProfileError } = await adminClient
         .from("profiles")
@@ -297,13 +276,12 @@ serve(async (req) => {
       if (clinicAssignmentCheckError && clinicAssignmentCheckError.code !== 'PGRST116') {
         console.error('Error checking clinic assignment:', clinicAssignmentCheckError);
         return new Response(
-          JSON.stringify({ error: "Error verificando asignación de clínica: " + clinicAssignmentCheckError.message }),
+          JSON.stringify({ error: "Error verificando asignación de clínica" }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
       if (existingClinicAssignment) {
-        console.log('Clinic assignment already exists');
         return new Response(
           JSON.stringify({ 
             success: true, 
@@ -325,15 +303,12 @@ serve(async (req) => {
       if (clinicAssignmentError) {
         console.error("Error creating clinic assignment:", clinicAssignmentError);
         return new Response(
-          JSON.stringify({ error: "Error creando asignación de clínica: " + clinicAssignmentError.message }),
+          JSON.stringify({ error: "Error creando asignación de clínica" }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-
-      console.log('Clinic assignment created successfully');
     } else {
       // Legacy: Check if assignment already exists in doctor_assistants
-      console.log('Checking existing doctor-assistant assignment...');
       const { data: existingAssignment, error: assignmentCheckError } = await adminClient
         .from("doctor_assistants")
         .select("id")
@@ -344,13 +319,12 @@ serve(async (req) => {
       if (assignmentCheckError && assignmentCheckError.code !== 'PGRST116') {
         console.error('Error checking assignment:', assignmentCheckError);
         return new Response(
-          JSON.stringify({ error: "Error verificando asignación: " + assignmentCheckError.message }),
+          JSON.stringify({ error: "Error verificando asignación" }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
       if (existingAssignment) {
-        console.log('Assignment already exists');
         return new Response(
           JSON.stringify({ 
             success: true, 
@@ -362,7 +336,6 @@ serve(async (req) => {
       }
 
       // Create the assignment
-      console.log('Creating doctor-assistant assignment...');
       const { error: assignmentError } = await adminClient
         .from("doctor_assistants")
         .insert({
@@ -373,15 +346,11 @@ serve(async (req) => {
       if (assignmentError) {
         console.error("Error creating assignment:", assignmentError);
         return new Response(
-          JSON.stringify({ error: "Error creando asignación: " + assignmentError.message }),
+          JSON.stringify({ error: "Error creando asignación" }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-
-      console.log('Assignment created successfully');
     }
-    console.log('=== SUCCESS ===');
-
     return new Response(
       JSON.stringify({ 
         success: true, 
@@ -391,17 +360,11 @@ serve(async (req) => {
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 
-  } catch (error) {
-    console.error("=== UNEXPECTED ERROR ===");
-    console.error("Error details:", error);
-    console.error("Error name:", error.name);
-    console.error("Error message:", error.message);
-    console.error("Error stack:", error.stack);
-    
+  } catch (_error) {
     return new Response(
       JSON.stringify({ 
-        error: `Error interno del servidor: ${error.message}`,
-        details: error.stack
+        error: "Internal error",
+        hint: "assign-assistant-by-email failed"
       }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

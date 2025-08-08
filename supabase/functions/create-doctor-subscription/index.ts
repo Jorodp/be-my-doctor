@@ -27,10 +27,6 @@ serve(async (req) => {
   console.log("Request headers:", Object.fromEntries(req.headers.entries()));
 
   try {
-    // Parse request body
-    const body = await req.json();
-    console.log("Body received:", body);
-
     // Validate plan_type is required
     const { plan_type } = body;
     if (!plan_type || !["monthly", "annual"].includes(plan_type)) {
@@ -40,25 +36,13 @@ serve(async (req) => {
       );
     }
 
-    // Get environment variables
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
 
-    console.log("Environment check:", {
-      hasStripeKey: !!stripeKey,
-      hasSupabaseUrl: !!supabaseUrl,
-      hasServiceRoleKey: !!serviceRoleKey,
-      hasAnonKey: !!anonKey
-    });
-
     if (!stripeKey || !supabaseUrl || !serviceRoleKey || !anonKey) {
-      console.error("Missing environment variables!");
-      return new Response(
-        JSON.stringify({ error: "Server configuration error" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Internal error", hint: "Config missing" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     // Authenticate user with ANON_KEY client
@@ -72,7 +56,6 @@ serve(async (req) => {
 
     const token = authHeader.replace("Bearer ", "");
     const authClient = createClient(supabaseUrl, anonKey);
-    console.log("Authenticating user with token length:", token.length);
     
     const { data: userData, error: authError } = await authClient.auth.getUser(token);
 
@@ -97,17 +80,12 @@ serve(async (req) => {
       .eq("user_id", user.id)
       .maybeSingle();
 
-    console.log("Profile query result:", { profile, profileError });
-
     if (profileError || !profile || profile.role !== "doctor") {
-      console.error("Doctor role verification failed:", { profileError, profile });
       return new Response(
-        JSON.stringify({ error: "Only doctors can subscribe" }),
+        JSON.stringify({ error: "Internal error", hint: "Unauthorized" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-
-    console.log("Doctor role verified successfully");
 
     // Initialize Stripe
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
@@ -119,21 +97,15 @@ serve(async (req) => {
     };
 
     const priceId = priceIds[plan_type as keyof typeof priceIds];
-    console.log("Using price ID:", priceId);
 
     // Check for existing Stripe customer
     let customerId;
-    console.log("Checking for existing Stripe customer...");
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     if (customers.data.length > 0) {
       customerId = customers.data[0].id;
-      console.log("Found existing customer:", customerId);
-    } else {
-      console.log("No existing customer found, will create new one at checkout");
     }
 
     // Create checkout session
-    console.log("Creating Stripe checkout session...");
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
@@ -144,15 +116,9 @@ serve(async (req) => {
       client_reference_id: user.id,
       metadata: {
         plan_type,
-        plan: plan_type, // También agregamos "plan" para compatibilidad con el webhook
+        plan: plan_type,
         user_id: user.id
       }
-    });
-
-    console.log("✅ Checkout session created successfully:", { 
-      sessionId: session.id, 
-      url: session.url,
-      metadata: session.metadata 
     });
 
     return new Response(
@@ -161,16 +127,8 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error("❌ Error in create-doctor-subscription:", {
-      message: error.message,
-      stack: error.stack,
-      name: error.name
-    });
     return new Response(
-      JSON.stringify({ 
-        error: "Server error occurred",
-        details: error.message 
-      }),
+      JSON.stringify({ error: "Internal error", hint: "create-doctor-subscription failed" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

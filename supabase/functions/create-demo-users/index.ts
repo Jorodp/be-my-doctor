@@ -338,26 +338,26 @@ Deno.serve(async (req) => {
           id: adminUser.user?.id,
           email: 'jorodp@hotmail.com',
           role: 'admin',
-          password: adminPassword
+          password: '[REDACTED]'
         },
         patient: {
           id: patientUser.user?.id,
           email: 'paciente@paciente.com',
           role: 'patient',
-          password: patientPassword
+          password: '[REDACTED]'
         },
         doctor: {
           id: doctorUser.user?.id,
           email: doctorUser.user?.email,
           role: 'doctor',
-          password: doctorPassword
+          password: '[REDACTED]'
         },
         assistant: {
           id: assistantUser.user?.id,
           email: assistantUser.user?.email,
           role: 'assistant',
           assigned_doctor_id: doctorUser.user?.id,
-          password: assistantPassword
+          password: '[REDACTED]'
         },
         demo_doctors: createdDoctors
       }

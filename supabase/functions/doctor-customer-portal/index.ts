@@ -7,9 +7,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const logStep = (step: string, details?: any) => {
-  const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
-  console.log(`[DOCTOR-CUSTOMER-PORTAL] ${step}${detailsStr}`);
+const logStep = (step: string) => {
+  // minimal log in edge function
 };
 
 serve(async (req) => {
@@ -71,10 +70,8 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    logStep("ERROR in doctor-customer-portal", { message: errorMessage });
-    return new Response(JSON.stringify({ error: errorMessage }), {
+  } catch (_error) {
+    return new Response(JSON.stringify({ error: "Internal error", hint: "doctor-customer-portal failed" }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     });

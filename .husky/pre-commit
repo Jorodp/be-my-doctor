@@ -1,0 +1,13 @@
+#!/bin/sh
+# Pre-commit hook to block insecure console usage
+
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '^(src|supabase/functions)/')
+
+if [ -n "$STAGED_FILES" ]; then
+  if git diff --cached $STAGED_FILES | grep -E '\+.*console\.(log|debug|trace)\('; then
+    echo "❌ Found console.log/debug/trace in staged changes. Use logger.info/warn/error (or console.warn/error in edge)."
+    exit 1
+  fi
+fi
+
+exit 0
