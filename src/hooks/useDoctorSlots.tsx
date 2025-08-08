@@ -207,7 +207,7 @@ export function useBookAppointment() {
       const localDateTimeMX = createMexicoTZDate(date, normalizedStartTime);
       const slotStartUTC = localDateTimeMX.utc().toISOString();
 
-      console.log('Booking via RPC book_slot()', {
+      console.log('Booking via RPC book_slot_v2()', {
         date,
         startTime,
         normalizedStartTime,

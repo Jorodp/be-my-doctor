@@ -26,6 +26,7 @@ import { useToast } from '@/hooks/use-toast';
 import { format, addDays, isAfter, isBefore, startOfDay } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { PendingRatingValidator } from '@/components/PendingRatingValidator';
+import { createMexicoTZDate } from '@/utils/dayjsConfig';
 
 interface Doctor {
   id: string;
@@ -212,77 +213,56 @@ export default function BookAppointment() {
 
     setBookingLoading(true);
     try {
-      // Crear fecha en zona horaria local (México)
-      const appointmentStart = new Date(selectedDate);
-      const [hours, minutes] = selectedTime.split(':');
-      appointmentStart.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-      
-      const appointmentEnd = new Date(appointmentStart);
-      appointmentEnd.setHours(appointmentStart.getHours() + 1); // 1 hour appointment
+      // Construir fecha/hora en zona MX y convertir a UTC (coherente con backend)
+      const dateStr = format(selectedDate, 'yyyy-MM-dd');
+      const normalizedStartTime = selectedTime.length === 5 ? selectedTime : `${selectedTime}:00`;
+      const localDateTimeMX = createMexicoTZDate(dateStr, normalizedStartTime);
+      const slotStartUTC = localDateTimeMX.utc().toISOString();
 
-      // ✅ VALIDACIÓN DE SOLAPAMIENTO ANTES DE INSERTAR
-      const { data: conflictingAppointments, error: checkError } = await supabase
-        .from('appointments')
-        .select('id, starts_at, ends_at')
-        .eq('doctor_user_id', doctorId)
-        .in('status', ['scheduled', 'completed'])
-        .lt('starts_at', appointmentEnd.toISOString())
-        .gt('ends_at', appointmentStart.toISOString());
+      // Obtener ID interno del doctor (profiles.id)
+      const { data: doctorProfile, error: profileError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', doctorId)
+        .single();
+      if (profileError) throw profileError;
 
-      if (checkError) {
-        console.error('Error checking for conflicts:', checkError);
-        throw new Error('Error verificando disponibilidad');
+      // Obtener una clínica del doctor (usar la primera disponible)
+      const { data: clinicRow, error: clinicError } = await supabase
+        .from('clinics')
+        .select('id')
+        .eq('doctor_id', doctorProfile.id)
+        .order('name', { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      if (clinicError) throw clinicError;
+      if (!clinicRow) {
+        throw new Error('El doctor no tiene clínicas configuradas.');
       }
 
-      if (conflictingAppointments && conflictingAppointments.length > 0) {
-        toast({
-          title: "Horario no disponible",
-          description: "Este horario ya está ocupado. Por favor selecciona otro horario.",
-          variant: "destructive"
-        });
-        setBookingLoading(false);
-        return;
-      }
+      // Reservar usando RPC robusto en el backend
+      const { data: booked, error: rpcError } = await supabase
+        .rpc('book_slot_v2', {
+          p_doctor_internal_id: doctorProfile.id,
+          p_clinic_id: clinicRow.id,
+          p_slot_start: slotStartUTC,
+          p_patient_user_id: user.id,
+          p_created_by: user.id,
+          p_notes: appointmentNotes || null,
+        })
+        .maybeSingle();
 
-      // Si no hay conflictos, proceder con la inserción
-      const { error } = await supabase
-        .from('appointments')
-        .insert({
-          doctor_user_id: doctorId,
-          patient_user_id: user.id,
-          starts_at: appointmentStart.toISOString(),
-          ends_at: appointmentEnd.toISOString(),
-          status: 'scheduled',
-          notes: appointmentNotes || null,
-          created_by: user.id
-        });
-
-      if (error) {
-        if (error.code === '23505') { // Unique constraint violation
-          toast({
-            title: "Error de concurrencia",
-            description: "Este horario fue tomado por otro paciente. Selecciona otro horario.",
-            variant: "destructive"
-          });
-        } else {
-          throw error;
-        }
-        setBookingLoading(false);
-        return;
-      }
+      if (rpcError) throw rpcError;
+      if (!booked) throw new Error('No se pudo crear la cita.');
 
       setBookingSuccess(true);
+      toast({ title: '¡Cita Agendada!', description: 'Tu cita ha sido agendada exitosamente' });
+    } catch (error: any) {
+      console.error('Error booking appointment (RPC):', error);
       toast({
-        title: "¡Cita Agendada!",
-        description: "Tu cita ha sido agendada exitosamente",
-      });
-
-    } catch (error) {
-      console.error('Error booking appointment:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo agendar la cita. Intenta con otro horario.",
-        variant: "destructive"
+        title: 'Error',
+        description: error?.message || 'No se pudo agendar la cita. Intenta con otro horario.',
+        variant: 'destructive',
       });
     } finally {
       setBookingLoading(false);
